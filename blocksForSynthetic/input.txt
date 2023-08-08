@@ -1,0 +1,38 @@
+remove all instances of the letter e from the string
+s = s.replace("e", "")
+
+replace all spaces with exclamation points in the string
+s = s.replace(" ", "!")
+
+convert the string s to lowercase
+s = s.lower()
+
+remove the first and last two characters of the string
+s = s[2:-2]
+
+removes all vowels from the strings
+s = "".join(char for char in s if char not in "aeiouAEIOU")
+
+remove every third character from the string
+s = "".join(char for i, char in enumerate(s) if i % 3 != 0)
+
+drop the last half of the string, as computed by characters
+s = s[: len(s) // 2]
+
+replace spaces with triple spaces
+s = s.replace(" ", "   ")
+
+reverse the order of words in the string
+s = " ".join(s.split()[::-1])
+
+drop the first half of the string, as computed by number of words
+s = " ".join(s.split()[len(s.split()) // 2 :])
+
+add the word apples after every word in the string
+s = " ".join(word + " apples" for word in s.split())
+
+make every other character in the string uppercase
+s = "".join(char.upper() if i % 2 == 0 else char for i, char in enumerate(s))
+
+delete all exclamation points, question marks, and periods from the string
+s = "".join([x for x in s if x not in ".!?"])

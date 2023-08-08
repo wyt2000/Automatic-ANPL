@@ -43,6 +43,7 @@ class ProgramBuilder():
         func += f'    {func_return}\n'
         return func
 
+
     def build_specifications(self, func, func_name, spec_num, max_spec_size):
         spec = ''
         spec += 'if __name__ == \"__main__\":\n'

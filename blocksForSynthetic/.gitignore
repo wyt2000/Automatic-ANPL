@@ -1,7 +1,6 @@
 *.zip
 outputs
 prompts
-response.txt
-
+responses
+__pycache__
 log
-ANPL

@@ -20,30 +20,26 @@ def main(input):
     return ans
 '''
 
-messages = []
-system_message = {"role": "system", "content": background}
-messages.append(system_message)
+pre_prompt = "Please write an ANPL code, which has only one function should be named as string_manipulation. Write a single line $$$$$$$$$$ before and after your code."
 
-try:
-    while True:
-        input('Press Enter to read message from msg.txt:\n')
-        msg = '' 
-        with open('msg.txt', 'r') as f:
-            lines = f.readlines() 
-            msg = ''.join(lines)
-        print(f'User:\n{msg}')
-        user_message = {"role": "user", "content": msg}
-        messages.append(user_message)
+post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
+
+class GPT4toANPL:
+    def __init__(self, background=background, pre_prompt=pre_prompt, post_prompt=post_prompt):
+        self.background = background
+        self.pre_prompt = pre_prompt
+        self.post_prompt = post_prompt 
+
+    def request(self, prompt, res_path):
+        messages = [
+            {"role": "system", "content": self.background},
+            {"role": "user", "content": '\n'.join([self.pre_prompt, prompt, self.post_prompt])}
+        ]
         response = openai.ChatCompletion.create(model='gpt-4', messages=messages)
         status_code = response["choices"][0]["finish_reason"]
         assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]
-        with open('response.txt', 'w') as f:
+        with open(res_path, 'w') as f:
             f.write(response)
-        print(f"ChatGPT:\n{response}")
-        messages.append({"role": "assistant", "content": response})
-finally:
-    pathlib.Path("log").mkdir(parents=True, exist_ok=True)
-    timestr = time.strftime("%m%d%H%M%S")
-    with open(f"log/gpt-{timestr}.log", "w") as f:
-        f.write(json.dumps(messages))
+        return response.split('$$$$$$$$$$')[1]
+

@@ -1,2 +1,7 @@
 *.zip
-output
+outputs
+prompts
+response.txt
+
+log
+ANPL

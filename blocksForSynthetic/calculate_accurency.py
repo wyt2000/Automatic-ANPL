@@ -2,6 +2,7 @@ import json
 import pathlib
 
 paths = pathlib.Path(".").glob("anpl*.json")
+paths = sorted(paths)
 for path in paths:
     with open(path, 'r') as f:
         data = json.loads(f.read())

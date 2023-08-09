@@ -2,6 +2,7 @@ import openai
 import json
 import pathlib
 import time
+import re
 
 background = '''You are a expert of ANPL programming language.
 An ANPL program consists of a python-like sketch, and natural language holes.
@@ -30,19 +31,19 @@ class GPT4toANPL:
         self.pre_prompt = pre_prompt
         self.post_prompt = post_prompt 
 
-    def extract_code(self, response, func_name):
-        func_head = f'def {func_name}'
+    def extract_code(self, response):
+        func_head = re.compile("def .+\(.+\)\:")
         func_return = 'return'
         lines = response.split('\n')
         code = []
         ok = False
         for line in lines:
-            if func_head in line:
+            if func_head.match(line):
                 ok = True
             if ok:
                 code.append(line)
-            if func_return in line:
-                ok = False
+            if ok and func_return in line:
+                break
         return '\n'.join(code)
 
 
@@ -62,5 +63,5 @@ class GPT4toANPL:
         response = response["choices"][0]["message"]["content"]
         with open(res_path, 'w') as f:
             f.write(response)
-        return self.extract_code(response, func_name)
+        return self.extract_code(response)
 

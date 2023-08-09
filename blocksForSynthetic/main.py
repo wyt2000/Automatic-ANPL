@@ -34,7 +34,11 @@ if __name__ == '__main__':
         builder.dataset[i].response = response
         print(f'{data.name}: Request for GPT4 done!, the response anpl program is:\n{response}')
         anpl_code_path = os.path.join(anpl_result_dir, data.name+'.py')
-        anpl_code = anpl.compile(data.name, response, anpl_code_path)
+        try:
+            anpl_code = anpl.compile(data.name, response, anpl_code_path)
+        except:
+            print(f'{data.name}: ANPL compile error!')
+            anpl_code = None
         builder.dataset[i].anpl = anpl_code 
         if anpl_code is None:
             anpl_compile_info.compile_errors[data.name] = data.block_num
@@ -54,4 +58,4 @@ if __name__ == '__main__':
             anpl_compile_info.accepteds[data.name] = data.block_num
 
     with open(anpl_compile_info_path, 'w') as f:
-        f.write(json.dumps(anpl_compile_info.asdict()))
+        f.write(json.dumps(dataclasses.asdict(anpl_compile_info)))

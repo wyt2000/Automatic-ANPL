@@ -81,7 +81,7 @@ class ProgramBuilder():
         pathlib.Path(dir_path).mkdir(parents=True)
 
     def build(self, 
-              max_block_num=7,
+              block_num=7,
               data_size=20,
               func_name='string_manipulation',
               func_args='s: str',
@@ -95,14 +95,13 @@ class ProgramBuilder():
               prompt_dir='prompts/',
               seed=114514):
 
-        assert(0 <= max_block_num <= self.block_total) 
+        assert(0 <= block_num <= self.block_total) 
         random.seed(seed)
         self.mkdir_override(output_dir)
         if with_prompt:
             self.mkdir_override(prompt_dir)
 
         for i in range(1, data_size + 1):
-            block_num = random.randint(1, max_block_num)
             block_ids = random.sample(range(self.block_total), block_num)
             func_code = self.build_func_code(block_ids, func_name, func_args, func_desc, func_return)
             specs = self.build_spec(func_code, func_name, spec_num, max_spec_size)

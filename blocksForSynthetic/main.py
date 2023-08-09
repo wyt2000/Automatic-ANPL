@@ -84,21 +84,29 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
             f.write(json.dumps(dataclasses.asdict(compile_info)))
 
 if __name__ == '__main__':
-    builder = ProgramBuilder()
-    builder.build()
-    
-    anpl_robot = GPT2Code()
-    anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
 
-    test_compiler(
-        builder=builder,
-        compiler=anpl_compiler,
-        robot=anpl_robot,
-        model_name='gpt-3.5-turbo-0301',
-        prompt_dir='prompts/',
-        response_dir='anpl_responses/',
-        result_dir='anpl_results/',
-        compile_info_path='anpl_compile_info.txt',
-    )
+    for block_num in range(1, 8):
+        builder = ProgramBuilder()
+        builder.build(
+            block_num=block_num,
+            output_dir=f'programs_{block_num}/',
+            output_prefix='string_manipulation_{block_num}',
+            prompt_dir='prompts_{block_num}/',
+            seed=int('{block_num}114514')
+        )
+        
+        anpl_robot = GPT2Code()
+        anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
+
+        test_compiler(
+            builder=builder,
+            compiler=anpl_compiler,
+            robot=anpl_robot,
+            model_name='gpt-3.5-turbo-0301',
+            prompt_dir='prompts_{block_num}/',
+            response_dir='anpl_responses_{block_num}/',
+            result_dir='anpl_results_{block_num}/',
+            compile_info_path='anpl_compile_info_{block_num}.json',
+        )
 
 

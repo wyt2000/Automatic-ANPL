@@ -19,10 +19,9 @@ def clean_gpt(prev_anpl, new_anpl):
     else:
         return False
 
-class ANPLCompiler():
+class ANPLCompiler:
     name = 'anpl'
     def __init__(self, max_try_times=5, max_temperature=0.5):
-        self.anplp = ANPLParser()
         self.max_try_times = max_try_times
         self.max_temperature = max_temperature
 

@@ -1,9 +1,9 @@
 *.zip
 *.txt
-programs
-prompts
-*responses
-*results
+*programs*
+*prompts*
+*responses*
+*results*
 __pycache__
 log
 

@@ -90,9 +90,9 @@ if __name__ == '__main__':
         builder.build(
             block_num=block_num,
             output_dir=f'programs_{block_num}/',
-            output_prefix='string_manipulation_{block_num}',
-            prompt_dir='prompts_{block_num}/',
-            seed=int('{block_num}114514')
+            output_prefix=f'string_manipulation_{block_num}',
+            prompt_dir=f'prompts_{block_num}/',
+            seed=int(f'{block_num}114514')
         )
         
         anpl_robot = GPT2Code()
@@ -103,10 +103,10 @@ if __name__ == '__main__':
             compiler=anpl_compiler,
             robot=anpl_robot,
             model_name='gpt-3.5-turbo-0301',
-            prompt_dir='prompts_{block_num}/',
-            response_dir='anpl_responses_{block_num}/',
-            result_dir='anpl_results_{block_num}/',
-            compile_info_path='anpl_compile_info_{block_num}.json',
+            prompt_dir=f'prompts_{block_num}/',
+            response_dir=f'anpl_responses_{block_num}/',
+            result_dir=f'anpl_results_{block_num}/',
+            compile_info_path=f'anpl_compile_info_{block_num}.json',
         )
 
 

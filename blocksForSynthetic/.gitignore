@@ -1,5 +1,6 @@
 *.zip
 *.txt
+*.json
 *programs*
 *prompts*
 *responses*

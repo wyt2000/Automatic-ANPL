@@ -25,7 +25,7 @@ pre_prompt = "Please write an ANPL code, which has only one function should be n
 
 post_prompt = "Please write ANPL code first, then write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
 
-class GPT2ANPL:
+class GPT2Code:
     def __init__(self, background=background, pre_prompt=pre_prompt, post_prompt=post_prompt):
         self.background = background
         self.pre_prompt = pre_prompt

@@ -1,17 +1,14 @@
 from ProgramBuilder import ProgramBuilder
-from GPT2ANPL import GPT2ANPL 
+from GPT2Code import GPT2Code 
 from ANPLCompiler import ANPLCompiler
+from ParselPrompts import background as parsel_background
+from ParselPrompts import pre_prompt as parsel_pre_prompt
+from ParselPrompts import post_prompt as parsel_post_prompt
 import os
 import pathlib
 import importlib
 import json
 import dataclasses
-
-model_name              = 'gpt-3.5-turbo-0301'
-prompt_dir              = 'prompts/'
-response_dir            = 'responses/'
-anpl_result_dir         = 'anpl_results/'
-anpl_compile_info_path  = 'anpl_compile_info.txt'
 
 @dataclasses.dataclass
 class CompileInfo:
@@ -20,48 +17,68 @@ class CompileInfo:
     wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
     accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
-if __name__ == '__main__':
-    builder = ProgramBuilder()
-    builder.build()
-
-    robot = GPT2ANPL()
-    anpl = ANPLCompiler(max_try_times=20)
+def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir, result_dir, compile_info_path):
     builder.mkdir_override(response_dir)
-    builder.mkdir_override(anpl_result_dir)
-    anpl_compile_info = CompileInfo('anpl')
+    builder.mkdir_override(result_dir)
+    compile_info = CompileInfo(compiler.name)
+
     for i, data in enumerate(builder.dataset):
-        print(f'{data.name}: Requesting for {model_name}...')
-        response = robot.request(model_name, data.func_name, data.prompt, os.path.join(response_dir, data.name+'.res'))
-        builder.dataset[i].response = response
-        print(f'{data.name}: Request for {model_name} done!, the response anpl program is:\n{response}')
-        anpl_code_path = os.path.join(anpl_result_dir, data.name+'.py')
+        task_name = f"{compiler.name}_{data.name}"
+        print(f'{task_name}: requesting for {model_name}...')
+        response = robot.request(model_name,
+                                 data.func_name,
+                                 data.prompt, 
+                                 os.path.join(response_dir, f"{task_name}.res"))
+        print(f'{task_name} request for {model_name} done!, the response {compiler.name} code is:\n{response}')
+        code_path = os.path.join(result_dir, f"{task_name}.py")
         try:
-            anpl_code = anpl.compile(data.name, response, anpl_code_path)
-        except:
-            print(f'{data.name}: ANPL compile error!')
-            anpl_code = None
-        builder.dataset[i].anpl = anpl_code 
-        if anpl_code is None:
-            anpl_compile_info.compile_errors[data.name] = data.block_num
+            code = compiler.compile(data.name, response, code_path)
+        except Exception as err:
+            print(f'{task_name}: synthesis failed!')
+            print(err)
+            code = None
+        if code is None:
+            print(f'{task_name}: compile error!')
+            compile_info.compile_errors[data.name] = data.block_num
             continue
-        module_path = os.path.splitext(anpl_code_path)[0]
+        module_path = os.path.splitext(code_path)[0]
         module = importlib.import_module(module_path.replace('/', '.'))
         try:
             func = module.__getattribute__(data.func_name)
         except:
-            print(f'{data.name}: ANPL func {data.func_name} not found, compile error!')
-            anpl_compile_info.compile_errors[data.name] = data.block_num
+            print(f'{task_name}: func {data.func_name} not found, compile error!')
+            compile_info.compile_errors[data.name] = data.block_num
             continue
         ok = True
         for inp, out in data.specs:
             if func(inp) != out: 
-                print(f'{data.name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{out}\"!')
+                print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{out}\"!')
                 ok = False
-                anpl_compile_info.wrong_answers[data.name] = data.block_num
+                compile_info.wrong_answers[data.name] = data.block_num
                 break
         if ok:
-            print(f'{data.name}: Accepted!')
-            anpl_compile_info.accepteds[data.name] = data.block_num
+            print(f'{task_name}: Accepted!')
+            compile_info.accepteds[data.name] = data.block_num
 
-    with open(anpl_compile_info_path, 'w') as f:
-        f.write(json.dumps(dataclasses.asdict(anpl_compile_info)))
+    with open(compile_info_path, 'w') as f:
+        f.write(json.dumps(dataclasses.asdict(compile_info)))
+
+if __name__ == '__main__':
+    builder = ProgramBuilder()
+    builder.build()
+    
+    anpl_robot = GPT2Code()
+    anpl_compiler = ANPLCompiler(max_try_times=10, max_temperature=1.0)
+
+    test_compiler(
+        builder=builder,
+        compiler=anpl_compiler,
+        robot=anpl_robot,
+        model_name='gpt-3.5-turbo-0301',
+        prompt_dir='prompts/',
+        response_dir='anpl_responses/',
+        result_dir='anpl_results/',
+        compile_info_path='anpl_compile_info.txt',
+    )
+
+

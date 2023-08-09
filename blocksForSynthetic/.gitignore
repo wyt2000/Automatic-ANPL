@@ -2,8 +2,8 @@
 *.txt
 programs
 prompts
-responses
-anpl_results
+*responses
+*results
 __pycache__
 log
 

@@ -45,7 +45,12 @@ if __name__ == '__main__':
             continue
         module_path = os.path.splitext(anpl_code_path)[0]
         module = importlib.import_module(module_path.replace('/', '.'))
-        func = module.__getattribute__(data.func_name)
+        try:
+            func = module.__getattribute__(data.func_name)
+        except:
+            print(f'{data.name}: ANPL func {func_name} not found, compile error!')
+            anpl_compile_info.compile_errors[data.name] = data.block_num
+            continue
         ok = True
         for inp, out in data.specs:
             if func(inp) != out: 

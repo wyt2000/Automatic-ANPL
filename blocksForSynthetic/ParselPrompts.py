@@ -1,3 +1,5 @@
+import re
+
 background = '''You are a expert of Parsel programming language.
 Parsel is a natural language framework for writing programs for any target language using code language models. Parsel considers multiple implementations for each function, searching sets of implementations to find programs passing unit tests (more generally, program constraints). It can be used for many kinds of algorithmic tasks, e.g. code synthesis, robotic planning, and theorem proving. The following are some prombles and the Parsel codes to solve them.
 # Here is an example calculating the probability of landing on the same character in a random shift of an input string, based on the following problem:
@@ -69,7 +71,22 @@ max_score(input_str): Simple function returning the maximum score Alex can get.
 (7 lines)
 '''
 
-pre_prompt = "Please write a Parsel code , which has a function named `func_name`."
+pre_prompt = "Please write a Parsel code ,which has a function should be named as `func_name`."
 
-post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
+post_prompt = "Please write Parsel code first, then write out your reasoning, and then describe your high-level solution and explain why it is correct. "
+
+def extract_code(func_name, response):
+    func_head = re.compile(f"{func_name}\(.+\).*\:")
+    func_return = 'return'
+    lines = response.split('\n')
+    code = []
+    ok = False
+    for line in lines:
+        if func_head.match(line):
+            ok = True
+        if ok:
+            code.append(line)
+        if ok and func_return in line:
+            break
+    return '\n'.join(code)
 

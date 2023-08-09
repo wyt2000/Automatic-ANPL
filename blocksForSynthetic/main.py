@@ -1,9 +1,11 @@
 from ProgramBuilder import ProgramBuilder
 from GPT2Code import GPT2Code 
 from ANPLCompiler import ANPLCompiler
+from ParselCompiler import ParselCompiler
 from ParselPrompts import background as parsel_background
 from ParselPrompts import pre_prompt as parsel_pre_prompt
 from ParselPrompts import post_prompt as parsel_post_prompt
+from ParselPrompts import extract_code as parsel_extract_code
 import os
 import pathlib
 import importlib
@@ -101,7 +103,8 @@ if __name__ == '__main__':
             prompt_dir=f'prompts_{block_num}/',
             seed=int(f'{block_num}114514')
         )
-        
+       
+        '''
         anpl_robot = GPT2Code()
         anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
 
@@ -114,6 +117,22 @@ if __name__ == '__main__':
             response_dir=f'anpl_responses_{block_num}/',
             result_dir=f'anpl_results_{block_num}/',
             compile_info_path=f'anpl_compile_info_{block_num}.json',
+        )
+        '''
+
+        parsel_robot = GPT2Code(parsel_background, parsel_pre_prompt, parsel_post_prompt)
+        parsel_robot.extract_code = parsel_extract_code
+        parsel_compiler = ParselCompiler()
+
+        test_compiler(
+            builder=builder,
+            compiler=parsel_compiler,
+            robot=parsel_robot,
+            model_name='gpt-3.5-turbo-0301',
+            prompt_dir=f'prompts_{block_num}/',
+            response_dir=f'parsel_responses_{block_num}/',
+            result_dir=f'parsel_results_{block_num}/',
+            compile_info_path=f'parsel_compile_info_{block_num}.json',
         )
 
 

@@ -23,31 +23,31 @@ def main(input):
 
 pre_prompt = "Please write an ANPL code, which has only one function should be named as `func_name`."
 
-post_prompt = "Please write ANPL code first, then write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
+post_prompt = "Please write ANPL code first, then write out your reasoning, and then describe your high-level solution and explain why it is correct. "
+
+def extract_code(func_name, response):
+    func_head = re.compile("def .+\(.+\).*\:")
+    func_return = 'return'
+    lines = response.split('\n')
+    code = []
+    ok = False
+    for line in lines:
+        if func_head.match(line):
+            ok = True
+        if ok:
+            code.append(line)
+        if ok and func_return in line:
+            break
+    return '\n'.join(code)
 
 class GPT2Code:
     def __init__(self, background=background, pre_prompt=pre_prompt, post_prompt=post_prompt):
         self.background = background
         self.pre_prompt = pre_prompt
         self.post_prompt = post_prompt 
+        self.extract_code = extract_code
 
-    def extract_code(self, response):
-        func_head = re.compile("def .+\(.+\).*\:")
-        func_return = 'return'
-        lines = response.split('\n')
-        code = []
-        ok = False
-        for line in lines:
-            if func_head.match(line):
-                ok = True
-            if ok:
-                code.append(line)
-            if ok and func_return in line:
-                break
-        return '\n'.join(code)
-
-
-    def request(self, model_name, func_name, prompt, res_path):
+    def request(self, model_name, func_name, prompt, res_path, extract_code=extract_code):
         messages = [
             {"role": "system", "content": self.background},
             {"role": "user", "content": '\n'.join([
@@ -63,5 +63,5 @@ class GPT2Code:
         response = response["choices"][0]["message"]["content"]
         with open(res_path, 'w') as f:
             f.write(response)
-        return self.extract_code(response)
+        return self.extract_code(func_name, response)
 

@@ -24,63 +24,64 @@ class CompileInfo:
     accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
 def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir, result_dir, compile_info_path):
-    builder.mkdir_override(response_dir)
-    builder.mkdir_override(result_dir)
-    compile_info = CompileInfo(compiler.name)
+    try:
+        builder.mkdir_override(response_dir)
+        builder.mkdir_override(result_dir)
+        compile_info = CompileInfo(compiler.name)
 
-    for i, data in enumerate(builder.dataset):
-        task_name = f"{compiler.name}_{data.name}"
-        print(f'{task_name}: requesting for {model_name}...')
-        response = robot.request(model_name,
-                                 data.func_name,
-                                 data.prompt, 
-                                 os.path.join(response_dir, f"{task_name}.res"))
-        print(f'{task_name} request for {model_name} done!, the response {compiler.name} code is:\n{response}')
-        code_path = os.path.join(result_dir, f"{task_name}.py")
-        try:
-            code = compiler.compile(data.name, response, code_path)
-        except Exception as err:
-            print(f'{task_name}: synthesis failed!')
-            print(err)
-            code = None
-        if code is None:
-            print(f'{task_name}: compile error!')
-            compile_info.compile_errors[data.name] = data.block_num
-            continue
-
-        module_path = os.path.splitext(code_path)[0]
-        module = importlib.import_module(module_path.replace('/', '.'))
-        try:
-            func = module.__getattribute__(data.func_name)
-        except:
-            print(f'{task_name}: func {data.func_name} not found, compile error!')
-            compile_info.compile_errors[data.name] = data.block_num
-            continue
-        @timeout_decorator.timeout(time_limit)
-        def timeout_func(inp):
-            out = func(inp)
-            return out
-        ok = True
-        for inp, ans in data.specs:
-            try: 
-                out = timeout_func(inp)
-            except timeout_decorator.TimeoutError as err:
-                print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{out}\"!')
-                break
+        for i, data in enumerate(builder.dataset):
+            task_name = f"{compiler.name}_{data.name}"
+            print(f'{task_name}: requesting for {model_name}...')
+            response = robot.request(model_name,
+                                     data.func_name,
+                                     data.prompt, 
+                                     os.path.join(response_dir, f"{task_name}.res"))
+            print(f'{task_name} request for {model_name} done!, the response {compiler.name} code is:\n{response}')
+            code_path = os.path.join(result_dir, f"{task_name}.py")
+            try:
+                code = compiler.compile(data.name, response, code_path)
             except Exception as err:
-                print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{out}\"!')
-                break
-            if out != ans: 
-                print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{ans}\"!')
-                ok = False
-                compile_info.wrong_answers[data.name] = data.block_num
-                break
-        if ok:
-            print(f'{task_name}: Accepted!')
-            compile_info.accepteds[data.name] = data.block_num
+                print(f'{task_name}: synthesis failed!')
+                print(err)
+                code = None
+            if code is None:
+                print(f'{task_name}: compile error!')
+                compile_info.compile_errors[data.name] = data.block_num
+                continue
 
-    with open(compile_info_path, 'w') as f:
-        f.write(json.dumps(dataclasses.asdict(compile_info)))
+            module_path = os.path.splitext(code_path)[0]
+            module = importlib.import_module(module_path.replace('/', '.'))
+            try:
+                func = module.__getattribute__(data.func_name)
+            except:
+                print(f'{task_name}: func {data.func_name} not found, compile error!')
+                compile_info.compile_errors[data.name] = data.block_num
+                continue
+            @timeout_decorator.timeout(time_limit)
+            def timeout_func(inp):
+                out = func(inp)
+                return out
+            ok = True
+            for inp, ans in data.specs:
+                try: 
+                    out = timeout_func(inp)
+                except timeout_decorator.TimeoutError as err:
+                    print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                    break
+                except Exception as err:
+                    print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                    break
+                if out != ans: 
+                    print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{ans}\"!')
+                    ok = False
+                    compile_info.wrong_answers[data.name] = data.block_num
+                    break
+            if ok:
+                print(f'{task_name}: Accepted!')
+                compile_info.accepteds[data.name] = data.block_num
+    finally:
+        with open(compile_info_path, 'w') as f:
+            f.write(json.dumps(dataclasses.asdict(compile_info)))
 
 if __name__ == '__main__':
     builder = ProgramBuilder()

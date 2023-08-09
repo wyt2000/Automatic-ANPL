@@ -4,21 +4,15 @@ import pathlib
 import time
 import re
 
-background = '''You are a expert of ANPL programming language.
-An ANPL program consists of a python-like sketch, and natural language holes.
-A hole implements a function module with a natural language description, which will be fleshed out by LLMs during the compiling process. Each hole specified with a natural language description quoted by quotation marks `` or \"\"\". When called, holes should be organized by specifying its input-output variables, serving as the interconnections. To define a hole, users can either:
-    1. define a hole as a sub-function with the function name, parameters, and descriptions, and then call the function with its function name and input-output variables, or
-    2. just define and call it with descriptions and input-output variables inline.
-A sketch is the control/data flow connecting different holes, specified with a programmatic language. Users constitute the sketch by assigning names to variables and using them as hole parameters in a data flow graph. Besides, users can write complex control flows with programmatic keywords (e.g., for, while, if) similar to that in Python to get more intricate ANPL programs.
-Here is an example for ANPL:
+background = '''You are a expert of Parsel programming language.
+Parsel is a natural language framework for writing programs for any target language using code language models. Parsel considers multiple implementations for each function, searching sets of implementations to find programs passing unit tests (more generally, program constraints). It can be used for many kinds of algorithmic tasks, e.g. code synthesis, robotic planning, and theorem proving. The following are some prombles and the Parsel codes to solve them.
+Here is an example calculating the probability of landing on the same character in a random shift of an input string, based on the following:
+Problem:
+     Vasya and Kolya play a game with a string, using the following rules. Initially, Kolya creates a string s, consisting of small English letters, and uniformly at random chooses an integer k from a segment [0, len(s) - 1]. He tells Vasya this string s, and then shifts it k letters to the left, i.e. creates a new string t = s_k + 1s_k + 2... s_ns_1s_2... s_k. Vasya does not know the integer k nor the string t, but he wants to guess the integer k. To do this, he asks Kolya to tell him the first letter of the new string, and then, after he sees it, open one more letter on some position, which Vasya can choose.
+    Vasya understands, that he can’t guarantee that he will win, but he wants to know the probability of winning, if he plays optimally. He wants you to compute this probability.
+    Note that Vasya wants to know the value of k uniquely, it means, that if there are at least two cyclic shifts of s that fit the information Vasya knowns, Vasya loses. Of course, at any moment of the game Vasya wants to maximize the probability of his win.
+\"\"\"
 
-def main(input):
-    input = `Delete '\n' in the input`(input)
-    n, m = `Split the input str by space and convert it to int as n and m`(input)
-    n, m, ans = `Let ans as an empty str. If n > m, ans start with 'B', decrease n by 1, otherwise it start with 'G', decrease m by 1. Then alternately append 'B' and 'G' to then end of ans, meanwhile decreasing n and m by 1, until n = 0 or m = 0. Return n, m and ans.`(n, m)
-    ans = `Append n 'B's and m 'G's to then end of ans.`(n, m, ans)
-    ans += '\n'
-    return ans
 '''
 
 pre_prompt = "Please write an ANPL code, which has only one function should be named as `func_name`."

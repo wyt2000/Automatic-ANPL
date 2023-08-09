@@ -1,3 +1,3 @@
 [submodule "blocksForSynthetic/parsel"]
 	path = blocksForSynthetic/parsel
-	url = git@github.com:wyt2000/parsel.git
+	url = http://62.234.201.16/nzy/parsel.git 

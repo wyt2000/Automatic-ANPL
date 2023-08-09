@@ -32,7 +32,7 @@ class GPT4toANPL:
         self.post_prompt = post_prompt 
 
     def extract_code(self, response):
-        func_head = re.compile("def .+\(.+\)\:")
+        func_head = re.compile("def .+\(.+\).*\:")
         func_return = 'return'
         lines = response.split('\n')
         code = []

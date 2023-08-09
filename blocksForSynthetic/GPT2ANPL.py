@@ -23,9 +23,9 @@ def main(input):
 
 pre_prompt = "Please write an ANPL code, which has only one function should be named as `func_name`."
 
-post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
+post_prompt = "Please write ANPL code first, then write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
 
-class GPT4toANPL:
+class GPT2ANPL:
     def __init__(self, background=background, pre_prompt=pre_prompt, post_prompt=post_prompt):
         self.background = background
         self.pre_prompt = pre_prompt
@@ -47,7 +47,7 @@ class GPT4toANPL:
         return '\n'.join(code)
 
 
-    def request(self, func_name, prompt, res_path):
+    def request(self, model_name, func_name, prompt, res_path):
         messages = [
             {"role": "system", "content": self.background},
             {"role": "user", "content": '\n'.join([
@@ -57,7 +57,7 @@ class GPT4toANPL:
                 ])
             }
         ]
-        response = openai.ChatCompletion.create(model='gpt-4', messages=messages)
+        response = openai.ChatCompletion.create(model=model_name, messages=messages)
         status_code = response["choices"][0]["finish_reason"]
         assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]

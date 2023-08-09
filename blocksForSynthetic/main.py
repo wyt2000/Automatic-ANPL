@@ -1,5 +1,5 @@
 from ProgramBuilder import ProgramBuilder
-from gpt4toANPL import GPT4toANPL
+from GPT2ANPL import GPT2ANPL 
 from ANPLCompiler import ANPLCompiler
 import os
 import pathlib
@@ -7,10 +7,11 @@ import importlib
 import json
 import dataclasses
 
-prompt_dir = 'prompts/'
-response_dir = 'responses/'
-anpl_result_dir = 'anpl_results/'
-anpl_compile_info_path = 'anpl_compile_info.txt'
+model_name              = 'gpt-3.5-turbo-0301'
+prompt_dir              = 'prompts/'
+response_dir            = 'responses/'
+anpl_result_dir         = 'anpl_results/'
+anpl_compile_info_path  = 'anpl_compile_info.txt'
 
 @dataclasses.dataclass
 class CompileInfo:
@@ -23,16 +24,16 @@ if __name__ == '__main__':
     builder = ProgramBuilder()
     builder.build()
 
-    robot = GPT4toANPL()
+    robot = GPT2ANPL()
     anpl = ANPLCompiler()
     builder.mkdir_override(response_dir)
     builder.mkdir_override(anpl_result_dir)
     anpl_compile_info = CompileInfo('anpl')
     for i, data in enumerate(builder.dataset):
-        print(f'{data.name}: Requesting for GPT4...')
-        response = robot.request(data.func_name, data.prompt, os.path.join(response_dir, data.name+'.res'))
+        print(f'{data.name}: Requesting for {model_name}...')
+        response = robot.request(model_name, data.func_name, data.prompt, os.path.join(response_dir, data.name+'.res'))
         builder.dataset[i].response = response
-        print(f'{data.name}: Request for GPT4 done!, the response anpl program is:\n{response}')
+        print(f'{data.name}: Request for {model_name} done!, the response anpl program is:\n{response}')
         anpl_code_path = os.path.join(anpl_result_dir, data.name+'.py')
         try:
             anpl_code = anpl.compile(data.name, response, anpl_code_path)

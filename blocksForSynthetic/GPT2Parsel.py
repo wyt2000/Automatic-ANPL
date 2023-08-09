@@ -75,7 +75,7 @@ max_score(input_str): Simple function returning the maximum score Alex can get.
 (7 lines)
 '''
 
-pre_prompt = "Please write a Parsel code , which has a function named as `func_name`."
+pre_prompt = "Please write a Parsel code , which has a function named `func_name`."
 
 post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
 

@@ -9,9 +9,10 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 class ANPLCompiler():
 
-    def __init__(self, max_try_times=20):
+    def __init__(self, max_try_times=20, max_temperature=0.5):
         self.anplp = ANPLParser()
         self.max_try_times = max_try_times
+        self.max_temperature = max_temperature
 
     def compile(self, name, code, save_path):
         anplp = self.anplp
@@ -20,7 +21,7 @@ class ANPLCompiler():
         for hole in holes:
             for i in range(self.max_try_times):
                 print(f"{name}: {i}th {hole}")
-                res = fun_synthesis(anpl, hole, temp=i*(1.0 / self.max_try_times))
+                res = fun_synthesis(anpl, hole, temp=i*(self.max_temperature / self.max_try_times))
                 print(f"{name}: {repr(res)}")
                 newanpl = anplp.try_parse(res, from_user=False)
                 if not newanpl:

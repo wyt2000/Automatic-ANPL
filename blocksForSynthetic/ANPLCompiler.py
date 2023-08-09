@@ -11,13 +11,14 @@ class ANPLCompiler():
 
     def __init__(self, max_try_times=20):
         self.anplp = ANPLParser()
+        self.max_try_times = max_try_times
 
     def compile(self, name, code, save_path):
         anplp = self.anplp
         anpl = self.anplp.parse(code)
         holes = anpl.get_holes()
         for hole in holes:
-            for i in range(max_try_times):
+            for i in range(self.max_try_times):
                 print(f"{name}: {i}th {hole}")
                 res = fun_synthesis(anpl, hole, temp=i*0.1)
                 print(f"{name}: {repr(res)}")

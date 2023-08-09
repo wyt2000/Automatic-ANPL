@@ -68,7 +68,7 @@ if __name__ == '__main__':
     builder.build()
     
     anpl_robot = GPT2Code()
-    anpl_compiler = ANPLCompiler(max_try_times=10, max_temperature=1.0)
+    anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
 
     test_compiler(
         builder=builder,

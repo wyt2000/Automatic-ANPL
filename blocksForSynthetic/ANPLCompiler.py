@@ -20,7 +20,7 @@ class ANPLCompiler():
         for hole in holes:
             for i in range(self.max_try_times):
                 print(f"{name}: {i}th {hole}")
-                res = fun_synthesis(anpl, hole, temp=i*0.1)
+                res = fun_synthesis(anpl, hole, temp=i*(1.0 / self.max_try_times))
                 print(f"{name}: {repr(res)}")
                 newanpl = anplp.try_parse(res, from_user=False)
                 if not newanpl:

@@ -48,13 +48,13 @@ if __name__ == '__main__':
         try:
             func = module.__getattribute__(data.func_name)
         except:
-            print(f'{data.name}: ANPL func {func_name} not found, compile error!')
+            print(f'{data.name}: ANPL func {data.func_name} not found, compile error!')
             anpl_compile_info.compile_errors[data.name] = data.block_num
             continue
         ok = True
         for inp, out in data.specs:
             if func(inp) != out: 
-                print(f'{data.name}: Wrong Answer! {func_name}(\"{inp}\") should be \"{out}\"!')
+                print(f'{data.name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{out}\"!')
                 ok = False
                 anpl_compile_info.wrong_answers[data.name] = data.block_num
                 break

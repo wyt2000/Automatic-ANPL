@@ -9,11 +9,17 @@ import pathlib
 import importlib
 import json
 import dataclasses
+import timeout_decorator
+
+time_limit = 10
 
 @dataclasses.dataclass
 class CompileInfo:
     compiler_name : str = 'anpl'
     compile_errors : dict[str, int] = dataclasses.field(default_factory=dict) 
+    wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
+    time_limit_exceededs: dict[str, int] = dataclasses.field(default_factory=dict) 
+    runtime_errors: dict[str, int] = dataclasses.field(default_factory=dict) 
     wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
     accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
@@ -41,6 +47,7 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
             print(f'{task_name}: compile error!')
             compile_info.compile_errors[data.name] = data.block_num
             continue
+
         module_path = os.path.splitext(code_path)[0]
         module = importlib.import_module(module_path.replace('/', '.'))
         try:
@@ -49,10 +56,22 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
             print(f'{task_name}: func {data.func_name} not found, compile error!')
             compile_info.compile_errors[data.name] = data.block_num
             continue
+        @timeout_decorator.timeout(time_limit)
+        def timeout_func(inp):
+            out = func(inp)
+            return out
         ok = True
-        for inp, out in data.specs:
-            if func(inp) != out: 
-                print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{out}\"!')
+        for inp, ans in data.specs:
+            try: 
+                out = timeout_func(inp)
+            except timeout_decorator.TimeoutError as err:
+                print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                break
+            except Exception as err:
+                print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                break
+            if out != ans: 
+                print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{ans}\"!')
                 ok = False
                 compile_info.wrong_answers[data.name] = data.block_num
                 break

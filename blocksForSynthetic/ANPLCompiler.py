@@ -31,9 +31,9 @@ class ANPLCompiler():
         anpl = anpl_parser.try_parse(code)
         holes = anpl.get_holes()
         for hole in holes:
-            for i in range(5):
+            for i in range(self.max_try_times):
                 print(f"{name}: {i}th {hole}")
-                res = fun_synthesis(anpl, hole, temp=i*0.1)
+                res = fun_synthesis(anpl, hole, temp=i*(self.max_temperature / self.max_try_times))
                 print(f"{name}: {repr(res)}")
                 if res:
                     newanpl = anpl_parser.try_parse(res, from_user=False)

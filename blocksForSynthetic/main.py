@@ -67,9 +67,13 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
                     out = timeout_func(inp)
                 except timeout_decorator.TimeoutError as err:
                     print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                    ok = False
+                    compile_info.time_limit_exceededs[data.name] = data.block_num
                     break
                 except Exception as err:
                     print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                    ok = False
+                    compile_info.runtime_errors[data.name] = data.block_num
                     break
                 if out != ans: 
                     print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{ans}\"!')

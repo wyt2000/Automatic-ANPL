@@ -9,7 +9,7 @@ openai.api_key = os.environ['OPENAI_API_KEY']
 
 class ANPLCompiler():
 
-    def __init__(self):
+    def __init__(self, max_try_times=20):
         self.anplp = ANPLParser()
 
     def compile(self, name, code, save_path):
@@ -17,7 +17,7 @@ class ANPLCompiler():
         anpl = self.anplp.parse(code)
         holes = anpl.get_holes()
         for hole in holes:
-            for i in range(5):
+            for i in range(max_try_times):
                 print(f"{name}: {i}th {hole}")
                 res = fun_synthesis(anpl, hole, temp=i*0.1)
                 print(f"{name}: {repr(res)}")

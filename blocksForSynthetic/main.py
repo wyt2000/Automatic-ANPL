@@ -25,7 +25,7 @@ if __name__ == '__main__':
     builder.build()
 
     robot = GPT2ANPL()
-    anpl = ANPLCompiler()
+    anpl = ANPLCompiler(max_try_times=20)
     builder.mkdir_override(response_dir)
     builder.mkdir_override(anpl_result_dir)
     anpl_compile_info = CompileInfo('anpl')

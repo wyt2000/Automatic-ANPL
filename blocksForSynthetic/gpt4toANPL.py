@@ -20,7 +20,7 @@ def main(input):
     return ans
 '''
 
-pre_prompt = "Please write an ANPL code, which has only one function should be named as string_manipulation. Write a single line $$$$$$$$$$ before and after your code."
+pre_prompt = "Please write an ANPL code, which has only one function should be named as string_manipulation. Write a single line with ten $s ($$$$$$$$$$) before and after your code."
 
 post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
 

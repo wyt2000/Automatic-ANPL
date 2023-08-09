@@ -4,6 +4,17 @@ import shutil
 import random
 import string
 import argparse
+import dataclasses
+
+@dataclasses.dataclass
+class ProgramData():
+    name: str
+    prog: str
+    func_name: str
+    block_num: int
+    prompt: str
+    specs: list[tuple[str, str]]
+    anpl: str | None = None
 
 class ProgramBuilder():
     alphabet = list(string.ascii_letters) + [' ', '?', '!', '.']
@@ -21,6 +32,7 @@ class ProgramBuilder():
         self.descs = descs
         self.codes = codes
         self.block_total = len(codes)
+        self.dataset = []
 
     def build_prompt(self, block_ids, func_desc):
         prompt = func_desc + '\n'
@@ -28,7 +40,7 @@ class ProgramBuilder():
             prompt += f'    - {self.descs[idx]}\n'
         return prompt
 
-    def build_function(self, block_ids, func_name, func_args, func_desc, func_return):
+    def build_func_code(self, block_ids, func_name, func_args, func_desc, func_return):
         func = ''
         func += f'def {func_name}({func_args}):\n'
         func += f'    \"\"\"\n    {func_desc}\n'
@@ -43,17 +55,24 @@ class ProgramBuilder():
         func += f'    {func_return}\n'
         return func
 
-
-    def build_specifications(self, func, func_name, spec_num, max_spec_size):
-        spec = ''
-        spec += 'if __name__ == \"__main__\":\n'
+    def build_spec(self, func, func_name, spec_num, max_spec_size):
+        specs = []
         exec(func)
         for i in range(spec_num):
             spec_size = random.randint(1, max_spec_size)
             inp = ''.join(random.choices(self.alphabet, k=spec_size))
             out = eval(f'{func_name}(\"{inp}\")') 
-            spec += f'    assert({func_name}(\"{inp}\") == \"{out}\")\n'
-        return spec
+            specs.append((inp, out))
+        return specs
+
+
+    def build_spec_code(self, func_name, specs):
+        code = ''
+        code += 'if __name__ == \"__main__\":\n'
+        for spec in specs:
+            inp, out = spec
+            code += f'    assert({func_name}(\"{inp}\") == \"{out}\")\n'
+        return code 
 
     @staticmethod
     def mkdir_override(dir_path):
@@ -71,7 +90,7 @@ class ProgramBuilder():
               spec_num=5,
               max_spec_size=30,
               with_prompt=True,
-              output_dir='outputs/',
+              output_dir='programs/',
               output_prefix='string_manipulation',
               prompt_dir='prompts/',
               seed=114514):
@@ -85,14 +104,19 @@ class ProgramBuilder():
         for i in range(1, data_size + 1):
             block_num = random.randint(1, max_block_num)
             block_ids = random.sample(range(self.block_total), block_num)
-            func = self.build_function(block_ids, func_name, func_args, func_desc, func_return)
-            spec = self.build_specifications(func, func_name, spec_num, max_spec_size)
-            result = '\n'.join([func, spec])
-            with open(os.path.join(output_dir, output_prefix+f'_{i}.py'), 'w') as f:
-                f.write(result)
-                prompt = self.build_prompt(block_ids, func_desc)
-                with open(os.path.join(prompt_dir, output_prefix+f'_{i}.prompt'), 'w') as f:
-                    f.write(prompt)
+            func_code = self.build_func_code(block_ids, func_name, func_args, func_desc, func_return)
+            specs = self.build_spec(func_code, func_name, spec_num, max_spec_size)
+            spec_code = self.build_spec_code(func_name, specs)
+            prog = '\n'.join([func_code, spec_code])
+            prompt = None 
+            name = output_prefix+f'_{i}'
+            with open(os.path.join(output_dir, name+'.py'), 'w') as f:
+                f.write(prog)
+                if with_prompt:
+                    prompt = self.build_prompt(block_ids, func_desc)
+                    with open(os.path.join(prompt_dir, name+'.prompt'), 'w') as f:
+                        f.write(prompt)
+            self.dataset.append(ProgramData(name, prog, func_name, block_num, prompt, specs))
 
 if __name__ == '__main__':
     builder = ProgramBuilder()

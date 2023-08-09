@@ -12,28 +12,31 @@ class ANPLCompiler():
     def __init__(self):
         self.anplp = ANPLParser()
 
-    def compile(self, code, save_path):
+    def compile(self, name, code, save_path):
         anplp = self.anplp
         anpl = self.anplp.parse(code)
         holes = anpl.get_holes()
         for hole in holes:
             for i in range(5):
-                print(f"{i}th: {hole}")
+                print(f"{name}: {i}th {hole}")
                 res = fun_synthesis(anpl, hole, temp=i*0.1)
-                print("GPT>")
-                print(res)
+                print(f"{name}: {repr(res)}")
                 newanpl = anplp.try_parse(res, from_user=False)
                 if not newanpl:
-                    print("SyntaxError")
                     continue
                 if not hole.startswith("_hole") and hole in newanpl.funs:
                     newanpl.clean(hole)
                 elif newanpl.entry in anpl.funs:
                     if not clean_anpl(anpl, newanpl):
-                        print("Error: Cannot find the entry")
                         continue
                 anpl.fill_fun(hole, newanpl)
                 break
         if len(anpl.get_holes()) > 0:
-            raise NotImplementedError("Cannot Synthesis your code")
-        save(anpl, save_path)
+            print(f"{name}: ANPL Synthesis Failed!")
+            return None
+        print(f"{name}: ANPL Synthesis Success!")
+        code = anpl.to_python()
+        with open(save_path, "w") as f:
+            f.write(code)
+        return code
+    

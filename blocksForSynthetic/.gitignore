@@ -1,6 +1,9 @@
 *.zip
-outputs
+*.txt
+programs
 prompts
 responses
+anpl_results
 __pycache__
 log
+

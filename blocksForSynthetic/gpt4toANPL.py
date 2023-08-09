@@ -20,7 +20,7 @@ def main(input):
     return ans
 '''
 
-pre_prompt = "Please write an ANPL code, which has only one function should be named as string_manipulation. Write a single line with ten $s ($$$$$$$$$$) before and after your code."
+pre_prompt = "Please write an ANPL code, which has only one function should be named as `func_name`."
 
 post_prompt = "Write out your reasoning first, and then describe your high-level solution and explain why it is correct. "
 
@@ -30,10 +30,31 @@ class GPT4toANPL:
         self.pre_prompt = pre_prompt
         self.post_prompt = post_prompt 
 
-    def request(self, prompt, res_path):
+    def extract_code(self, response, func_name):
+        func_head = f'def {func_name}'
+        func_return = 'return'
+        lines = response.split('\n')
+        code = []
+        ok = False
+        for line in lines:
+            if func_head in line:
+                ok = True
+            if ok:
+                code.append(line)
+            if func_return in line:
+                ok = False
+        return '\n'.join(code)
+
+
+    def request(self, func_name, prompt, res_path):
         messages = [
             {"role": "system", "content": self.background},
-            {"role": "user", "content": '\n'.join([self.pre_prompt, prompt, self.post_prompt])}
+            {"role": "user", "content": '\n'.join([
+                    self.pre_prompt.replace("`func_name`", func_name),
+                    prompt,
+                    self.post_prompt.replace("`func_name`", func_name)
+                ])
+            }
         ]
         response = openai.ChatCompletion.create(model='gpt-4', messages=messages)
         status_code = response["choices"][0]["finish_reason"]
@@ -41,5 +62,5 @@ class GPT4toANPL:
         response = response["choices"][0]["message"]["content"]
         with open(res_path, 'w') as f:
             f.write(response)
-        return response.split('$$$$$$$$$$')[1]
+        return self.extract_code(response, func_name)
 

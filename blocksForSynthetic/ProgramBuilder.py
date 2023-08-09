@@ -82,7 +82,7 @@ class ProgramBuilder():
 
     def build(self, 
               max_block_num=7,
-              data_size=20,
+              data_size=2,
               func_name='string_manipulation',
               func_args='s: str',
               func_desc='This function takes a string as input, then returns the result of performing the following sequence of manipulations on that string:',

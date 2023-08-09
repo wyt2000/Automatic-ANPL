@@ -5,26 +5,19 @@ import os
 import pathlib
 import importlib
 import json
+import dataclasses
 
 prompt_dir = 'prompts/'
 response_dir = 'responses/'
 anpl_result_dir = 'anpl_results/'
 anpl_compile_info_path = 'anpl_compile_info.txt'
 
+@dataclasses.dataclass
 class CompileInfo:
-    def __init__(self, compiler_name='anpl'):
-        self.compiler_name = compiler_name
-        self.compile_errors = {} 
-        self.wrong_answers = {} 
-        self.accepteds = {} 
-
-    def asdict(self):
-        return {
-            "compiler_name"  : self.compiler_name,
-            "compile_errors" : self.compile_errors,
-            "wrong_answers"  : self.wrong_answers,
-            "accepteds"      : self.accepteds
-        }
+    compiler_name : str = 'anpl'
+    compile_errors : dict[str, int] = dataclasses.field(default_factory=dict) 
+    wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
+    accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
 if __name__ == '__main__':
     builder = ProgramBuilder()
@@ -37,7 +30,7 @@ if __name__ == '__main__':
     anpl_compile_info = CompileInfo('anpl')
     for i, data in enumerate(builder.dataset):
         print(f'{data.name}: Requesting for GPT4...')
-        response = robot.request(data.prompt, os.path.join(response_dir, data.name+'.res'))
+        response = robot.request(data.func_name, data.prompt, os.path.join(response_dir, data.name+'.res'))
         builder.dataset[i].response = response
         print(f'{data.name}: Request for GPT4 done!, the response anpl program is:\n{response}')
         anpl_code_path = os.path.join(anpl_result_dir, data.name+'.py')
@@ -46,7 +39,7 @@ if __name__ == '__main__':
         if anpl_code is None:
             anpl_compile_info.compile_errors[data.name] = data.block_num
             continue
-        module_path = os.path.splitext(anpl_code_path)
+        module_path = os.path.splitext(anpl_code_path)[0]
         module = importlib.import_module(module_path.replace('/', '.'))
         func = module.__getattribute__(data.func_name)
         ok = True

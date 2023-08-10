@@ -12,6 +12,7 @@ import importlib
 import json
 import dataclasses
 import timeout_decorator
+import traceback
 
 time_limit = 10
 
@@ -54,12 +55,13 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
                     compile_info.compile_errors[data.name] = data.block_num
                     continue
 
-                module_path = os.path.splitext(code_path)[0]
-                module = importlib.import_module(module_path.replace('/', '.'))
                 try:
+                    module_path = os.path.splitext(code_path)[0]
+                    module = importlib.import_module(module_path.replace('/', '.'))
                     func = module.__getattribute__(data.func_name)
                 except:
                     print(f'{task_name}: func {data.func_name} not found, compile error!')
+                    traceback.print_exc()
                     compile_info.compile_errors[data.name] = data.block_num
                     continue
                 @timeout_decorator.timeout(time_limit)

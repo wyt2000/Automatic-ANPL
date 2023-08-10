@@ -13,7 +13,7 @@ main(input): The input is a two-line str. Split the input by '\n' as two element
 \"\"\"
 '''
 
-pre_prompt = "Please write a Parsel code, which has only one function should be named as `func_name`. The function should be in one line, and the second line should be input-output example in format {input} -> {output}."
+pre_prompt = "Please write a Parsel code, which has only one function should be named as `func_name`. The function should be in one line, and the second line should be a input-output example in format {input} -> {output}, when feed the function {input}. it should return {output}."
 
 post_prompt = "Please write Parsel code first, you should write out a single line \"\"\" both before and after your code, then write out your reasoning, and then describe your high-level solution and explain why it is correct. "
 

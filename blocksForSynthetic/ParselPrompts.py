@@ -5,16 +5,15 @@ Parsel is a natural language framework for writing programs for any target langu
 The syntax of Parsel is: 
 {func}({arg}): {natural language description}.
 {input} -> {output}
+Attention: the natural language description of the function should be in one line.
 Here is an example of Parsel code: 
 \"\"\"
-main(input): The input is a two-line str. Split the input by '\n' as two element list. Get the first element of the input, split it by space as n and k. Get the second element of the input, split it by space and convert it to int list as arr. Sorted arr in non-decreasing order. Call sum_to_str.
+main(input): The input is a two-line str. Split the input by '\n' as two element list. Get the first element of the input, split it by space as n and k. Get the second element of the input, split it by space and convert it to int list as arr. Sorted arr in non-decreasing order. Get sum of the first k elements from arr as ans. Convert ans to str. Return ans.
 '8 5\n1 1 1 1 1 1 1 1\n' -> '5'
-    sum_to_str(k, arr): This is a python function, the input is a int k and a int list arr. Get sum of the first k elements from arr as ans. Convert ans to str. Return ans.
-    3, [1, 2, 3, 4, 5] -> '6'
 \"\"\"
 '''
 
-pre_prompt = "Please write a Parsel code, which has a function should be named as `func_name`."
+pre_prompt = "Please write a Parsel code, which has only one function should be named as `func_name`. The function should be in one line, and the second line should be input-output example in format {input} -> {output}."
 
 post_prompt = "Please write Parsel code first, you should write out a single line \"\"\" both before and after your code, then write out your reasoning, and then describe your high-level solution and explain why it is correct. "
 

@@ -45,8 +45,10 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
                     code = compiler.compile(data.name, response, code_path)
                 except Exception as err:
                     print(f'{task_name}: synthesis failed!')
-                    print(err)
+                    print(err.with_traceback())
                     code = None
+                finally:
+                    pass
                 if code is None:
                     print(f'{task_name}: compile error!')
                     compile_info.compile_errors[data.name] = data.block_num

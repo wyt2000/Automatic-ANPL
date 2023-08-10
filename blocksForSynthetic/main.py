@@ -46,7 +46,7 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
                     code = compiler.compile(data.name, response, code_path)
                 except Exception as err:
                     print(f'{task_name}: synthesis failed!')
-                    print(err.with_traceback())
+                    traceback.print_exc()
                     code = None
                 finally:
                     pass
@@ -73,12 +73,12 @@ def test_compiler(builder, compiler, robot, model_name, prompt_dir, response_dir
                     try: 
                         out = timeout_func(inp)
                     except timeout_decorator.TimeoutError as err:
-                        print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                        print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{ans}\"!')
                         ok = False
                         compile_info.time_limit_exceededs[data.name] = data.block_num
                         break
                     except Exception as err:
-                        print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{out}\"!')
+                        print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{ans}\"!')
                         ok = False
                         compile_info.runtime_errors[data.name] = data.block_num
                         break
@@ -108,7 +108,7 @@ if __name__ == '__main__':
             seed=int(f'{block_num}114514')
         )
        
-        '''
+        
         anpl_robot = GPT2Code()
         anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
 
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             result_dir=f'anpl_results_{block_num}/',
             compile_info_path=f'anpl_compile_info_{block_num}.json',
         )
-        '''
+        
 
         parsel_robot = GPT2Code(parsel_background, parsel_pre_prompt, parsel_post_prompt)
         parsel_robot.extract_code = parsel_extract_code

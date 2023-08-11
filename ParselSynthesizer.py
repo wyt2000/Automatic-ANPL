@@ -1,18 +1,18 @@
-import sys
-sys.path.append('./parsel')
-
-from parsel import parsel
 import os
 import traceback
+from parsel import parsel
+from Synthesizer import AbstractSynthesizer
 
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+class ParselSynthesizer(AbstractSynthesizer):
 
-class ParselCompiler:
-    name = 'parsel'
     cache_path = 'cache.json'
     key_path = 'key.txt'
 
-    def compile(self, name, program, save_path):
+    @property
+    def name(self):
+        return 'parsel'
+
+    def synthesize(self, program, save_path, *args):
         codegen = parsel.CodeGen(self.cache_path, self.key_path)
         code = None
         try:
@@ -25,8 +25,3 @@ class ParselCompiler:
                 os.remove(self.cache_path)
         return code
 
-if __name__ == '__main__':
-    compiler = ParselCompiler()
-    with open('test.ss', 'r') as f:
-        res = compiler.compile('test', f.read(), 'test.py')
-    print(res)

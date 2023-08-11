@@ -8,10 +8,10 @@ import traceback
 
 from ProgramSampler import ProgramSampler 
 from GPTClient import GPTClient 
-from ANPLCompiler import ANPLCompiler
+from ANPLSynthesizer import ANPLSynthesizer
 from ANPLPromptWrapper import ANPLPromptWrapper
 from ANPLResponseWrapper import ANPLResponseWrapper
-from ParselCompiler import ParselCompiler
+from ParselSynthesizer import ParselSynthesizer
 from ParselPromptWrapper import ParselPromptWrapper 
 from ParselResponseWrapper  import ParselResponseWrapper 
 from utils import mkdir_override
@@ -28,11 +28,11 @@ class CompileInfo:
     wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
     accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
-def test_compiler(sampler,
+def test_synthesizer(sampler,
                   client,
                   prompt_wrapper,
                   response_wrapper,
-                  compiler,
+                  synthesizer,
                   model_name,
                   prompt_dir,
                   response_dir,
@@ -41,11 +41,11 @@ def test_compiler(sampler,
     try:
         mkdir_override(response_dir)
         mkdir_override(result_dir)
-        compile_info = CompileInfo(compiler.name)
+        compile_info = CompileInfo(synthesizer.name)
 
         for i, data in enumerate(sampler.dataset):
             try:
-                task_name = f"{compiler.name}_{data.prog_name}"
+                task_name = f"{synthesizer.name}_{data.prog_name}"
                 print(f'{task_name}: requesting for {model_name}...')
                 response = client.request(model_name,
                                           data.func_name,
@@ -53,10 +53,10 @@ def test_compiler(sampler,
                                           os.path.join(response_dir, f"{task_name}.res"),
                                           prompt_wrapper,
                                           response_wrapper)
-                print(f'{task_name} request for {model_name} done!, the response {compiler.name} code is:\n{response}')
+                print(f'{task_name} request for {model_name} done!, the response {synthesizer.name} code is:\n{response}')
                 code_path = os.path.join(result_dir, f"{task_name}.py")
                 try:
-                    code = compiler.compile(data.prog_name, response, code_path)
+                    code = synthesizer.synthesize(response, code_path, data.prog_name)
                 except Exception as err:
                     print(f'{task_name}: synthesis failed!')
                     traceback.print_exc()
@@ -111,7 +111,7 @@ def test_compiler(sampler,
 
 if __name__ == '__main__':
 
-    for num_snippets in range(1, 8):
+    for num_snippets in range(3, 8):
         sampler = ProgramSampler()
         sampler.sample(
             num_snippets=num_snippets,
@@ -124,32 +124,32 @@ if __name__ == '__main__':
 
         anpl_prompt_wrapper = ANPLPromptWrapper()
         anpl_response_wrapper = ANPLResponseWrapper()
-        anpl_compiler = ANPLCompiler(max_try_times=5, max_temperature=0.5)
+        anpl_synthesizer = ANPLSynthesizer(max_try_times=5, max_temperature=0.5)
 
-        test_compiler(
-            sampler=sampler,
-            client=client,
-            prompt_wrapper=anpl_prompt_wrapper,
-            response_wrapper=anpl_response_wrapper,
-            compiler=anpl_compiler,
-            model_name='gpt-3.5-turbo-0301',
-            prompt_dir=f'prompts_{num_snippets}/',
-            response_dir=f'anpl_responses_{num_snippets}/',
-            result_dir=f'anpl_results_{num_snippets}/',
-            compile_info_path=f'anpl_compile_info_{num_snippets}.json',
-        )
+        #test_synthesizer(
+        #    sampler=sampler,
+        #    client=client,
+        #    prompt_wrapper=anpl_prompt_wrapper,
+        #    response_wrapper=anpl_response_wrapper,
+        #    synthesizer=anpl_synthesizer,
+        #    model_name='gpt-3.5-turbo-0301',
+        #    prompt_dir=f'prompts_{num_snippets}/',
+        #    response_dir=f'anpl_responses_{num_snippets}/',
+        #    result_dir=f'anpl_results_{num_snippets}/',
+        #    compile_info_path=f'anpl_compile_info_{num_snippets}.json',
+        #)
 
         
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()
-        parsel_compiler = ParselCompiler()
+        parsel_synthesizer = ParselSynthesizer()
 
-        test_compiler(
+        test_synthesizer(
             sampler=sampler,
             client=client,
             prompt_wrapper=parsel_prompt_wrapper,
             response_wrapper=parsel_response_wrapper,
-            compiler=parsel_compiler,
+            synthesizer=parsel_synthesizer,
             model_name='gpt-3.5-turbo-0301',
             prompt_dir=f'prompts_{num_snippets}/',
             response_dir=f'parsel_responses_{num_snippets}/',

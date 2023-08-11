@@ -15,7 +15,7 @@ from ParselSynthesizer import ParselSynthesizer
 from ParselPromptWrapper import ParselPromptWrapper 
 from ParselResponseWrapper  import ParselResponseWrapper 
 from utils import mkdir_override
-from JudgeSystem import JudgeStatusContainer
+from JudgeSystem import JudgeSystem, JudgeError
 
 time_limit = 10
 
@@ -28,77 +28,46 @@ def test_synthesizer(sampler,
                   prompt_dir,
                   response_dir,
                   result_dir,
-                  compile_info_path):
+                  judge_status_path):
     try:
         mkdir_override(response_dir)
         mkdir_override(result_dir)
-        compile_info = CompileInfo(synthesizer.name)
+        judge_system = JudgeSystem(synthesizer)
 
         for i, data in enumerate(sampler.dataset):
+            task_name = f"{synthesizer.name}_{data.prog_name}"
+            print(f'{task_name}: requesting for {model_name}...')
             try:
-                task_name = f"{synthesizer.name}_{data.prog_name}"
-                print(f'{task_name}: requesting for {model_name}...')
                 response = client.request(model_name,
                                           data.func_name,
                                           data.prompt, 
                                           os.path.join(response_dir, f"{task_name}.res"),
                                           prompt_wrapper,
                                           response_wrapper)
-                print(f'{task_name} request for {model_name} done!, the response {synthesizer.name} code is:\n{response}')
-                code_path = os.path.join(result_dir, f"{task_name}.py")
-                try:
-                    code = synthesizer.synthesize(response, code_path, data.prog_name)
-                except Exception as err:
-                    print(f'{task_name}: synthesis failed!')
-                    traceback.print_exc()
-                    code = None
-                finally:
-                    pass
-                if code is None:
-                    print(f'{task_name}: compile error!')
-                    compile_info.compile_errors[data.prog_name] = data.num_snippets
-                    continue
-
-                try:
-                    module_path = os.path.splitext(code_path)[0]
-                    module = importlib.import_module(module_path.replace('/', '.'))
-                    func = module.__getattribute__(data.func_name)
-                except:
-                    print(f'{task_name}: func {data.func_name} not found, compile error!')
-                    traceback.print_exc()
-                    compile_info.compile_errors[data.prog_name] = data.num_snippets
-                    continue
-                @timeout_decorator.timeout(time_limit)
-                def timeout_func(inp):
-                    out = func(inp)
-                    return out
-                ok = True
-                for inp, ans in data.specs:
-                    try: 
-                        out = timeout_func(inp)
-                    except timeout_decorator.TimeoutError as err:
-                        print(f'{task_name}: Time limit exceeded at {data.func_name}(\"{inp}\") = \"{ans}\"!')
-                        ok = False
-                        compile_info.time_limit_exceededs[data.prog_name] = data.num_snippets
-                        break
-                    except Exception as err:
-                        print(f'{task_name}: Runtime error at {data.func_name}(\"{inp}\") = \"{ans}\"!')
-                        ok = False
-                        compile_info.runtime_errors[data.prog_name] = data.num_snippets
-                        break
-                    if out != ans: 
-                        print(f'{task_name}: Wrong Answer! {data.func_name}(\"{inp}\") should be \"{ans}\"!')
-                        ok = False
-                        compile_info.wrong_answers[data.prog_name] = data.num_snippets
-                        break
-                if ok:
-                    print(f'{task_name}: Accepted!')
-                    compile_info.accepteds[data.prog_name] = data.num_snippets
-            except Exception as err:
-                print(err)
+            except Exception:
+                print(f'{task_name}: Unknown error occurs during requesting for ChatGPT!')
+                traceback.print_exc()
+                judge_system.add_judge_status('JudgeUnknownError', data)
+                continue
+            print(f'{task_name} request for {model_name} done!, the response {synthesizer.name} code is:\n{response}')
+            save_path = os.path.join(result_dir, f"{task_name}.py")
+            try:
+                func = judge_system.compile(response, save_path, data)
+                judge_system.judge(func, data.specs, data.func_name)
+                print(f'{task_name}: Accepted!')
+                judge_system.add_judge_status("JudgeAccepted", data)
+            except JudgeError as err:
+                print(f'{task_name}: {str(err)}')
+                judge_system.add_judge_status(type(err).__name__, data)
+                continue
+            except Exception:
+                print(f'{task_name}: Unknown error occurs during judging!')
+                traceback.print_exc()
+                judge_system.add_judge_status('JudgeUnknownError', data)
+                continue
     finally:
-        with open(compile_info_path, 'w') as f:
-            f.write(json.dumps(dataclasses.asdict(compile_info)))
+        with open(judge_status_path, 'w') as f:
+            f.write(json.dumps(dataclasses.asdict(judge_system.judge_status_container)))
 
 if __name__ == '__main__':
 
@@ -127,9 +96,8 @@ if __name__ == '__main__':
             prompt_dir=f'prompts_{num_snippets}/',
             response_dir=f'anpl_responses_{num_snippets}/',
             result_dir=f'anpl_results_{num_snippets}/',
-            compile_info_path=f'anpl_compile_info_{num_snippets}.json',
+            judge_status_path=f'anpl_judge_status_{num_snippets}.json',
         )
-
         
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()
@@ -145,7 +113,6 @@ if __name__ == '__main__':
             prompt_dir=f'prompts_{num_snippets}/',
             response_dir=f'parsel_responses_{num_snippets}/',
             result_dir=f'parsel_results_{num_snippets}/',
-            compile_info_path=f'parsel_compile_info_{num_snippets}.json',
+            judge_status_path=f'parsel_judge_status_{num_snippets}.json',
         )
-
 

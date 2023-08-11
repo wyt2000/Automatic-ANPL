@@ -15,18 +15,9 @@ from ParselSynthesizer import ParselSynthesizer
 from ParselPromptWrapper import ParselPromptWrapper 
 from ParselResponseWrapper  import ParselResponseWrapper 
 from utils import mkdir_override
+from JudgeSystem import JudgeStatusContainer
 
 time_limit = 10
-
-@dataclasses.dataclass
-class CompileInfo:
-    compiler_name : str = 'anpl'
-    compile_errors : dict[str, int] = dataclasses.field(default_factory=dict) 
-    wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
-    time_limit_exceededs: dict[str, int] = dataclasses.field(default_factory=dict) 
-    runtime_errors: dict[str, int] = dataclasses.field(default_factory=dict) 
-    wrong_answers : dict[str, int] = dataclasses.field(default_factory=dict) 
-    accepteds : dict[str, int] = dataclasses.field(default_factory=dict) 
 
 def test_synthesizer(sampler,
                   client,
@@ -126,18 +117,18 @@ if __name__ == '__main__':
         anpl_response_wrapper = ANPLResponseWrapper()
         anpl_synthesizer = ANPLSynthesizer(max_try_times=5, max_temperature=0.5)
 
-        #test_synthesizer(
-        #    sampler=sampler,
-        #    client=client,
-        #    prompt_wrapper=anpl_prompt_wrapper,
-        #    response_wrapper=anpl_response_wrapper,
-        #    synthesizer=anpl_synthesizer,
-        #    model_name='gpt-3.5-turbo-0301',
-        #    prompt_dir=f'prompts_{num_snippets}/',
-        #    response_dir=f'anpl_responses_{num_snippets}/',
-        #    result_dir=f'anpl_results_{num_snippets}/',
-        #    compile_info_path=f'anpl_compile_info_{num_snippets}.json',
-        #)
+        test_synthesizer(
+            sampler=sampler,
+            client=client,
+            prompt_wrapper=anpl_prompt_wrapper,
+            response_wrapper=anpl_response_wrapper,
+            synthesizer=anpl_synthesizer,
+            model_name='gpt-3.5-turbo-0301',
+            prompt_dir=f'prompts_{num_snippets}/',
+            response_dir=f'anpl_responses_{num_snippets}/',
+            result_dir=f'anpl_results_{num_snippets}/',
+            compile_info_path=f'anpl_compile_info_{num_snippets}.json',
+        )
 
         
         parsel_prompt_wrapper = ParselPromptWrapper()

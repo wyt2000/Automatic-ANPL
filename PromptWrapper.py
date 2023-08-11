@@ -8,7 +8,7 @@ class AbstractPromptWrapper(ABC):
 
     @property
     @abstractmethod
-    def backgroud(self):
+    def background(self):
         '''
         The role of chatGPT and syntax rules or examples of the synthesizer's DSL.
         eg: You are an expert of {synthesizer's DSL} programming language. The following are some examples for you...
@@ -43,17 +43,21 @@ class AbstractPromptWrapper(ABC):
     def _transform_post_prompt(self, args):
         return self.post_prompt
 
-    def warp(self, raw_prompt, *args):
+    def wrap(self, raw_prompt, *args):
         '''
         Convert function descriptions to ChatGPT prompts.
         :param raw_prompt
         :type raw_prompt: str
         '''
-        return '\n'.join([
+        user_message = '\n'.join([
             self._transform_pre_prompt(args),
-            self._transfrom_raw(raw_prompt, args),
+            self._transform_raw_prompt(raw_prompt, args),
             self._transform_post_prompt(args)
         ])
+        return [
+            {"role": "system", "content": self.background},
+            {"role": "user", "content": user_message}
+        ]
 
 
 

@@ -25,8 +25,8 @@ _post_prompt = "Please write ANPL code first, then write out your reasoning, and
 class ANPLPromptWrapper(AbstractPromptWrapper):
     
     @property
-    def backgroud(self):
-        return _backgroud
+    def background(self):
+        return _background
 
     @property
     def pre_prompt(self):

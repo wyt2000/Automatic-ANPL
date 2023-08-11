@@ -2,6 +2,7 @@
 *.json
 *.ss
 *programs*
+!ProgramSampler.py
 *prompts*
 *responses*
 *results*

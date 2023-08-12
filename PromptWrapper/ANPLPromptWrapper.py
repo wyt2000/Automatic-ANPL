@@ -1,4 +1,4 @@
-from PromptWrapper import AbstractPromptWrapper
+from .PromptWrapper import AbstractPromptWrapper
 
 #TODO: Read prompts from files.
 _background = '''You are a expert of ANPL programming language.

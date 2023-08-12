@@ -1,13 +1,13 @@
-from ProgramSampler         import ProgramSampler 
-from GPTClient              import GPTClient 
-from ANPLSynthesizer        import ANPLSynthesizer
-from ANPLPromptWrapper      import ANPLPromptWrapper
-from ANPLResponseWrapper    import ANPLResponseWrapper
-from ParselSynthesizer      import ParselSynthesizer
-from ParselPromptWrapper    import ParselPromptWrapper 
-from ParselResponseWrapper  import ParselResponseWrapper 
-from SynthesizerEvaluator   import SynthesizerEvaluator
-from utils                  import mkdir_override
+from ProgramSampler                         import ProgramSampler 
+from GPTClient                              import GPTClient 
+from Synthesizer.ANPLSynthesizer            import ANPLSynthesizer
+from PromptWrapper.ANPLPromptWrapper        import ANPLPromptWrapper
+from ResponseWrapper.ANPLResponseWrapper    import ANPLResponseWrapper
+from Synthesizer.ParselSynthesizer            import ParselSynthesizer
+from PromptWrapper.ParselPromptWrapper        import ParselPromptWrapper
+from ResponseWrapper.ParselResponseWrapper    import ParselResponseWrapper
+from SynthesizerEvaluator                   import SynthesizerEvaluator
+from utils                                  import mkdir_override
 
 if __name__ == '__main__':
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
             response_dir=anpl_response_dir,
             result_dir=anpl_result_dir
         )
-        anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
+        #anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
 
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()

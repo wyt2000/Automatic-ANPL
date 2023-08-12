@@ -1,4 +1,4 @@
-from PromptWrapper import AbstractPromptWrapper
+from .PromptWrapper import AbstractPromptWrapper
 
 _background = '''You are a expert of Parsel programming language.
 Parsel is a natural language framework for writing programs for any target language using code language models. Parsel considers multiple implementations for each function, searching sets of implementations to find programs passing unit tests (more generally, program constraints). It can be used for many kinds of algorithmic tasks, e.g. code synthesis, robotic planning, and theorem proving. 

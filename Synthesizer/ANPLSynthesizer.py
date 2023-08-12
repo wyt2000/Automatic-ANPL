@@ -1,8 +1,8 @@
 import openai
 import os
-from Synthesizer import AbstractSynthesizer
-from anpl.parser import ANPLParser
-from anpl.synthesizer import fun_synthesis
+from .Synthesizer import AbstractSynthesizer
+from .anpl.parser import ANPLParser
+from .anpl.synthesizer import fun_synthesis
 
 openai.api_key = os.environ['OPENAI_API_KEY']
 

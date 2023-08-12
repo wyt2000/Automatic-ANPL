@@ -1,7 +1,7 @@
 import os
 import traceback
-from parsel import parsel
-from Synthesizer import AbstractSynthesizer
+from .parsel import parsel
+from .Synthesizer import AbstractSynthesizer
 
 class ParselSynthesizer(AbstractSynthesizer):
 

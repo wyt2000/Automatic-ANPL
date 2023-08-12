@@ -1,4 +1,4 @@
-from ResponseWrapper import AbstractResponseWrapper
+from .ResponseWrapper import AbstractResponseWrapper
 import re
 
 class ANPLResponseWrapper(AbstractResponseWrapper):

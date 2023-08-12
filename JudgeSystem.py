@@ -6,19 +6,25 @@ import importlib
 
 ''' Judge Status Exception '''
 
-class JudgeError(Exception):
+class JudgeStatus(Exception):
     pass
 
-class JudgeCompileError(JudgeError):
+class JudgeAccepted(JudgeStatus):
     pass
 
-class JudgeRuntimeError(JudgeError):
+class JudgeCompileError(JudgeStatus):
     pass
 
-class JudgeTimeLimitExceeded(JudgeError):
+class JudgeRuntimeError(JudgeStatus):
     pass
 
-class JudgeWrongAnswer(JudgeError):
+class JudgeTimeLimitExceeded(JudgeStatus):
+    pass
+
+class JudgeWrongAnswer(JudgeStatus):
+    pass
+
+class JudgeUnknownError(JudgeStatus):
     pass
 
 ''' Judge Status Exception '''

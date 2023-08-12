@@ -11,7 +11,7 @@ from utils                                  import mkdir_override
 
 if __name__ == '__main__':
 
-    for num_snippets in range(3, 8):
+    for num_snippets in range(1, 8):
         sampler = ProgramSampler()
         sampler.sample(
             num_snippets=num_snippets,
@@ -40,7 +40,7 @@ if __name__ == '__main__':
             response_dir=anpl_response_dir,
             result_dir=anpl_result_dir
         )
-        #anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
+        anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
 
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()

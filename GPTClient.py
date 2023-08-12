@@ -2,6 +2,7 @@ import openai
 
 class GPTClient:
 
+    #TODO: Parallel by coroutine.
     def request(self, model_name, func_name, prompt, save_path, prompt_wrapper, response_wrapper):
         '''
         Request to ChatGPT for Synthesizer's DSL.

@@ -22,7 +22,7 @@ class SynthesizerEvaluator:
         :param synthesizer: Subclass of `AbstarctSynthesizer`, method `synthesize` should be implemented.
         :type synthesizer: Synthesizer
 
-        :param prompt_wrapper: Subclass of `AbstarctPromptWrapper`, proporty `pre_prompt`, `post_prompt` and `prompt` should be implemented.
+        :param prompt_wrapper: Subclass of `AbstarctPromptWrapper`, proporty `background`, `pre_prompt` and `post_prompt` should be implemented.
         :type prompt_wrapper: PromptWrapper
 
         :param response_wrapper: Subclass of `AbstractResponseWrapper`, method `wrap` should be implemented.

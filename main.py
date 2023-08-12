@@ -3,9 +3,9 @@ from GPTClient                              import GPTClient
 from Synthesizer.ANPLSynthesizer            import ANPLSynthesizer
 from PromptWrapper.ANPLPromptWrapper        import ANPLPromptWrapper
 from ResponseWrapper.ANPLResponseWrapper    import ANPLResponseWrapper
-from Synthesizer.ParselSynthesizer            import ParselSynthesizer
-from PromptWrapper.ParselPromptWrapper        import ParselPromptWrapper
-from ResponseWrapper.ParselResponseWrapper    import ParselResponseWrapper
+from Synthesizer.ParselSynthesizer          import ParselSynthesizer
+from PromptWrapper.ParselPromptWrapper      import ParselPromptWrapper
+from ResponseWrapper.ParselResponseWrapper  import ParselResponseWrapper
 from SynthesizerEvaluator                   import SynthesizerEvaluator
 from utils                                  import mkdir_override
 

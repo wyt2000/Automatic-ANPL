@@ -25,6 +25,9 @@ class GPTClient:
         :param response_wrapper: Extract DSL from raw response.
         :type response_wrapper: ResponseWrapper
 
+        :return: The input DSL of synthesizer.
+        :rtype: str
+
         '''
         messages = prompt_wrapper.wrap(prompt, func_name)
         response = openai.ChatCompletion.create(model=model_name, messages=messages)

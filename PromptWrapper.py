@@ -48,6 +48,9 @@ class AbstractPromptWrapper(ABC):
         Convert function descriptions to ChatGPT prompts.
         :param raw_prompt
         :type raw_prompt: str
+        
+        :return: messages for ChatGPT.
+        :rtype: list[dict[str, str]]
         '''
         user_message = '\n'.join([
             self._transform_pre_prompt(args),

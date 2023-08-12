@@ -139,6 +139,10 @@ class ProgramSampler():
 
         :param seed: random seed for `random.sample`
         :type seed: int
+
+        :return: dataset.
+        :rtype: list
+
         '''
 
         assert(0 <= num_snippets <= self.total_snippets) 
@@ -163,6 +167,8 @@ class ProgramSampler():
                 prog      = '\n'.join([func_code, spec_code])
                 with open(os.path.join(program_dir, prog_name+'.py'), 'w') as f:
                     f.write(prog)
+
+        return self.dataset
 
 if __name__ == '__main__':
     sampler = ProgramSampler()

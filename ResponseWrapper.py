@@ -11,5 +11,8 @@ class AbstractResponseWrapper(ABC):
         '''
         :param response: ChatGPT response, contains DSL and maybe some explanations.
         :type response: str
+
+        :return: The input DSL of synthesizer.
+        :rtype: str
         '''
 

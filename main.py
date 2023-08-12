@@ -1,73 +1,13 @@
-import os
-import pathlib
-import importlib
-import json
-import dataclasses
-import timeout_decorator
-import traceback
-
-from ProgramSampler import ProgramSampler 
-from GPTClient import GPTClient 
-from ANPLSynthesizer import ANPLSynthesizer
-from ANPLPromptWrapper import ANPLPromptWrapper
-from ANPLResponseWrapper import ANPLResponseWrapper
-from ParselSynthesizer import ParselSynthesizer
-from ParselPromptWrapper import ParselPromptWrapper 
+from ProgramSampler         import ProgramSampler 
+from GPTClient              import GPTClient 
+from ANPLSynthesizer        import ANPLSynthesizer
+from ANPLPromptWrapper      import ANPLPromptWrapper
+from ANPLResponseWrapper    import ANPLResponseWrapper
+from ParselSynthesizer      import ParselSynthesizer
+from ParselPromptWrapper    import ParselPromptWrapper 
 from ParselResponseWrapper  import ParselResponseWrapper 
-from utils import mkdir_override
-from JudgeSystem import JudgeSystem, JudgeError
-
-time_limit = 10
-
-def test_synthesizer(sampler,
-                  client,
-                  prompt_wrapper,
-                  response_wrapper,
-                  synthesizer,
-                  model_name,
-                  prompt_dir,
-                  response_dir,
-                  result_dir,
-                  judge_status_path):
-    try:
-        mkdir_override(response_dir)
-        mkdir_override(result_dir)
-        judge_system = JudgeSystem(synthesizer)
-
-        for i, data in enumerate(sampler.dataset):
-            task_name = f"{synthesizer.name}_{data.prog_name}"
-            print(f'{task_name}: requesting for {model_name}...')
-            try:
-                response = client.request(model_name,
-                                          data.func_name,
-                                          data.prompt, 
-                                          os.path.join(response_dir, f"{task_name}.res"),
-                                          prompt_wrapper,
-                                          response_wrapper)
-            except Exception:
-                print(f'{task_name}: Unknown error occurs during requesting for ChatGPT!')
-                traceback.print_exc()
-                judge_system.add_judge_status('JudgeUnknownError', data)
-                continue
-            print(f'{task_name} request for {model_name} done!, the response {synthesizer.name} code is:\n{response}')
-            save_path = os.path.join(result_dir, f"{task_name}.py")
-            try:
-                func = judge_system.compile(response, save_path, data)
-                judge_system.judge(func, data.specs, data.func_name)
-                print(f'{task_name}: Accepted!')
-                judge_system.add_judge_status("JudgeAccepted", data)
-            except JudgeError as err:
-                print(f'{task_name}: {str(err)}')
-                judge_system.add_judge_status(type(err).__name__, data)
-                continue
-            except Exception:
-                print(f'{task_name}: Unknown error occurs during judging!')
-                traceback.print_exc()
-                judge_system.add_judge_status('JudgeUnknownError', data)
-                continue
-    finally:
-        with open(judge_status_path, 'w') as f:
-            f.write(json.dumps(dataclasses.asdict(judge_system.judge_status_container)))
+from SynthesizerEvaluator   import SynthesizerEvaluator
+from utils                  import mkdir_override
 
 if __name__ == '__main__':
 
@@ -85,34 +25,41 @@ if __name__ == '__main__':
         anpl_prompt_wrapper = ANPLPromptWrapper()
         anpl_response_wrapper = ANPLResponseWrapper()
         anpl_synthesizer = ANPLSynthesizer(max_try_times=5, max_temperature=0.5)
+        anpl_response_dir = f'anpl_responses_{num_snippets}/'
+        anpl_result_dir = f'anpl_results_{num_snippets}/'
+        anpl_judge_status_path = f'anpl_judge_status_{num_snippets}.json'
 
-        test_synthesizer(
-            sampler=sampler,
+        mkdir_override(anpl_response_dir)
+        mkdir_override(anpl_result_dir)
+        anpl_evaluator = SynthesizerEvaluator(
+            synthesizer=anpl_synthesizer,
             client=client,
             prompt_wrapper=anpl_prompt_wrapper,
             response_wrapper=anpl_response_wrapper,
-            synthesizer=anpl_synthesizer,
             model_name='gpt-3.5-turbo-0301',
-            prompt_dir=f'prompts_{num_snippets}/',
-            response_dir=f'anpl_responses_{num_snippets}/',
-            result_dir=f'anpl_results_{num_snippets}/',
-            judge_status_path=f'anpl_judge_status_{num_snippets}.json',
+            response_dir=anpl_response_dir,
+            result_dir=anpl_result_dir
         )
-        
+        anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
+
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()
         parsel_synthesizer = ParselSynthesizer()
+        parsel_response_dir = f'parsel_responses_{num_snippets}/'
+        parsel_result_dir = f'parsel_results_{num_snippets}/'
+        parsel_judge_status_path = f'parsel_judge_status_{num_snippets}.json'
 
-        test_synthesizer(
-            sampler=sampler,
+        mkdir_override(parsel_response_dir)
+        mkdir_override(parsel_result_dir)
+        parsel_evaluator = SynthesizerEvaluator(
+            synthesizer=parsel_synthesizer,
             client=client,
             prompt_wrapper=parsel_prompt_wrapper,
             response_wrapper=parsel_response_wrapper,
-            synthesizer=parsel_synthesizer,
             model_name='gpt-3.5-turbo-0301',
-            prompt_dir=f'prompts_{num_snippets}/',
-            response_dir=f'parsel_responses_{num_snippets}/',
-            result_dir=f'parsel_results_{num_snippets}/',
-            judge_status_path=f'parsel_judge_status_{num_snippets}.json',
+            response_dir=parsel_response_dir,
+            result_dir=parsel_result_dir
         )
+        parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
+
 

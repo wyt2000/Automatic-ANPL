@@ -30,6 +30,9 @@ class JudgeStatusContainer:
     synthesizer_name: str = 'unknown'
     judge_status: dict[str, list[tuple[str, int]]] = dataclasses.field(default_factory=dict)
 
+    def clear(self):
+        self.judge_status.clear()
+
 ''' Judge Status Container'''
 
 class JudgeSystem:
@@ -64,6 +67,12 @@ class JudgeSystem:
         if status not in judge_status:
             judge_status[status] = []
         judge_status[status].append((data.prog_name, data.num_snippets))
+
+    def clear(self):
+        '''
+        Clear saved judge status.
+        '''
+        self.judge_status_container.clear()
 
     def compile(self, program, save_path, data):
         '''

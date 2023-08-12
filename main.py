@@ -1,5 +1,4 @@
 from ProgramSampler                         import ProgramSampler 
-from GPTClient                              import GPTClient 
 from Synthesizer.ANPLSynthesizer            import ANPLSynthesizer
 from PromptWrapper.ANPLPromptWrapper        import ANPLPromptWrapper
 from ResponseWrapper.ANPLResponseWrapper    import ANPLResponseWrapper
@@ -20,7 +19,6 @@ if __name__ == '__main__':
             prompt_dir=f'prompts_{num_snippets}/',
             seed=int(f'{num_snippets}114514')
         )
-        client = GPTClient()
 
         anpl_prompt_wrapper = ANPLPromptWrapper()
         anpl_response_wrapper = ANPLResponseWrapper()
@@ -33,7 +31,6 @@ if __name__ == '__main__':
         mkdir_override(anpl_result_dir)
         anpl_evaluator = SynthesizerEvaluator(
             synthesizer=anpl_synthesizer,
-            client=client,
             prompt_wrapper=anpl_prompt_wrapper,
             response_wrapper=anpl_response_wrapper,
             model_name='gpt-3.5-turbo-0301',
@@ -53,7 +50,6 @@ if __name__ == '__main__':
         mkdir_override(parsel_result_dir)
         parsel_evaluator = SynthesizerEvaluator(
             synthesizer=parsel_synthesizer,
-            client=client,
             prompt_wrapper=parsel_prompt_wrapper,
             response_wrapper=parsel_response_wrapper,
             model_name='gpt-3.5-turbo-0301',

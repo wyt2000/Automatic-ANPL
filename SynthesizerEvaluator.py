@@ -2,6 +2,7 @@ import os
 import traceback
 import json
 import dataclasses
+from GPTClient import GPTClient
 from JudgeSystem import JudgeSystem, JudgeStatus, JudgeAccepted, JudgeUnknownError
 
 class SynthesizerEvaluator:
@@ -11,7 +12,6 @@ class SynthesizerEvaluator:
 
     def __init__(self,
                  synthesizer,
-                 client,
                  prompt_wrapper,
                  response_wrapper,
                  model_name,
@@ -21,9 +21,6 @@ class SynthesizerEvaluator:
         '''
         :param synthesizer: Subclass of `AbstarctSynthesizer`, method `synthesize` should be implemented.
         :type synthesizer: Synthesizer
-
-        :param client: Client to send request to ChatGPT.
-        :type client: GPTClient
 
         :param prompt_wrapper: Subclass of `AbstarctPromptWrapper`, proporty `pre_prompt`, `post_prompt` and `prompt` should be implemented.
         :type prompt_wrapper: PromptWrapper
@@ -42,19 +39,19 @@ class SynthesizerEvaluator:
         '''
 
         self.synthesizer        = synthesizer
-        self.client             = client
         self.prompt_wrapper     = prompt_wrapper
         self.response_wrapper   = response_wrapper
         self.model_name         = model_name
         self.response_dir       = response_dir
         self.result_dir         = result_dir
+        self.client             = GPTClient() 
         self.judge_system       = JudgeSystem(self.synthesizer) 
 
     def evaluate(self, task_name, data):
         '''
         Evaluate the synthesizer by one piece of data, including:
         1. Request ChatGPT for the synthesizer's DSL by wrapped prompts.
-        2. Synthesize the DSL to generate target code, which can be called `compile`.
+        2. Synthesize the DSL to generate target code, which can be called as `compile`.
         3. Judge whether the target code can satisfy the I/O specs in data.
         The result will be raised as `JudgeStatus` exception, just like status in common online judges.
         

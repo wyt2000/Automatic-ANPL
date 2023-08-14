@@ -173,7 +173,7 @@ class ProgramSampler():
             self.logger.exception(f'Error occurs during program samping!')
             exit(1)
 
-        self.logger.info(f'Generate done!')
+        self.logger.info(f'Program sampling done!')
         return self.dataset
 
 if __name__ == '__main__':

@@ -3,6 +3,8 @@ import timeout_decorator
 import dataclasses
 import os
 import importlib
+from contextlib import redirect_stdout
+from contextlib import redirect_stderr
 from utils import color_str
 
 ''' Judge Status Exception '''
@@ -81,7 +83,7 @@ class JudgeSystem:
         '''
         self.judge_status_container.clear()
 
-    def compile(self, program, save_path, data):
+    def compile(self, program, save_path, data, log_path):
         '''
         DSL to target code by synthesizer, load target code from file and get function from it.
 
@@ -94,13 +96,18 @@ class JudgeSystem:
         :param data: 
         :type data: ProgramData 
 
+        :param log_path: path to redirect stdout and stderr.
+        :type log_path: str
+
         :return: Python function can be executed immdiately.
         :rtype: function
 
         :raise JudgeCompileError:
         '''
         try:
-            code = self.synthesizer.synthesize(program, save_path, data.prog_name)
+            with open(log_path, 'w') as log_file:
+                with redirect_stdout(log_file), redirect_stderr(log_file):
+                    code = self.synthesizer.synthesize(program, save_path, data.prog_name)
         except Exception:
             raise JudgeCompileError(color_str("Compile error occurs during synthesizing!", "red"))
         try:
@@ -147,5 +154,4 @@ class JudgeSystem:
                 raise JudgeRuntimeError(color_str("Runtime error " + judge_info, "red"))
             if out != ans:
                 raise JudgeWrongAnswer(color_str("Wrong answer " + judge_info, "red"))
-
 

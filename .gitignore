@@ -6,6 +6,7 @@
 *prompts*
 *responses*
 *results*
+*log*
+!logging.conf
 __pycache__
-log
 key.txt

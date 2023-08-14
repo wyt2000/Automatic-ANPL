@@ -7,9 +7,11 @@ from PromptWrapper.ParselPromptWrapper      import ParselPromptWrapper
 from ResponseWrapper.ParselResponseWrapper  import ParselResponseWrapper
 from SynthesizerEvaluator                   import SynthesizerEvaluator
 from utils                                  import mkdir_override
+import logging.config
 
 if __name__ == '__main__':
 
+    logging.config.fileConfig('logging.conf')
     for num_snippets in range(1, 8):
         sampler = ProgramSampler()
         sampler.sample(

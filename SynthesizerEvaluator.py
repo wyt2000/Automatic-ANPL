@@ -2,6 +2,8 @@ import os
 import traceback
 import json
 import dataclasses
+import logging
+import logging.config
 from GPTClient import GPTClient
 from JudgeSystem import JudgeSystem, JudgeStatus, JudgeAccepted, JudgeUnknownError
 
@@ -46,6 +48,7 @@ class SynthesizerEvaluator:
         self.result_dir         = result_dir
         self.client             = GPTClient() 
         self.judge_system       = JudgeSystem(self.synthesizer) 
+        self.logger             = logging.getLogger(__name__)
 
     def evaluate(self, task_name, data):
         '''
@@ -68,7 +71,7 @@ class SynthesizerEvaluator:
         :raise JudgeCompileError: Error occured during synthesizing or getting target code. 
         :raise JudgeUnknownError: Other strange errors, eg: ChatGPT crashed.
         '''
-        print(f'{task_name}: requesting for {self.model_name}...')
+        self.logger.info(f'{task_name}: requesting for {self.model_name}...')
         try:
             response = self.client.request(self.model_name,
                                       data.func_name,
@@ -76,10 +79,10 @@ class SynthesizerEvaluator:
                                       os.path.join(self.response_dir, f"{task_name}.res"),
                                       self.prompt_wrapper,
                                       self.response_wrapper)
-        except Exception:
-            traceback.print_exc()
+        except Exception :
+            self.logger.exception("Exception")
             raise JudgeUnknownError("Unknown error occurs during requesting for ChatGPT!")
-        print(f'{task_name} request for {self.model_name} done!, the response {self.synthesizer.name} code is:\n{response}')
+        self.logger.info(f'{task_name} request done!, the response {self.synthesizer.name} code is:\n{response}')
         save_path = os.path.join(self.result_dir, f"{task_name}.py")
         func = self.judge_system.compile(response, save_path, data)
         self.judge_system.judge(func, data.specs, data.func_name)
@@ -102,11 +105,10 @@ class SynthesizerEvaluator:
                 try:
                     self.evaluate(task_name, data)
                 except JudgeStatus as status:
-                    print(f'{task_name}: {str(status)}')
+                    self.logger.info(f'{task_name}: {str(status)}')
                     self.judge_system.add_judge_status(type(status).__name__, data)
                 except Exception:
-                    print(f'{task_name}: Unknown error occurs during judging!')
-                    traceback.print_exc()
+                    self.logger.exception(f'{task_name}: Unknown error occurs during judging!')
                     self.judge_system.add_judge_status("JudgeUnknownError", data)
         finally:
             with open(judge_status_path, 'w') as f:

@@ -3,9 +3,9 @@ import traceback
 import json
 import dataclasses
 import logging
-import logging.config
 from GPTClient import GPTClient
 from JudgeSystem import JudgeSystem, JudgeStatus, JudgeAccepted, JudgeUnknownError
+from utils import color_str
 
 class SynthesizerEvaluator:
     '''
@@ -81,12 +81,12 @@ class SynthesizerEvaluator:
                                       self.response_wrapper)
         except Exception :
             self.logger.exception("Exception")
-            raise JudgeUnknownError("Unknown error occurs during requesting for ChatGPT!")
+            raise JudgeUnknownError(color_str("Unknown error occurs during requesting for ChatGPT!", "red"))
         self.logger.info(f'{task_name} request done!, the response {self.synthesizer.name} code is:\n{response}')
         save_path = os.path.join(self.result_dir, f"{task_name}.py")
         func = self.judge_system.compile(response, save_path, data)
         self.judge_system.judge(func, data.specs, data.func_name)
-        raise JudgeAccepted("Accepted!")
+        raise JudgeAccepted(color_str("Accepted!", "green"))
 
     #TODO: Decouple clear and save.
     def evaluate_all(self, dataset, judge_status_path):
@@ -108,7 +108,7 @@ class SynthesizerEvaluator:
                     self.logger.info(f'{task_name}: {str(status)}')
                     self.judge_system.add_judge_status(type(status).__name__, data)
                 except Exception:
-                    self.logger.exception(f'{task_name}: Unknown error occurs during judging!')
+                    self.logger.exception(f'{task_name}: ' + color_str('Unknown error occurs during judging!', 'red'))
                     self.judge_system.add_judge_status("JudgeUnknownError", data)
         finally:
             with open(judge_status_path, 'w') as f:

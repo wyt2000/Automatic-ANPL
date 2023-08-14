@@ -5,6 +5,7 @@ import random
 import string
 import argparse
 import dataclasses
+import logging
 
 from utils import mkdir_override
 
@@ -50,6 +51,7 @@ class ProgramSampler():
         self.codes = codes
         self.total_snippets = len(codes)
         self.dataset = []
+        self.logger = logging.getLogger(__name__)
 
     def _build_op_desc(self, snippet_ids):
         op_desc = []
@@ -144,30 +146,34 @@ class ProgramSampler():
         :rtype: list
 
         '''
-
         assert(0 <= num_snippets <= self.total_snippets) 
+        self.logger.info(f'Generating {data_size} programs, each has {num_snippets} snippets...')
         random.seed(seed)
         mkdir_override(prompt_dir)
         if save_correct_program:
             mkdir_override(program_dir)
+        try:
+            for i in range(1, data_size + 1):
+                snippet_ids = random.sample(range(self.total_snippets), num_snippets)
+                op_desc     = self._build_op_desc(snippet_ids)
+                prompt      = self._build_prompt(func_desc, op_desc)
+                func_code   = self._build_func_code(snippet_ids, func_name, func_args, func_desc, op_desc, func_return)
+                specs       = self._build_spec(func_code, func_name, spec_num, max_spec_size)
+                spec_code   = self._build_spec_code(func_name, specs)
+                prog_name   = program_prefix+f'_{i}'
+                self.dataset.append(ProgramData(prog_name, func_name, num_snippets, prompt, specs))
+                with open(os.path.join(prompt_dir, prog_name+'.prompt'), 'w') as f:
+                    f.write(prompt)
 
-        for i in range(1, data_size + 1):
-            snippet_ids = random.sample(range(self.total_snippets), num_snippets)
-            op_desc     = self._build_op_desc(snippet_ids)
-            prompt      = self._build_prompt(func_desc, op_desc)
-            func_code   = self._build_func_code(snippet_ids, func_name, func_args, func_desc, op_desc, func_return)
-            specs       = self._build_spec(func_code, func_name, spec_num, max_spec_size)
-            spec_code   = self._build_spec_code(func_name, specs)
-            prog_name   = program_prefix+f'_{i}'
-            self.dataset.append(ProgramData(prog_name, func_name, num_snippets, prompt, specs))
-            with open(os.path.join(prompt_dir, prog_name+'.prompt'), 'w') as f:
-                f.write(prompt)
+                if save_correct_program:
+                    prog      = '\n'.join([func_code, spec_code])
+                    with open(os.path.join(program_dir, prog_name+'.py'), 'w') as f:
+                        f.write(prog)
+        except Exception:
+            self.logger.exception(f'Error occurs during program samping!')
+            exit(1)
 
-            if save_correct_program:
-                prog      = '\n'.join([func_code, spec_code])
-                with open(os.path.join(program_dir, prog_name+'.py'), 'w') as f:
-                    f.write(prog)
-
+        self.logger.info(f'Generate done!')
         return self.dataset
 
 if __name__ == '__main__':

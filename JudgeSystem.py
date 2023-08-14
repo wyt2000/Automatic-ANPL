@@ -3,6 +3,7 @@ import timeout_decorator
 import dataclasses
 import os
 import importlib
+from utils import color_str
 
 ''' Judge Status Exception '''
 
@@ -100,20 +101,17 @@ class JudgeSystem:
         '''
         try:
             code = self.synthesizer.synthesize(program, save_path, data.prog_name)
-        except:
-            traceback.print_exc()
-            raise JudgeCompileError("Compile error occurs during synthesizing!")
+        except Exception:
+            raise JudgeCompileError(color_str("Compile error occurs during synthesizing!", "red"))
         try:
             module_path = os.path.splitext(save_path)[0]
             module = importlib.import_module(module_path.replace('/', '.'))
-        except:
-            traceback.print_exc()
-            raise JudgeCompileError("Compile error occurs during module loading, maybe the target program is invalid!")
+        except Exception:
+            raise JudgeCompileError(color_str("Compile error occurs during module loading, maybe the target program is invalid!", "red"))
         try:
             func = module.__getattribute__(data.func_name)
-        except:
-            traceback.print_exc()
-            raise JudgeCompileError("Compile error occurs during function getting, maybe the target function is missing!")
+        except Exception:
+            raise JudgeCompileError(color_str("Compile error occurs during function getting, maybe the target function is missing!", "red"))
         return func
     
     #TODO: Support mutli-arg functions.
@@ -144,10 +142,10 @@ class JudgeSystem:
             try:
                 out = timeout_func(inp)
             except timeout_decorator.TimeoutError:
-                raise JudgeTimeLimitExceeded(f"Time limit exceeded " + judge_info)
+                raise JudgeTimeLimitExceeded(color_str("Time limit exceeded " + judge_info, "red"))
             except Exception:
-                raise JudgeRuntimeError(f"Runtime error " + judge_info)
+                raise JudgeRuntimeError(color_str("Runtime error " + judge_info, "red"))
             if out != ans:
-                raise JudgeWrongAnswer(f"Wrong answer " + judge_info)
+                raise JudgeWrongAnswer(color_str("Wrong answer " + judge_info, "red"))
 
 

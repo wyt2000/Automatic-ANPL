@@ -12,7 +12,7 @@ import logging.config
 if __name__ == '__main__':
 
     logging.config.fileConfig('logging.conf')
-    for num_snippets in range(1, 8):
+    for num_snippets in range(3, 4):
         sampler = ProgramSampler()
         sampler.sample(
             num_snippets=num_snippets,
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             result_dir=anpl_result_dir,
             log_dir=anpl_log_dir
         )
-        #anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
+        anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path, batch_size=4)
 
         parsel_prompt_wrapper = ParselPromptWrapper()
         parsel_response_wrapper = ParselResponseWrapper()
@@ -64,6 +64,6 @@ if __name__ == '__main__':
             result_dir=parsel_result_dir,
             log_dir=parsel_log_dir
         )
-        parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
+        parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path, batch_size=4)
 
 

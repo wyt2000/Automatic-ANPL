@@ -3,7 +3,7 @@
     input_path: "input.txt"
     sample_config:
       num_snippets: [1, 2] # int or list[int]
-      data_size: 20
+      data_size: 2
       spec_num: 5
       max_spec_size: 30
       save_correct_program: true

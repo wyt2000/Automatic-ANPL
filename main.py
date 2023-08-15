@@ -27,6 +27,7 @@ if __name__ == '__main__':
             # For each synthesizer
             for evaluator in configManager.build_evaluators(config['SynthesizerConfig'], suffix=num_snippets):
                 judge_status_path = f'{evaluator.synthesizer.name}_judge_status_{num_snippets}.json'
+                evaluator.clear()
                 try:
                     evaluator.evaluate_all(dataset)
                 finally:

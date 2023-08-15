@@ -56,7 +56,7 @@ class SynthesizerEvaluator:
         self.judge_system       = JudgeSystem(self.synthesizer) 
         self.logger             = logging.getLogger(__name__)
 
-    async def evaluate(self, task_name, data):
+    async def evaluate(self, task_name, data, semaphone):
         '''
         Evaluate the synthesizer by one piece of data, including:
         1. Request ChatGPT for the synthesizer's DSL by wrapped prompts.
@@ -77,26 +77,27 @@ class SynthesizerEvaluator:
         :raise JudgeCompileError: Error occured during synthesizing or getting target code. 
         :raise JudgeUnknownError: Other strange errors, eg: ChatGPT crashed.
         '''
-        self.logger.info(f'{task_name}: requesting for {self.model_name}...')
-        try:
-            response = await self.client.request(self.model_name,
-                                      data.func_name,
-                                      data.prompt, 
-                                      os.path.join(self.response_dir, f"{task_name}.res"),
-                                      self.prompt_wrapper,
-                                      self.response_wrapper)
-        except Exception :
-            self.logger.exception("Exception")
-            raise JudgeUnknownError(color_str("Unknown error occurs during requesting for ChatGPT!", "red"))
-        self.logger.info(f'{task_name} request done!')
-        self.logger.debug(f'The response {self.synthesizer.name} code is:\n{response}')
-        save_path = os.path.join(self.result_dir, f"{task_name}.py")
-        func = self.judge_system.compile(response, save_path, data, os.path.join(self.log_dir,f"{task_name}.log"))
-        self.judge_system.judge(func, data.specs, data.func_name)
-        raise JudgeAccepted(color_str("Accepted!", "green"))
+        async with semaphone:
+            try:
+                self.logger.info(f'{task_name}: requesting for {self.model_name}...')
+                response = await self.client.request(self.model_name,
+                                          data.func_name,
+                                          data.prompt, 
+                                          os.path.join(self.response_dir, f"{task_name}.res"),
+                                          self.prompt_wrapper,
+                                          self.response_wrapper)
+            except Exception :
+                self.logger.exception("Exception")
+                raise JudgeUnknownError(color_str("Unknown error occurs during requesting for ChatGPT!", "red"))
+            self.logger.info(f'{task_name} request done!')
+            self.logger.debug(f'The response {self.synthesizer.name} code is:\n{response}')
+            save_path = os.path.join(self.result_dir, f"{task_name}.py")
+            func = self.judge_system.compile(response, save_path, data, os.path.join(self.log_dir,f"{task_name}.log"))
+            self.judge_system.judge(func, data.specs, data.func_name)
+            raise JudgeAccepted(color_str("Accepted!", "green"))
 
     #TODO: Decouple clear and save.
-    def evaluate_all(self, dataset, judge_status_path, num_workers=1):
+    def evaluate_all(self, dataset, judge_status_path, num_workers=4):
         '''
         Evaluate the synthesizer by dataset, save the results in `judge_status_path`.
         :param dataset:
@@ -105,28 +106,25 @@ class SynthesizerEvaluator:
         :param judge_status_path:
         :type judge_status_path: str
 
-        :param num_workers: The number of coroutines to do the task.
-        :type num_workers: int
         '''
-        self.judge_system.clear()
         try:
-            for i in range(0, len(dataset), num_workers):
-                batch = dataset[i : i + num_workers]
-                async def batch_tasks():
-                    tasks = []
-                    for data in batch:
-                        task_name = f"{self.synthesizer.name}_{data.prog_name}"
-                        tasks.append((task_name, asyncio.create_task(self.evaluate(task_name, data))))
-                    for task_name, task in tasks:
-                        try:
-                            await task
-                        except JudgeStatus as status:
-                            self.logger.info(f'{task_name}: {str(status)}')
-                            self.judge_system.add_judge_status(type(status).__name__, data)
-                        except Exception:
-                            self.logger.exception(f'{task_name}: ' + color_str('Unknown error occurs during judging!', 'red'))
-                            self.judge_system.add_judge_status("JudgeUnknownError", data)
-                asyncio.run(batch_tasks())
+            self.judge_system.clear()
+            semaphone = asyncio.Semaphore(num_workers)
+            async def batch_tasks():
+                tasks = []
+                for data in dataset:
+                    task_name = f"{self.synthesizer.name}_{data.prog_name}"
+                    tasks.append((task_name, asyncio.create_task(self.evaluate(task_name, data, semaphone))))
+                for task_name, task in tasks:
+                    try:
+                        await task
+                    except JudgeStatus as status:
+                        self.logger.info(f'{task_name}: {str(status)}')
+                        self.judge_system.add_judge_status(type(status).__name__, data)
+                    except Exception:
+                        self.logger.exception(f'{task_name}: ' + color_str('Unknown error occurs during judging!', 'red'))
+                        self.judge_system.add_judge_status("JudgeUnknownError", data)
+            asyncio.run(batch_tasks())
         finally:
             with open(judge_status_path, 'w') as f:
                 f.write(json.dumps(dataclasses.asdict(self.judge_system.judge_status_container)))

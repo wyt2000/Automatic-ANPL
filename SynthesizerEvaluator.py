@@ -82,8 +82,9 @@ class SynthesizerEvaluator:
         '''
         async with semaphone:
             try:
-                self.logger.info(f'{task_name}: requesting for {self.model_name}...')
-                response = await self.client.request(self.model_name,
+                response = await self.client.request(
+                                          task_name,
+                                          self.model_name,
                                           data.func_name,
                                           data.prompt, 
                                           os.path.join(self.response_dir, f"{task_name}.res"),
@@ -92,7 +93,6 @@ class SynthesizerEvaluator:
             except Exception :
                 self.logger.exception("Exception")
                 raise JudgeUnknownError(color_str("Unknown error occurs during requesting for ChatGPT!", "red"))
-            self.logger.info(f'{task_name} request done!')
             self.logger.debug(f'The response {self.synthesizer.name} code is:\n{response}')
             save_path = os.path.join(self.result_dir, f"{task_name}.py")
             func = self.judge_system.compile(response, save_path, data, os.path.join(self.log_dir,f"{task_name}.log"))

@@ -7,11 +7,14 @@ class GPTClient:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def request(self, model_name, func_name, prompt, save_path, prompt_wrapper, response_wrapper):
+    async def request(self, task_name, model_name, func_name, prompt, save_path, prompt_wrapper, response_wrapper):
         '''
         Request to ChatGPT for Synthesizer's DSL.
         Ensure that the environment variable OPENAI_API_KEY is set correctly.
-        
+
+        :param task_name: 
+        :type task_name: str
+       
         :param model_name: GPT model name, eg: GPT-4
         :type model_name: str
 
@@ -35,12 +38,12 @@ class GPTClient:
 
         '''
         messages = prompt_wrapper.wrap(prompt, func_name)
-        self.logger.debug(f"Sending prompt:\n{prompt}")
+        self.logger.info(f'{task_name}: Requesting for {model_name}...')
         # ref: https://github.com/openai/openai-python/issues/278#issuecomment-1473357978
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
             response = await openai.ChatCompletion.acreate(model=model_name, messages=messages)
-        self.logger.debug(f"Received response:\n{response}")
+        self.logger.info(f'{task_name}: Request done!')
         status_code = response["choices"][0]["finish_reason"]
         assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]

@@ -1,95 +1,78 @@
 from ProgramSampler                         import ProgramSampler 
-from Synthesizer.ANPLSynthesizer            import ANPLSynthesizer
-from PromptWrapper.ANPLPromptWrapper        import ANPLPromptWrapper
-from ResponseWrapper.ANPLResponseWrapper    import ANPLResponseWrapper
-from Synthesizer.ParselSynthesizer          import ParselSynthesizer
-from PromptWrapper.ParselPromptWrapper      import ParselPromptWrapper
-from ResponseWrapper.ParselResponseWrapper  import ParselResponseWrapper
-from Synthesizer.GPTSynthesizer             import GPTSynthesizer
-from PromptWrapper.GPTPromptWrapper         import GPTPromptWrapper
-from ResponseWrapper.GPTResponseWrapper     import GPTResponseWrapper
 from SynthesizerEvaluator                   import SynthesizerEvaluator
-from utils                                  import mkdir_override
+from utils                                  import mkdir_override, make_object
 import logging.config
+import yaml
+import copy 
+import json
+import dataclasses
+
+logging.config.fileConfig('logging.conf')
+
+class ConfigManager:
+
+    def __init__(self, config_path='config.yml'):
+        with open(config_path, 'r') as f:
+            self.config = yaml.safe_load(f)
+
+    def _transform_sample_config(self, num_snippets, config):
+        new_config = copy.deepcopy(config)
+        new_config['num_snippets']      = num_snippets
+        new_config['seed']              = int(str(num_snippets) + str(config['seed']))
+        new_config['program_prefix']    += f'_{num_snippets}'
+        new_config['program_dir']       += f'_{num_snippets}'
+        new_config['prompt_dir']        += f'_{num_snippets}'
+        return new_config
+
+    def build_program_datasets(self, config):
+        sampler = ProgramSampler(input_path=config['input_path'])
+        config = config['sample_config']
+        if isinstance(config['num_snippets'], int):
+            yield sampler.sample(**config)
+            return
+        for num_snippets in config['num_snippets']:
+            yield sampler.sample(**self._transform_sample_config(num_snippets, config))
+
+    def _make_object(self, prefix, config):
+        return make_object('.'.join([prefix, config['name']]), config['name'], **config.get('args', {}))
+
+    def build_evaluators(self, syn_configs, suffix):
+        for config in syn_configs:
+            prompt_wrapper = self._make_object('PromptWrapper', config['prompt_wrapper_class']) 
+            response_wrapper = self._make_object('ResponseWrapper', config['response_wrapper_class']) 
+            synthesizer = self._make_object('Synthesizer', config['synthesizer_class']) 
+            name = config['name']
+
+            response_dir = f'{name}_responses_{suffix}/'
+            result_dir = f'{name}_results_{suffix}/'
+            log_dir= f'{name}_logs_{suffix}/'
+
+            mkdir_override(response_dir)
+            mkdir_override(result_dir)
+            mkdir_override(log_dir)
+
+            yield SynthesizerEvaluator(
+                synthesizer=synthesizer,
+                prompt_wrapper=prompt_wrapper,
+                response_wrapper=response_wrapper,
+                model_name=config['model_name'],
+                response_dir=response_dir,
+                result_dir=result_dir,
+                log_dir=log_dir
+            )
 
 if __name__ == '__main__':
 
-    logging.config.fileConfig('logging.conf')
-    for num_snippets in range(1, 8):
-        sampler = ProgramSampler()
-        sampler.sample(
-            num_snippets=num_snippets,
-            program_dir=f'programs_{num_snippets}/',
-            program_prefix=f'string_manipulation_{num_snippets}',
-            prompt_dir=f'prompts_{num_snippets}/',
-            seed=int(f'{num_snippets}114514')
-        )
-        
-        gpt_prompt_wrapper = GPTPromptWrapper()
-        gpt_response_wrapper = GPTResponseWrapper()
-        gpt_synthesizer = GPTSynthesizer()
-        gpt_response_dir = f'gpt_responses_{num_snippets}/'
-        gpt_result_dir = f'gpt_results_{num_snippets}/'
-        gpt_log_dir= f'gpt_logs_{num_snippets}/'
-        gpt_judge_status_path = f'gpt_judge_status_{num_snippets}.json'
-
-        mkdir_override(gpt_response_dir)
-        mkdir_override(gpt_result_dir)
-        mkdir_override(gpt_log_dir)
-        gpt_evaluator = SynthesizerEvaluator(
-            synthesizer=gpt_synthesizer,
-            prompt_wrapper=gpt_prompt_wrapper,
-            response_wrapper=gpt_response_wrapper,
-            model_name='gpt-3.5-turbo-0301',
-            response_dir=gpt_response_dir,
-            result_dir=gpt_result_dir,
-            log_dir=gpt_log_dir
-        )
-        gpt_evaluator.evaluate_all(sampler.dataset, gpt_judge_status_path)
-
-        '''
-        anpl_prompt_wrapper = ANPLPromptWrapper()
-        anpl_response_wrapper = ANPLResponseWrapper()
-        anpl_synthesizer = ANPLSynthesizer(max_try_times=5, max_temperature=0.5)
-        anpl_response_dir = f'anpl_responses_{num_snippets}/'
-        anpl_result_dir = f'anpl_results_{num_snippets}/'
-        anpl_log_dir= f'anpl_logs_{num_snippets}/'
-        anpl_judge_status_path = f'anpl_judge_status_{num_snippets}.json'
-
-        mkdir_override(anpl_response_dir)
-        mkdir_override(anpl_result_dir)
-        mkdir_override(anpl_log_dir)
-        anpl_evaluator = SynthesizerEvaluator(
-            synthesizer=anpl_synthesizer,
-            prompt_wrapper=anpl_prompt_wrapper,
-            response_wrapper=anpl_response_wrapper,
-            model_name='gpt-3.5-turbo-0301',
-            response_dir=anpl_response_dir,
-            result_dir=anpl_result_dir,
-            log_dir=anpl_log_dir
-        )
-        anpl_evaluator.evaluate_all(sampler.dataset, anpl_judge_status_path)
-
-        parsel_prompt_wrapper = ParselPromptWrapper()
-        parsel_response_wrapper = ParselResponseWrapper()
-        parsel_synthesizer = ParselSynthesizer()
-        parsel_response_dir = f'parsel_responses_{num_snippets}/'
-        parsel_result_dir = f'parsel_results_{num_snippets}/'
-        parsel_log_dir = f'parsel_logs_{num_snippets}/'
-        parsel_judge_status_path = f'parsel_judge_status_{num_snippets}.json'
-
-        mkdir_override(parsel_response_dir)
-        mkdir_override(parsel_result_dir)
-        mkdir_override(parsel_log_dir)
-        parsel_evaluator = SynthesizerEvaluator(
-            synthesizer=parsel_synthesizer,
-            prompt_wrapper=parsel_prompt_wrapper,
-            response_wrapper=parsel_response_wrapper,
-            model_name='gpt-3.5-turbo-0301',
-            response_dir=parsel_response_dir,
-            result_dir=parsel_result_dir,
-            log_dir=parsel_log_dir
-        )
-        parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
-        '''
+    logger = logging.getLogger(__name__)
+    configManager = ConfigManager()
+    for config in configManager.config:
+        for dataset in configManager.build_program_datasets(config['ProgramSamplerConfig']):
+            num_snippets = dataset[0].num_snippets
+            for evaluator in configManager.build_evaluators(config['SynthesizerConfig'], suffix=num_snippets):
+                judge_status_path = f'{evaluator.synthesizer.name}_judge_status_{num_snippets}.json'
+                try:
+                    evaluator.evaluate_all(dataset)
+                finally:
+                    with open(judge_status_path, 'w') as f:
+                        f.write(json.dumps(dataclasses.asdict(evaluator.judge_system.judge_status_container)))
 

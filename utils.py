@@ -2,6 +2,7 @@ import os
 import shutil
 import pathlib
 import coloredlogs
+import importlib
 
 def mkdir_override(dir_path):
     '''
@@ -32,4 +33,7 @@ class ColoredFormatter(coloredlogs.ColoredFormatter):
         '''Match coloredlogs.ColoredFormatter arguments with logging.Formatter'''
         coloredlogs.ColoredFormatter.__init__(self, fmt=fmt, datefmt=datefmt)
 
-
+def make_object(module_name, class_name, **kwargs):
+    module = importlib.import_module(module_name)
+    cls = getattr(module, class_name)
+    return cls(**kwargs)

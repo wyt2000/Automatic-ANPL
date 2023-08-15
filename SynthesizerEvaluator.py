@@ -99,38 +99,32 @@ class SynthesizerEvaluator:
             self.judge_system.judge(func, data.specs, data.func_name)
             raise JudgeAccepted(color_str("Accepted!", "green"))
 
-    #TODO: Decouple clear and save.
-    def evaluate_all(self, dataset, judge_status_path, num_workers=8):
+    def clear(self):
+        self.judge_system.clear()
+
+    def evaluate_all(self, dataset, num_workers=8):
         '''
         Evaluate the synthesizer by dataset, save the results in `judge_status_path`.
         :param dataset:
         :type dataset: list[ProgramData]
 
-        :param judge_status_path:
-        :type judge_status_path: str
-
         :param num_workers: Concurrent task number.
         :type num_workers: int
         '''
-        try:
-            self.judge_system.clear()
-            semaphone = asyncio.Semaphore(num_workers)
-            async def batch_tasks():
-                tasks = []
-                for data in dataset:
-                    task_name = f"{self.synthesizer.name}_{data.prog_name}"
-                    tasks.append((task_name, data, asyncio.create_task(self.evaluate(task_name, data, semaphone))))
-                for task_name, data, task in tasks:
-                    try:
-                        await task
-                    except JudgeStatus as status:
-                        self.logger.info(f'{task_name}: {str(status)}')
-                        self.judge_system.add_judge_status(type(status).__name__, data)
-                    except Exception:
-                        self.logger.exception(f'{task_name}: ' + color_str('Unknown error occurs during judging!', 'red'))
-                        self.judge_system.add_judge_status("JudgeUnknownError", data)
-            asyncio.run(batch_tasks())
-        finally:
-            with open(judge_status_path, 'w') as f:
-                f.write(json.dumps(dataclasses.asdict(self.judge_system.judge_status_container)))
+        semaphone = asyncio.Semaphore(num_workers)
+        async def batch_tasks():
+            tasks = []
+            for data in dataset:
+                task_name = f"{self.synthesizer.name}_{data.prog_name}"
+                tasks.append((task_name, data, asyncio.create_task(self.evaluate(task_name, data, semaphone))))
+            for task_name, data, task in tasks:
+                try:
+                    await task
+                except JudgeStatus as status:
+                    self.logger.info(f'{task_name}: {str(status)}')
+                    self.judge_system.add_judge_status(type(status).__name__, data)
+                except Exception:
+                    self.logger.exception(f'{task_name}: ' + color_str('Unknown error occurs during judging!', 'red'))
+                    self.judge_system.add_judge_status("JudgeUnknownError", data)
+        asyncio.run(batch_tasks())
 

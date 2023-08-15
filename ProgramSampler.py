@@ -50,7 +50,6 @@ class ProgramSampler():
         self.descs = descs
         self.codes = codes
         self.total_snippets = len(codes)
-        self.dataset = []
         self.logger = logging.getLogger(__name__)
 
     def _build_op_desc(self, snippet_ids):
@@ -148,6 +147,7 @@ class ProgramSampler():
         '''
         assert(0 <= num_snippets <= self.total_snippets) 
         self.logger.info(f'Generating {data_size} programs, each has {num_snippets} snippets...')
+        dataset = []
         random.seed(seed)
         mkdir_override(prompt_dir)
         if save_correct_program:
@@ -161,7 +161,7 @@ class ProgramSampler():
                 specs       = self._build_spec(func_code, func_name, spec_num, max_spec_size)
                 spec_code   = self._build_spec_code(func_name, specs)
                 prog_name   = program_prefix+f'_{i}'
-                self.dataset.append(ProgramData(prog_name, func_name, num_snippets, prompt, specs))
+                dataset.append(ProgramData(prog_name, func_name, num_snippets, prompt, specs))
                 with open(os.path.join(prompt_dir, prog_name+'.prompt'), 'w') as f:
                     f.write(prompt)
 
@@ -174,7 +174,7 @@ class ProgramSampler():
             exit(1)
 
         self.logger.info(f'Program sampling done!')
-        return self.dataset
+        return dataset
 
 if __name__ == '__main__':
     sampler = ProgramSampler()

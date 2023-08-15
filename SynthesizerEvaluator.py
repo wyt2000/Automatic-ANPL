@@ -100,6 +100,9 @@ class SynthesizerEvaluator:
             raise JudgeAccepted(color_str("Accepted!", "green"))
 
     def clear(self):
+        '''
+        Clear judge status.
+        '''
         self.judge_system.clear()
 
     def evaluate_all(self, dataset, num_workers=8):

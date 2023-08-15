@@ -70,6 +70,9 @@ class SynthesizerEvaluator:
         :param data:
         :type data: ProgramData
 
+        :param semaphone: Semaphone to control coroutine number.
+        :type semaphone: asyncio.Semaphore
+
         :raise JudgeAccepted: The program passed all I/O spec tests.
         :raise JudgeWrongAnswer: The program failed at some I/O spec test.
         :raise JudgeTimeLimitExceeded: The program was executed for too long time, the time limit can be set in `judge_system`.
@@ -106,6 +109,8 @@ class SynthesizerEvaluator:
         :param judge_status_path:
         :type judge_status_path: str
 
+        :param num_workers: Concurrent task number.
+        :type num_workers: int
         '''
         try:
             self.judge_system.clear()

@@ -100,7 +100,7 @@ class SynthesizerEvaluator:
             raise JudgeAccepted(color_str("Accepted!", "green"))
 
     #TODO: Decouple clear and save.
-    def evaluate_all(self, dataset, judge_status_path, num_workers=4):
+    def evaluate_all(self, dataset, judge_status_path, num_workers=8):
         '''
         Evaluate the synthesizer by dataset, save the results in `judge_status_path`.
         :param dataset:
@@ -119,8 +119,8 @@ class SynthesizerEvaluator:
                 tasks = []
                 for data in dataset:
                     task_name = f"{self.synthesizer.name}_{data.prog_name}"
-                    tasks.append((task_name, asyncio.create_task(self.evaluate(task_name, data, semaphone))))
-                for task_name, task in tasks:
+                    tasks.append((task_name, data, asyncio.create_task(self.evaluate(task_name, data, semaphone))))
+                for task_name, data, task in tasks:
                     try:
                         await task
                     except JudgeStatus as status:

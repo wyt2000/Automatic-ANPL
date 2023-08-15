@@ -12,7 +12,7 @@ import logging.config
 if __name__ == '__main__':
 
     logging.config.fileConfig('logging.conf')
-    for num_snippets in range(3, 4):
+    for num_snippets in range(1, 8):
         sampler = ProgramSampler()
         sampler.sample(
             num_snippets=num_snippets,
@@ -64,6 +64,6 @@ if __name__ == '__main__':
             result_dir=parsel_result_dir,
             log_dir=parsel_log_dir
         )
-        #parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
+        parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
 
 

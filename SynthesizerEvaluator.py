@@ -96,7 +96,7 @@ class SynthesizerEvaluator:
         raise JudgeAccepted(color_str("Accepted!", "green"))
 
     #TODO: Decouple clear and save.
-    def evaluate_all(self, dataset, judge_status_path, batch_size=1):
+    def evaluate_all(self, dataset, judge_status_path, num_workers=1):
         '''
         Evaluate the synthesizer by dataset, save the results in `judge_status_path`.
         :param dataset:
@@ -104,11 +104,14 @@ class SynthesizerEvaluator:
 
         :param judge_status_path:
         :type judge_status_path: str
+
+        :param num_workers: The number of coroutines to do the task.
+        :type num_workers: int
         '''
         self.judge_system.clear()
         try:
-            for i in range(0, len(dataset), batch_size):
-                batch = dataset[i : i + batch_size]
+            for i in range(0, len(dataset), num_workers):
+                batch = dataset[i : i + num_workers]
                 async def batch_tasks():
                     tasks = []
                     for data in batch:

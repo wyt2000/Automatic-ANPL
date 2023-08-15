@@ -2,6 +2,7 @@ import logging
 import logging.config
 import json
 import dataclasses
+import argparse
 
 from ConfigManager import ConfigManager
 
@@ -9,9 +10,13 @@ logging.config.fileConfig('logging.conf')
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, help='yaml config path', default='config.yml')
+    args = parser.parse_args()
+
     logger = logging.getLogger('main')
     logger.info('Loading config...')
-    configManager = ConfigManager()
+    configManager = ConfigManager(args.config)
     logger.info('Loading config done!')
 
     # For each task

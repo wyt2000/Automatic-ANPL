@@ -67,3 +67,18 @@ Evaluate the accurency of program synthesizers automatically by ChatGPT.
                                                  Accuracy
 ```
 
+## Install requirements
+
+```python
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+python main.py --config config.yml
+```
+
+## How to add new synthesizer
+
+Add new `PromptWrapper`, `ResponseWrapper` and `Synthesizer`, then modify `config.yml`.

@@ -5,6 +5,9 @@ from ResponseWrapper.ANPLResponseWrapper    import ANPLResponseWrapper
 from Synthesizer.ParselSynthesizer          import ParselSynthesizer
 from PromptWrapper.ParselPromptWrapper      import ParselPromptWrapper
 from ResponseWrapper.ParselResponseWrapper  import ParselResponseWrapper
+from Synthesizer.GPTSynthesizer             import GPTSynthesizer
+from PromptWrapper.GPTPromptWrapper         import GPTPromptWrapper
+from ResponseWrapper.GPTResponseWrapper     import GPTResponseWrapper
 from SynthesizerEvaluator                   import SynthesizerEvaluator
 from utils                                  import mkdir_override
 import logging.config
@@ -21,7 +24,30 @@ if __name__ == '__main__':
             prompt_dir=f'prompts_{num_snippets}/',
             seed=int(f'{num_snippets}114514')
         )
+        
+        gpt_prompt_wrapper = GPTPromptWrapper()
+        gpt_response_wrapper = GPTResponseWrapper()
+        gpt_synthesizer = GPTSynthesizer()
+        gpt_response_dir = f'gpt_responses_{num_snippets}/'
+        gpt_result_dir = f'gpt_results_{num_snippets}/'
+        gpt_log_dir= f'gpt_logs_{num_snippets}/'
+        gpt_judge_status_path = f'gpt_judge_status_{num_snippets}.json'
 
+        mkdir_override(gpt_response_dir)
+        mkdir_override(gpt_result_dir)
+        mkdir_override(gpt_log_dir)
+        gpt_evaluator = SynthesizerEvaluator(
+            synthesizer=gpt_synthesizer,
+            prompt_wrapper=gpt_prompt_wrapper,
+            response_wrapper=gpt_response_wrapper,
+            model_name='gpt-3.5-turbo-0301',
+            response_dir=gpt_response_dir,
+            result_dir=gpt_result_dir,
+            log_dir=gpt_log_dir
+        )
+        gpt_evaluator.evaluate_all(sampler.dataset, gpt_judge_status_path)
+
+        '''
         anpl_prompt_wrapper = ANPLPromptWrapper()
         anpl_response_wrapper = ANPLResponseWrapper()
         anpl_synthesizer = ANPLSynthesizer(max_try_times=5, max_temperature=0.5)
@@ -65,5 +91,5 @@ if __name__ == '__main__':
             log_dir=parsel_log_dir
         )
         parsel_evaluator.evaluate_all(sampler.dataset, parsel_judge_status_path)
-
+        '''
 

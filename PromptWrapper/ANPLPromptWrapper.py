@@ -1,7 +1,7 @@
 from .PromptWrapper import AbstractPromptWrapper
 
 #TODO: Read prompts from files.
-_background = '''You are a expert of ANPL programming language.
+_background = '''You are an expert of ANPL programming language.
 An ANPL program consists of a python-like sketch, and natural language holes.
 A hole implements a function module with a natural language description, which will be fleshed out by LLMs during the compiling process. Each hole specified with a natural language description quoted by quotation marks `` or \"\"\". When called, holes should be organized by specifying its input-output variables, serving as the interconnections. To define a hole, users can either:
     1. define a hole as a sub-function with the function name, parameters, and descriptions, and then call the function with its function name and input-output variables, or

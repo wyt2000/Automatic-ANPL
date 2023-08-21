@@ -29,27 +29,24 @@ _start_code = """Your code should start with {starter_code}."""
 
 class GPTPromptBuilder(AbstractPromptBuilder):
 
-    def __init__(self):
-        self.clear()
-
     @property
     def background(self):
         return _background
 
-    def build_solution_request(self, question):
+    def build_solution_request(self, question, messages):
         msg = _solution_prompt.replace("{question}", question)
-        self.message.append({"role": "user", "content": msg})
-        return self.message
+        messages.append({"role": "user", "content": msg})
+        return messages 
     
-    def build_translation_request(self, solution_plan, starter_code):
+    def build_translation_request(self, solution_plan, starter_code, messages):
         msg = _translation_prompt.replace("{solution_plan}", solution_plan)
         if starter_code:
             msg += _starter_code.replace("{starter_code}", starter_code)
         else:
             msg += _io_description
         msg += _code_description
-        self.message.append({"role": "user", "content": msg})
-        return self.message
+        messages.append({"role": "user", "content": msg})
+        return messages
     
     def extract_code(self, code: str):
         return code.strip('```python')

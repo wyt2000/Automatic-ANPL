@@ -11,24 +11,22 @@ class AbstractPromptBuilder(ABC):
     def background(self):
         pass
 
-    def clear(self):
-        self.message = [
-            {"role": "system", "content": self.background}
-        ]
-
     @abstractmethod
-    def build_solution_request(self, question):
+    def build_solution_request(self, question, messages):
         pass
 
     @abstractmethod
-    def build_translation_request(self, solution_plan, starter_code):
+    def build_translation_request(self, solution_plan, starter_code, messages):
         pass
 
-    def get_response(self, response):
+    def build_background(self):
+        return [{"role": "system", "content": self.background}]
+
+    def get_response(self, response, messages):
         status_code = response["choices"][0]["finish_reason"]
         assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]
-        self.message.append({"role": "assistant", "content": response})
+        messages.append({"role": "assistant", "content": response})
         return response
 
     @abstractmethod

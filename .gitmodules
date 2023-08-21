@@ -1,0 +1,3 @@
+[submodule "apps_metric"]
+	path = apps_metric
+	url = https://github.com/wyt2000/apps_metric.git

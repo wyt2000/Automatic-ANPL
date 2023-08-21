@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     for data in sampler.sample_from_head(2):
         client.request(
-            task_name       = f'apps_{data.problem_id}',        
+            task_name       = f'apps_{data.problem_id}',
             model_name      = 'gpt-3.5-turbo-0301',
             question        = data.question,
             starter_code    = data.starter_code, 

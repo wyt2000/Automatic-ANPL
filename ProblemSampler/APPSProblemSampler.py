@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from .ProblemSampler import ProblemData, ProblemSampler
 
 # for huggingface
+import datasets
 from datasets import load_dataset 
 
 class APPSProblemData(ProblemData):
@@ -25,6 +26,7 @@ class APPSProblemData(ProblemData):
 class APPSProblemSampler(ProblemSampler):
 
     def __init__(self, path='codeparrot/apps', split='test', difficulties=['all']):
+        datasets.config.DEFAULT_MAX_BATCH_SIZE = 10
         self._apps = load_dataset(path=path, split=split, difficulties=difficulties)
 
     def sample(self, data_indices):

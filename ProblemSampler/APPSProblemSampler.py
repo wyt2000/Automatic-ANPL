@@ -24,8 +24,8 @@ class APPSProblemData(ProblemData):
 
 class APPSProblemSampler(ProblemSampler):
 
-    def __init__(self, path='codeparrot/apps', split='test'):
-        self._apps = load_dataset(path=path, split=split)
+    def __init__(self, path='codeparrot/apps', split='test', difficulties=['all']):
+        self._apps = load_dataset(path=path, split=split, difficulties=difficulties)
 
     def sample(self, data_indices):
         for idx in data_indices: 

@@ -1,53 +1,46 @@
 import openai
 import logging 
+import logging.config
 import aiohttp
+from PromptBuilder.PromptBuilder import AbstractPromptBuilder
+
+logging.config.fileConfig('logging.conf')
 
 class GPTClient:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
 
-    async def request(self, task_name, model_name, func_name, prompt, save_path, prompt_wrapper, response_wrapper):
-        '''
-        Request to ChatGPT for Synthesizer's DSL.
-        Ensure that the environment variable OPENAI_API_KEY is set correctly.
-
-        :param task_name: 
-        :type task_name: str
-       
-        :param model_name: GPT model name, eg: GPT-4
-        :type model_name: str
-
-        :param func_name: May be used in wrapper.
-        :type func_name: str
-
-        :param prompt: Raw prompts from program sampler.
-        :type prompt: str
-
-        :param save_path: The path to save raw responses from ChatGPT.
-        :type save_path: str
-
-        :param prompt_wrapper: Convert raw prompts to synthesizer specific prompts.
-        :type prompt_wrapper: PromptWrapper 
-
-        :param response_wrapper: Extract DSL from raw response.
-        :type response_wrapper: ResponseWrapper
-
-        :return: The input DSL of synthesizer.
-        :rtype: str
-
-        '''
-        messages = prompt_wrapper.wrap(prompt, func_name)
-        self.logger.info(f'{task_name}: Requesting for {model_name}...')
-        # ref: https://github.com/openai/openai-python/issues/278#issuecomment-1473357978
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            response = await openai.ChatCompletion.acreate(model=model_name, messages=messages)
-        self.logger.info(f'{task_name}: Request done!')
-        status_code = response["choices"][0]["finish_reason"]
-        assert status_code == "stop", f"The status code was {status_code}."
-        response = response["choices"][0]["message"]["content"]
+    def request(self, task_name, model_name, question, starter_code, save_path, prompt_builder: AbstractPromptBuilder):
+        prompt_builder.clear()
+        # Solution Stage
+        messages = prompt_builder.build_solution_request(question)
+        self.logger.debug(f'{task_name}: Requesting for high-level solution from {model_name}...')
+        response = openai.ChatCompletion.create(model=model_name, messages=messages)
+        solution_plan = prompt_builder.get_response(response)
+        self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
+        # Translation Stage
+        messages = prompt_builder.build_translation_request(solution_plan, starter_code)
+        self.logger.debug(f'{task_name}: Requesting for Python code from {model_name}...')
+        response = openai.ChatCompletion.create(model=model_name, messages=messages)
+        code = prompt_builder.get_response(response)
+        self.logger.debug(f'{task_name}: Requesting for Python code solution done!')
         with open(save_path, 'w') as f:
-            f.write(response)
-        return response_wrapper.wrap(response)
+            f.write(code)
+        return code
 
+if __name__ == '__main__':
+    from PromptBuilder.GPTPromptBuilder import GPTPromptBuilder 
+    from ProblemSampler.APPSProblemSampler import APPSProblemSampler
+    client = GPTClient()
+    sampler = APPSProblemSampler()
+    builder = GPTPromptBuilder()
+    for data in sampler.sample_from_head(2):
+        client.request(
+            task_name      = f'apps_{data.problem_id}',        
+            model_name     = 'gpt-3.5-turbo-0301',
+            question       = data.question,
+            starter_code   = data.starter_code, 
+            save_path      = f'apps_{data.problem_id}.py',
+            prompt_builder = builder
+        )

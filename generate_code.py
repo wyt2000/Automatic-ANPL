@@ -21,9 +21,11 @@ if __name__ == '__main__':
 
     save_dir = 'gpt_apps_code/'
     mkdir_override(save_dir)
-    num_samples = 200
-    num_workers = 16 
-    num_problems = len(sampler.apps)
+
+    rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
+    num_samples  = 200
+    num_workers  = 32
+    num_problems = 200 
     logger.debug(f"Generating {num_samples} programs for {num_problems} problems...")
 
     for data in sampler.sample_from_head(num_problems):
@@ -34,21 +36,25 @@ if __name__ == '__main__':
             for i in range(num_samples):
                 task = asyncio.create_task(
                     request(
-                        semaphone      = semaphone,
-                        code_list      = code_list,
-                        idx            = i,
-                        client         = client,
-                        task_name      = f'gpt_{data.problem_id}_{i}', 
-                        model_name     = 'gpt-3.5-turbo-0301',
-                        question       = data.question,
-                        starter_code   = data.starter_code, 
-                        save_dir       = None,
-                        prompt_builder = builder
+                        semaphone        = semaphone,
+                        code_list        = code_list,
+                        idx              = i,
+                        client           = client,
+                        task_name        = f'gpt_{data.problem_id}_{i}', 
+                        model_name       = 'gpt-3.5-turbo-0301',
+                        question         = data.question,
+                        starter_code     = data.starter_code, 
+                        save_dir         = None,
+                        prompt_builder   = builder,
+                        delay_in_seconds = 60.0 / (rate_limit / num_workers)
                     )
                 )
                 tasks.append(task)
             for task in tasks:
-                await task
+                try:
+                    await task
+                except Exception as err:
+                    logger.exception(err)
             with open(pathlib.Path(save_dir, f'gpt_{data.problem_id}.json'), 'w') as f:
                 f.write(json.dumps(code_list))
         asyncio.run(batch_tasks())

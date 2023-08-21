@@ -10,9 +10,11 @@ Propose a clever and efficient high-level solution for this problem. Consider al
 Some common strategies include:
     Constructive algorithms, Binary search, Depth-first search (DFS) and similar algorithms, Dynamic programming, Bitmasks, Brute force, Greedy algorithms, Graphs, Two pointers, Trees, Geometry, Graph matchings, Hashing, Probabilities, Data structures, Sortings, Games, Number theory, Combinatorics, Divide and conquer, Disjoint set union (DSU), Expression parsing
 
-    Write out your reasoning first, and then describe your high-level solution and explain why it is correct.
-    \"\"\"
-    Let's think step by step to come up with a clever algorithm."""
+Write out your reasoning first, and then describe your high-level solution and explain why it is correct.
+\"\"\"
+Let's think step by step to come up with a clever algorithm.
+Your response should contains at most 1000 tokens.
+"""
 
 _translation_prompt = """-----Translation-----
 Translate the follwing solution plan into Python code:
@@ -21,7 +23,7 @@ Translate the follwing solution plan into Python code:
 \"\"\"
 """
 
-_code_description = """You should only return the pure code. Omit explanations or any additional text. """
+_code_description = """You should only return the pure code. Omit explanations or any additional text. Your code should contains at most 1000 tokens."""
 
 _io_description = """Your code should handle the inputs from stdin, and print the output to stdout, so you should return the fullcode including the part handles I/O."""
 

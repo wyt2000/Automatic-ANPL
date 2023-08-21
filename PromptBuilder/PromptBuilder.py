@@ -23,8 +23,6 @@ class AbstractPromptBuilder(ABC):
         return [{"role": "system", "content": self.background}]
 
     def get_response(self, response, messages):
-        status_code = response["choices"][0]["finish_reason"]
-        assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]
         messages.append({"role": "assistant", "content": response})
         return response

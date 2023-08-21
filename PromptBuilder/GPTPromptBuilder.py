@@ -1,6 +1,6 @@
 from .PromptBuilder import AbstractPromptBuilder 
 
-_background = """You are an expert of Python programming language."""
+_background = """You are an expert of Python with significant prior experience in competitive programming."""
 
 _solution_prompt = """{question}
 -----Solution-----
@@ -19,7 +19,11 @@ Translate the follwing solution plan into Python code:
 \"\"\"
 {solution_plan}
 \"\"\"
-You should only return the pure code. Omit explanations or any additional text. """
+"""
+
+_code_description = """You should only return the pure code. Omit explanations or any additional text. """
+
+_io_description = """Your code should handle the inputs from stdin, and print the output to stdout, so you should return the fullcode including the part handles I/O."""
 
 _start_code = """Your code should start with {starter_code}."""
 
@@ -41,7 +45,13 @@ class GPTPromptBuilder(AbstractPromptBuilder):
         msg = _translation_prompt.replace("{solution_plan}", solution_plan)
         if starter_code:
             msg += _starter_code.replace("{starter_code}", starter_code)
+        else:
+            msg += _io_description
+        msg += _code_description
         self.message.append({"role": "user", "content": msg})
         return self.message
+    
+    def extract_code(self, code: str):
+        return code.strip('```python')
 
    

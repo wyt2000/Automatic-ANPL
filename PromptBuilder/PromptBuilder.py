@@ -23,11 +23,16 @@ class AbstractPromptBuilder(ABC):
     @abstractmethod
     def build_translation_request(self, solution_plan, starter_code):
         pass
-    
+
     def get_response(self, response):
         status_code = response["choices"][0]["finish_reason"]
         assert status_code == "stop", f"The status code was {status_code}."
         response = response["choices"][0]["message"]["content"]
         self.message.append({"role": "assistant", "content": response})
         return response
+
+    @abstractmethod
+    def extract_code(self, code: str):
+        pass
+
 

@@ -10,3 +10,4 @@
 !logging.conf
 __pycache__
 key.txt
+test_*

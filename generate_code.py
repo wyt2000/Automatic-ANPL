@@ -22,7 +22,7 @@ if __name__ == '__main__':
     save_dir = 'gpt_apps_code/'
     mkdir_override(save_dir)
     num_samples = 200
-    num_workers = 32 
+    num_workers = 16 
     num_problems = len(sampler.apps)
     logger.debug(f"Generating {num_samples} programs for {num_problems} problems...")
 

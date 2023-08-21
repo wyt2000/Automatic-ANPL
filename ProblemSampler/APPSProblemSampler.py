@@ -27,17 +27,17 @@ class APPSProblemSampler(ProblemSampler):
 
     def __init__(self, path='codeparrot/apps', split='test', difficulties=['all']):
         datasets.config.DEFAULT_MAX_BATCH_SIZE = 10
-        self._apps = load_dataset(path=path, split=split, difficulties=difficulties)
+        self.apps = load_dataset(path=path, split=split, difficulties=difficulties)
 
     def sample(self, data_indices):
         for idx in data_indices: 
-            yield APPSProblemData(self._apps[idx])
+            yield APPSProblemData(self.apps[idx])
 
     def sample_from_head(self, num_problems):
         yield from self.sample(range(num_problems))
 
     def sample_randomly(self, num_problems):
-        yield from self.sample(random.sample(range(len(self._apps)), num_problems))
+        yield from self.sample(random.sample(range(len(self.apps)), num_problems))
 
 if __name__ == '__main__':
     sampler = APPSProblemSampler()

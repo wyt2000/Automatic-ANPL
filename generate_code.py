@@ -14,15 +14,17 @@ async def request(semaphone, code_list, idx, client, **kwargs):
 
 if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
+    logger = logging.getLogger('main')
     client = GPTClient()
-    sampler = APPSProblemSampler()
+    sampler = APPSProblemSampler(difficulties=['competition'])
     builder = GPTPromptBuilder()
 
     save_dir = 'gpt_apps_code/'
     mkdir_override(save_dir)
-    num_samples = 20
-    num_workers = 8
-    num_problems = 5
+    num_samples = 200
+    num_workers = 32 
+    num_problems = len(sampler.apps)
+    logger.debug(f"Generating {num_samples} programs for {num_problems} problems...")
 
     for data in sampler.sample_from_head(num_problems):
         semaphone = asyncio.Semaphore(num_workers)

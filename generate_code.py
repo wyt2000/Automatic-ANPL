@@ -7,6 +7,7 @@ import logging.config
 import asyncio
 import json
 import pathlib
+import time
 
 async def request(semaphone, code_list, idx, client, **kwargs):
     async with semaphone:
@@ -19,20 +20,21 @@ if __name__ == '__main__':
     sampler = APPSProblemSampler(difficulties=['competition'])
     builder = GPTPromptBuilder()
 
-    save_dir = 'gpt_apps_code/'
+    timestr = time.strftime("%m%d%H%M%S")
+    save_dir = f'gpt_apps_code_{timestr}/'
     mkdir_override(save_dir)
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
-    num_samples  = 200
-    num_workers  = 32
-    num_problems = 200 
+    num_samples  = 8
+    num_workers  = 4 
+    num_problems = 1 
     logger.debug(f"Generating {num_samples} programs for {num_problems} problems...")
 
     for data in sampler.sample_from_head(num_problems):
         semaphone = asyncio.Semaphore(num_workers)
         async def batch_tasks():
             tasks = []
-            code_list = [None] * num_samples
+            code_list = [''] * num_samples
             for i in range(num_samples):
                 task = asyncio.create_task(
                     request(

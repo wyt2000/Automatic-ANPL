@@ -3,7 +3,7 @@ import json
 from apps_metric.apps_metric import apps_metric
 
 def get_codes(target_dir, prefix, num_problems):
-    generations = [None] * num_problems
+    generations = [[]] * num_problems
     for i in range(num_problems):
         path = pathlib.Path(target_dir, f'{prefix}_{i}.json')
         with open(path, 'r') as f:

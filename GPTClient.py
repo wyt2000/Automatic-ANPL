@@ -26,13 +26,12 @@ class GPTClient:
         '''
         return [response["message"]["content"] for response in responses["choices"]]
 
-    async def request_for_solution(self,
+    async def request_for_solutions(self,
                                    task_name: str,
-                                   completion_kwargs: dict = {}, 
                                    question: str,
                                    prompter: AbstractPrompter,
-                                   num_solutions: int,
                                    save_dir: str,
+                                   completion_kwargs: dict = {}, 
                                    delay_in_seconds: int = 1.0):
         '''
         Request from chatGPT to get high-level solution for question.
@@ -40,16 +39,16 @@ class GPTClient:
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
             messages = [
-                {"role": "system", "content": prompter.get_background()}
+                {"role": "system", "content": prompter.get_background()},
                 {"role": "user", "content": prompter.get_solution_prompt(question=question)}
             ]
-            self.logger.debug(f'{task_name}: Requesting for high-level solution from {model_name}...')
+            self.logger.debug(f'{task_name}: Requesting for high-level solution...')
             responses = await self.delayed_completion(
                 delay_in_seconds = delay_in_seconds,
                 messages         = messages,
                 **completion_kwargs
             )
-            responses = get_response_list(responses)
+            responses = self.get_response_list(responses)
             self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
             for i, response in enumerate(responses):
                 with open(pathlib.Path(save_dir, f'{task_name}_solution_{i}.txt'), 'w') as f:
@@ -57,15 +56,14 @@ class GPTClient:
             return responses
 
     # TODO: Unify request api.
-    async def request_for_code(self,
+    async def request_for_codes(self,
                                task_name: str,
-                               completion_kwargs: dict = {}, 
                                starter_code: str,
                                solutions: list[str],
                                suffix_name: str,
                                prompter: AbstractPrompter,
-                               num_solutions: int,
                                save_dir: str,
+                               completion_kwargs: dict = {}, 
                                delay_in_seconds: int = 1.0):
         '''
         Request from chatGPT to get code for high-level solution.
@@ -76,16 +74,16 @@ class GPTClient:
             codes = []
             for i, solution in enumerate(solutions):
                 messages = [
-                    {"role": "system", "content": prompter.get_background()}
+                    {"role": "system", "content": prompter.get_background()},
                     {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
                 ]
-                self.logger.debug(f'{task_name}: Requesting for target code of solution {i} from {model_name}...')
+                self.logger.debug(f'{task_name}: Requesting for target code of solution {i}...')
                 responses = await self.delayed_completion(
                     delay_in_seconds = delay_in_seconds,
                     messages         = messages,
                     **completion_kwargs
                 )
-                response = get_response_list(responses)[0]
+                response = self.get_response_list(responses)[0]
                 self.logger.debug(f'{task_name}: Requesting for target code of solution {i} done!')
                 with open(pathlib.Path(save_dir, f'{task_name}_{i}.{suffix_name}'), 'w') as f:
                     f.write(response)

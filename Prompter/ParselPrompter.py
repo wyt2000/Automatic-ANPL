@@ -9,7 +9,7 @@ class ParselPrompter(AbstractPrompter):
         return _solution_prompt.format(**kwargs)
 
     def get_translation_prompt(self, **kwargs):
-        return _translation_prompt.format(**kwargs) + self.get_code_desciption(**kwargs)
+        return _translation_prompt.format(**kwargs) + self.get_code_description(**kwargs)
 
     def get_code_description(self, **kwargs):
         return _code_description.format(**kwargs)

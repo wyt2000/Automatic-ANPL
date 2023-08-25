@@ -1,26 +1,20 @@
-from .PromptBuilder import AbstractPromptBuilder 
+from .Prompter import AbstractPrompter
 
-class ParselPromptBuilder(AbstractPromptBuilder):
+class ParselPrompter(AbstractPrompter):
+    
+    def get_background(self, **kwargs):
+        return _background.format(**kwargs)
 
-    @property
-    def background(self):
-        return _background
+    def get_solution_prompt(self, **kwargs):
+        return _solution_prompt.format(**kwargs)
 
-    def build_solution_request(self, question, messages):
-        msg = _solution_prompt.format(question=question)
-        messages.append({"role": "user", "content": msg})
-        return messages 
+    def get_translation_prompt(self, **kwargs):
+        return _translation_prompt.format(**kwargs) + self.get_code_desciption(**kwargs)
 
-    def build_translation_request(self, solution_plan, starter_code, messages):
-        msg = _translation_prompt.format(solution_start=starter_code, solution_text=solution_plan)
-        msg += _code_description
-        messages.append({"role": "user", "content": msg})
-        return messages
+    def get_code_description(self, **kwargs):
+        return _code_description.format(**kwargs)
 
-    def extract_code(self, code: str):
-        return code
-
-_background = """You are an expert of Parsel Programming language with significant prior experience in competitive programming. """
+_background = """You are an expert of programming language with significant prior experience in competitive programming. """
 
 _solution_prompt = """Question:
 {question}
@@ -120,14 +114,13 @@ There is only one top function in Parsel code, which has no indentation.
 Make sure that the top-level function matches the name of the function in the solution plan.
 
 # Translate the following solution plan into the above format:
-{solution_start}{solution_text}
+{starter_code}{solution}
 
 TRANSLATE to Parsel.
-You should return Parsel code consist with the grammar above, not Python code!
 \"\"\"
 
 """
 
-_code_description = """You should only return the pure code. Omit explanations or any additional text."""
-
+_code_description = """You should return Parsel code consist with Parsel grammar mentioned above, not Python code! 
+You should only return the pure code. Omit explanations or any additional text."""
 

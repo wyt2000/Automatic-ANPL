@@ -5,7 +5,7 @@ import aiohttp
 import pathlib
 import json
 import asyncio
-from PromptBuilder.PromptBuilder import AbstractPromptBuilder
+from Prompter.Prompter import AbstractPrompter
 
 class GPTClient:
 
@@ -13,44 +13,83 @@ class GPTClient:
         self.logger = logging.getLogger(__name__)
 
     async def delayed_completion(self, delay_in_seconds, **kwargs):
+        '''
+        Delay `delay_in_seconds`, then async call `ChatCompletion`.
+        '''
         await asyncio.sleep(delay_in_seconds)
         response = await openai.ChatCompletion.acreate(**kwargs)
         return response
 
-    async def request(self, task_name, model_name, question, starter_code, prompt_builder: AbstractPromptBuilder, save_dir=None, delay_in_seconds=1.0):
+    def get_response_list(self, responses):
+        '''
+        Convert GPT responses to list[str]
+        '''
+        return [response["message"]["content"] for response in responses["choices"]]
+
+    async def request_for_solution(self,
+                                   task_name: str,
+                                   completion_kwargs: dict = {}, 
+                                   question: str,
+                                   prompter: AbstractPrompter,
+                                   num_solutions: int,
+                                   save_dir: str,
+                                   delay_in_seconds: int = 1.0):
+        '''
+        Request from chatGPT to get high-level solution for question.
+        '''
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
-            # Solution Stage
-            messages = prompt_builder.build_background()
-            messages = prompt_builder.build_solution_request(question, messages)
+            messages = [
+                {"role": "system", "content": prompter.get_background()}
+                {"role": "user", "content": prompter.get_solution_prompt(question=question)}
+            ]
             self.logger.debug(f'{task_name}: Requesting for high-level solution from {model_name}...')
-            response = await self.delayed_completion(
-                    delay_in_seconds = delay_in_seconds,
-                    model            = model_name,
-                    messages         = messages,
-                    temperature      = 0.6
+            responses = await self.delayed_completion(
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
             )
-            solution_plan = prompt_builder.get_response(response, messages)
-            if save_dir is not None:
-                with open(pathlib.Path(save_dir, f'{task_name}.plan'), 'w') as f:
-                    f.write(solution_plan)
+            responses = get_response_list(responses)
             self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
-            # Translation Stage
-            messages = prompt_builder.build_translation_request(solution_plan, starter_code, messages)
-            self.logger.debug(f'{task_name}: Requesting for code from {model_name}...')
-            response = await self.delayed_completion(
+            for i, response in enumerate(responses):
+                with open(pathlib.Path(save_dir, f'{task_name}_solution_{i}.txt'), 'w') as f:
+                    f.write(response)
+            return responses
+
+    # TODO: Unify request api.
+    async def request_for_code(self,
+                               task_name: str,
+                               completion_kwargs: dict = {}, 
+                               starter_code: str,
+                               solutions: list[str],
+                               suffix_name: str,
+                               prompter: AbstractPrompter,
+                               num_solutions: int,
+                               save_dir: str,
+                               delay_in_seconds: int = 1.0):
+        '''
+        Request from chatGPT to get code for high-level solution.
+        '''
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            openai.aiosession.set(session)
+            #TODO?: They can be async, but I think one task should use only one coroutine.
+            codes = []
+            for i, solution in enumerate(solutions):
+                messages = [
+                    {"role": "system", "content": prompter.get_background()}
+                    {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
+                ]
+                self.logger.debug(f'{task_name}: Requesting for target code of solution {i} from {model_name}...')
+                responses = await self.delayed_completion(
                     delay_in_seconds = delay_in_seconds,
-                    model            = model_name,
                     messages         = messages,
-                    temperature      = 0.2,
-                    presence_penalty = 0.1,
-                    logit_bias       = {755:-100} # ban `def` to avoid generate python code
-            )
-            code = prompt_builder.get_response(response, messages)
-            code = prompt_builder.extract_code(code)
-            self.logger.debug(f'{task_name}: Requesting for code done!')
-            if save_dir is not None:
-                with open(pathlib.Path(save_dir, f'{task_name}.ss'), 'w') as f:
-                    f.write(code)
-            return code
+                    **completion_kwargs
+                )
+                response = get_response_list(responses)[0]
+                self.logger.debug(f'{task_name}: Requesting for target code of solution {i} done!')
+                with open(pathlib.Path(save_dir, f'{task_name}_{i}.{suffix_name}'), 'w') as f:
+                    f.write(response)
+                codes.append(response)
+            return codes
+
 

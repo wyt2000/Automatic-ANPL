@@ -2,7 +2,8 @@ from .PromptBuilder import AbstractPromptBuilder
 
 _background = """You are an expert of Python with significant prior experience in competitive programming."""
 
-_solution_prompt = """{question}
+_solution_prompt = """Question:
+{question}
 -----Solution-----
 
 Propose a clever and efficient high-level solution for this problem. Consider all edge cases and failure modes.
@@ -27,7 +28,7 @@ _code_description = """You should only return the pure code. Omit explanations o
 
 _io_description = """Your code should handle the inputs from stdin, and print the output to stdout, so you should return the fullcode including the part handles I/O."""
 
-_start_code = """Your code should start with {starter_code}."""
+_starter_code = """Your code should start with {starter_code}."""
 
 class GPTPromptBuilder(AbstractPromptBuilder):
 
@@ -36,14 +37,14 @@ class GPTPromptBuilder(AbstractPromptBuilder):
         return _background
 
     def build_solution_request(self, question, messages):
-        msg = _solution_prompt.replace("{question}", question)
+        msg = _solution_prompt.format(question=question)
         messages.append({"role": "user", "content": msg})
         return messages 
     
     def build_translation_request(self, solution_plan, starter_code, messages):
-        msg = _translation_prompt.replace("{solution_plan}", solution_plan)
+        msg = _translation_prompt.format(solution_plan=solution_plan)
         if starter_code:
-            msg += _starter_code.replace("{starter_code}", starter_code)
+            msg += _starter_code.format(starter_code=starter_code)
         else:
             msg += _io_description
         msg += _code_description

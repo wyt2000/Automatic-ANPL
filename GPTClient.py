@@ -31,6 +31,9 @@ class GPTClient:
                     temperature      = 0.6
             )
             solution_plan = prompt_builder.get_response(response, messages)
+            if save_dir is not None:
+                with open(pathlib.Path(save_dir, f'{task_name}.plan'), 'w') as f:
+                    f.write(solution_plan)
             self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
             # Translation Stage
             messages = prompt_builder.build_translation_request(solution_plan, starter_code, messages)
@@ -40,13 +43,14 @@ class GPTClient:
                     model            = model_name,
                     messages         = messages,
                     temperature      = 0.2,
-                    presence_penalty = 0.1
+                    presence_penalty = 0.1,
+                    logit_bias       = {755:-100} # ban `def` to avoid generate python code
             )
             code = prompt_builder.get_response(response, messages)
             code = prompt_builder.extract_code(code)
-            self.logger.debug(f'{task_name}: Requesting for code solution done!')
+            self.logger.debug(f'{task_name}: Requesting for code done!')
             if save_dir is not None:
-                with open(pathlib.Path(save_dir, f'{task_name}.py'), 'w') as f:
+                with open(pathlib.Path(save_dir, f'{task_name}.ss'), 'w') as f:
                     f.write(code)
             return code
 

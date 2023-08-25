@@ -1,5 +1,6 @@
 from GPTClient import GPTClient
 from PromptBuilder.GPTPromptBuilder import GPTPromptBuilder 
+from PromptBuilder.ParselPromptBuilder import ParselPromptBuilder
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler
 from utils import mkdir_override
 import logging 
@@ -17,16 +18,16 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('main')
     client = GPTClient()
-    sampler = APPSProblemSampler(difficulties=['competition'])
-    builder = GPTPromptBuilder()
+    sampler = APPSProblemSampler(difficulties=['all'])
+    builder = ParselPromptBuilder()
 
     timestr = time.strftime("%m%d%H%M%S")
-    save_dir = f'gpt_apps_code_{timestr}/'
+    save_dir = f'parsel_apps_code_{timestr}/'
     mkdir_override(save_dir)
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
-    num_samples  = 8
-    num_workers  = 4 
+    num_samples  = 1
+    num_workers  = 1 
     num_problems = 1 
     logger.debug(f"Generating {num_samples} programs for {num_problems} problems...")
 
@@ -46,7 +47,7 @@ if __name__ == '__main__':
                         model_name       = 'gpt-3.5-turbo-0301',
                         question         = data.question,
                         starter_code     = data.starter_code, 
-                        save_dir         = None,
+                        save_dir         = save_dir,
                         prompt_builder   = builder,
                         delay_in_seconds = 60.0 / (rate_limit / num_workers)
                     )
@@ -57,7 +58,8 @@ if __name__ == '__main__':
                     await task
                 except Exception as err:
                     logger.exception(err)
-            with open(pathlib.Path(save_dir, f'gpt_{data.problem_id}.json'), 'w') as f:
-                f.write(json.dumps(code_list))
+            if save_dir is None:
+                with open(pathlib.Path(save_dir, f'parsel_{data.problem_id}.json'), 'w') as f:
+                    f.write(json.dumps(code_list))
         asyncio.run(batch_tasks())
 

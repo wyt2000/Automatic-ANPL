@@ -51,7 +51,7 @@ class GPTClient:
             responses = self.get_response_list(responses)
             self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
             for i, response in enumerate(responses):
-                with open(pathlib.Path(save_dir, f'{task_name}_solution_{i}.txt'), 'w') as f:
+                with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
                     f.write(response)
             return responses
 

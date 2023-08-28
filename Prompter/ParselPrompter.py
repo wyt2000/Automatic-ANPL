@@ -29,7 +29,7 @@ Let's think step by step to come up with a clever algorithm.
 You should only output exactly high-level solution for this problem. You shouldn't output any pseudocode or code.
 """
 
-_translation_prompt = """-----Translation-----
+_translation_prompt = """
 The following are examples of Parsel programming language:
 # Here is an example calculating the probability of landing on the same character in a random shift of an input string, based on the following problem:
 # Vasya and Kolya play a game with a string, using the following rules. Initially, Kolya creates a string s, consisting of small English letters, and uniformly at random chooses an integer k from a segment [0, len(s) - 1]. He tells Vasya this string s, and then shifts it k letters to the left, i.e. creates a new string t = s_k + 1s_k + 2... s_ns_1s_2... s_k. Vasya does not know the integer k nor the string t, but he wants to guess the integer k. To do this, he asks Kolya to tell him the first letter of the new string, and then, after he sees it, open one more letter on some position, which Vasya can choose.
@@ -41,9 +41,8 @@ generate_cyclic_shifts(input_str): Calculates the average number of unique chara
     compute_a_and_letter_pos(input_str): Generates the str_as_number_list and letter_pos lists. str_as_number_list is a list of integers that is used to store the character values of the input string. str_as_number_list is initialized as a list of 0s for twice the length of the input string. The values are calculated by taking the ASCII value of each character in the string and subtracting the ASCII value of the character 'a'. letter_pos is a list of lists, with each sublist containing the indices at which a particular character appears in the input string.
     compute_unique_characters(c, str_as_number_list, letter_pos) -> ans: Calculates the maximum number of unique characters in all substrings (for k=1 to length) that start with the character represented by c. letter_pos is a list of lists, with each sublist containing the indices at which a character appears in the input string. str_as_number_list is a list of integers that is used to store the character values of the input string.
         compute_unique_characters_for_k(c, k, str_as_number_list, letter_pos): Create a counts list of zeros for each of the 26 alphabetical characters. For each i in the sublist of positions of letter_pos[c], increment counts at str_as_number_list[i + k]. Return the number of counts which are exactly one.
-i   to_output_str(ans, input_str): Returns a string representation of ans divided by the length of the input string.
+    to_output_str(ans, input_str): Returns a string representation of ans divided by the length of the input string.
 \"\"\"
-(6 lines)
 
 # And here is an example identifying the largest binary number according to the following rules:
 # The Little Elephant has an integer a, written in the binary notation. He wants to write this number on a piece of paper.
@@ -55,7 +54,6 @@ largest_binary_number(input_str): Returns the largest binary number that can be 
     remove_zero(binary_str): Remove the first zero from the input string.
     to_output_str(bigger_str): Returns the bigger string.
 \"\"\"
-(4 lines)
 
 # Here is an example of the format applied to identifying the winner of the following game:
 # It is so boring in the summer holiday, isn't it? So Alice and Bob have invented a new game to play. The rules are as follows. First, they get a set of n distinct integers. And then they take turns to make the following moves. During each move, either Alice or Bob (the player whose turn is the current) can choose two distinct integers x and y from the set, such that the set doesn't contain their absolute difference |x - y|. Then this player adds integer |x - y| to the set (so, the size of the set increases by one).
@@ -67,7 +65,6 @@ identify_winner(input_str): Returns the winner of the game.
         all_gcd(l): Returns the greatest common divisor of all elements in the list
     to_output_str(num_moves): Returns the string 'Alice' if the number of moves is odd and 'Bob' if the number of moves is even
 \"\"\"
-(5 lines)
 
 # Limak is a little bear who loves to play. Today he is playing by destroying block towers. He built n towers in a row. The i-th tower is made of h_i identical blocks. For clarification see picture for the first sample.
 # Limak will repeat the following operation till everything is destroyed.
@@ -82,7 +79,6 @@ destroy_towers(input_str): Returns the number of operations it takes to destroy 
     min_list(l1, l2): Return a list of the minimum of the corresponding elements of l1 and l2
     to_output_str(min_list): Return the string representation of the maximum element in the list
 \"\"\"
-(7 lines)
 
 # Alex decided to go on a touristic trip over the country.
 # For simplicity let's assume that the country has $n$ cities and $m$ bidirectional roads connecting them. Alex lives in city $s$ and initially located in it. To compare different cities Alex assigned each city a score $w_i$ which is as high as interesting city seems to Alex.
@@ -97,29 +93,10 @@ max_score(input_str): Simple function returning the maximum score Alex can get.
         pop_leaf(neighbors, degrees, leaves, root): Pop off a leaf. Set parent to sole neighbor of the leaf and delete the leaf from the neighbors dictionary. Decrement the parent's degree. If the parent is not the root and has degree 1, add it to the leaves. Return the leaf and parent.
     to_output_str(scores, neighbors, root, max_extra): Returns the string of the maximum score Alex can get. If the root isn't in neighbors, return the score of the root. Otherwise, this is the sum of the scores of the cities left in neighbors, plus the returned encountered max_extra.
 \"\"\"
-(7 lines)
-
-You will translate a solution plan for a problem into Parsel. Each line should contain either a function description or a function reference.
-A function description should be of the form:
-```
-function_name(arg1, arg2): Description of the function
-```
-A function reference should be of the form:
-```
-function_name
-```
-Use indentation to indicate dependencies between functions. For example, if function A calls function B, then function B should be indented under function A.
-There is only one top function in Parsel code, which has no indentation.
-Make sure that the top-level function matches the name of the function in the solution plan.
 
 # Translate the following solution plan into the above format:
-{starter_code}{solution}
+{solution}
+# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function!"""
 
-TRANSLATE to Parsel.
-\"\"\"
-
-"""
-
-_code_description = """You should return Parsel code consist with Parsel grammar mentioned above, not Python code! 
-You should only return the pure code. Omit explanations or any additional text."""
+_code_description = """Omit explanations or any additional text."""
 

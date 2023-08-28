@@ -42,8 +42,8 @@ if __name__ == '__main__':
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
     num_samples  = 2 
-    num_workers  = 2 
-    num_problems = 5
+    num_workers  = 4 
+    num_problems = 10 
     delay_in_seconds = 60.0 / (rate_limit / num_workers)
     logger.debug(f"Generating {num_samples} target programs for {num_problems} problems...")
 

@@ -5,12 +5,14 @@ import aiohttp
 import pathlib
 import json
 import asyncio
+import re
 from Prompter.Prompter import AbstractPrompter
 
 class GPTClient:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.pattern = re.compile("^\s*.+\(.*\).*\:")
 
     async def delayed_completion(self, delay_in_seconds, **kwargs):
         '''
@@ -25,6 +27,11 @@ class GPTClient:
         Convert GPT responses to list[str]
         '''
         return [response["message"]["content"] for response in responses["choices"]]
+
+    def extract_code(self, response):
+        code = response.split('\n')
+        code = '\n'.join([line for line in code if self.pattern.match(line)])
+        return code
 
     async def request_for_solutions(self,
                                    task_name: str,
@@ -84,6 +91,7 @@ class GPTClient:
                     **completion_kwargs
                 )
                 response = self.get_response_list(responses)[0]
+                response = self.extract_code(response)
                 self.logger.debug(f'{task_name}: Requesting for target code of solution {i} done!')
                 with open(pathlib.Path(save_dir, f'{task_name}_{i}.{suffix_name}'), 'w') as f:
                     f.write(response)

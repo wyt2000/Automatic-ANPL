@@ -1,6 +1,6 @@
 import os
 import traceback
-from parsel import parsel, codex, graph
+from .parsel import parsel, codex, graph
 
 _io_template = '''
 from sys import stdin

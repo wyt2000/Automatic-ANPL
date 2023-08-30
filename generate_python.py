@@ -51,7 +51,7 @@ if __name__ == '__main__':
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)
     mkdir_override(log_dir)
-    logger.debug(f"Synthesizing code from {begin} to {end}: use {n} parsel code, each code generate {k} python code for each function!")
+    logger.debug(f"Synthesizing {end - begin} problems : use {n} parsel code, generate {k} python code for each function!")
 
     for task in tasks:
         generate(task, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)

@@ -3,4 +3,4 @@
 	url = https://github.com/wyt2000/apps_metric.git
 [submodule "Synthesizer/parsel"]
 	path = Synthesizer/parsel
-	url = git@github.com:wyt2000/parsel.git
+	url = https://github.com/wyt2000/parsel.git

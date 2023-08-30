@@ -34,12 +34,12 @@ class GPTClient:
         return code
 
     async def request_for_solutions(self,
-                                   task_name: str,
-                                   question: str,
-                                   prompter: AbstractPrompter,
-                                   save_dir: str,
-                                   completion_kwargs: dict = {}, 
-                                   delay_in_seconds: int = 1.0):
+                                    task_name: str,
+                                    question: str,
+                                    prompter: AbstractPrompter,
+                                    save_dir: str,
+                                    completion_kwargs: dict = {}, 
+                                    delay_in_seconds: int = 1.0):
         '''
         Request from chatGPT to get high-level solution for question.
         '''
@@ -64,38 +64,34 @@ class GPTClient:
 
     # TODO: Unify request api.
     async def request_for_codes(self,
-                               task_name: str,
-                               starter_code: str,
-                               solutions: list[str],
-                               suffix_name: str,
-                               prompter: AbstractPrompter,
-                               save_dir: str,
-                               completion_kwargs: dict = {}, 
-                               delay_in_seconds: int = 1.0):
+                                task_name: str,
+                                starter_code: str,
+                                solution: str,
+                                suffix_name: str,
+                                prompter: AbstractPrompter,
+                                save_dir: str,
+                                completion_kwargs: dict = {}, 
+                                delay_in_seconds: int = 1.0):
         '''
         Request from chatGPT to get code for high-level solution.
         '''
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
-            #TODO?: They can be async, but I think one task should use only one coroutine.
-            codes = []
-            for i, solution in enumerate(solutions):
-                messages = [
-                    {"role": "system", "content": prompter.get_background()},
-                    {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
-                ]
-                self.logger.debug(f'{task_name}: Requesting for target code of solution {i}...')
-                responses = await self.delayed_completion(
-                    delay_in_seconds = delay_in_seconds,
-                    messages         = messages,
-                    **completion_kwargs
-                )
-                response = self.get_response_list(responses)[0]
-                response = self.extract_code(response)
-                self.logger.debug(f'{task_name}: Requesting for target code of solution {i} done!')
-                with open(pathlib.Path(save_dir, f'{task_name}_{i}.{suffix_name}'), 'w') as f:
-                    f.write(response)
-                codes.append(response)
-            return codes
+            messages = [
+                {"role": "system", "content": prompter.get_background()},
+                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
+            ]
+            self.logger.debug(f'{task_name}: Requesting for target code ...')
+            responses = await self.delayed_completion(
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
+            )
+            response = self.get_response_list(responses)[0]
+            response = self.extract_code(response)
+            self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
+            with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
+                f.write(response)
+            return response
 
 

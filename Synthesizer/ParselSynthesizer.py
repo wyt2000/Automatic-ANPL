@@ -2,6 +2,14 @@ import os
 import traceback
 from .parsel import parsel, codex, graph
 
+exec_imports = (
+    "import sys\nimport time\nimport itertools\nfrom itertools import accumulate, product, permutations, "
+    "combinations\nimport collections\nfrom collections import Counter, OrderedDict, deque, defaultdict, "
+    "ChainMap\nimport functools\nfrom functools import lru_cache\nimport math\nfrom math import sqrt, sin, cos, tan, ceil, "
+    "fabs, floor, gcd, exp, log, log2\nimport fractions\nfrom typing import List, Tuple\nimport numpy as "
+    "np\nimport random\nimport heapq\n"
+)
+
 _io_template = '''
 from sys import stdin
 
@@ -15,7 +23,7 @@ class ParselSynthesizer:
 
     # TODO: handle starter code.
     def transform(self, target_code, root):
-        return target_code + _io_template.format(root=root)
+        return exec_imports + target_code + _io_template.format(root=root)
 
     def synthesize(self,
                    parsel_code: str,

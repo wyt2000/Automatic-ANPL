@@ -12,7 +12,7 @@ class GPTClient:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.pattern = re.compile("^\s*.+\(.*\).*\:")
+        self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:")
 
     async def delayed_completion(self, delay_in_seconds, **kwargs):
         '''

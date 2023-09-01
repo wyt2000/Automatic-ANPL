@@ -96,7 +96,7 @@ max_score(input_str): Simple function returning the maximum score Alex can get.
 
 # Translate the following solution plan into the above format:
 {solution}
-# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function!"""
+# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! There should be only one top function in Parsel code, which has no indentation. You shouldn't output any Python code! You shouldn't copy the examples above!"""
 
 _code_description = """Omit explanations or any additional text."""
 

@@ -53,16 +53,16 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
 
-    input_dir = args.path 
-    save_dir = input_dir.replace("code", "result")
-    cache_dir = input_dir.replace("code", "cache")
-    log_dir = input_dir.replace("code", "log")
     suffix_name = "ss"
     begin = args.begin 
     end = args.end 
     tasks = [f"apps_{i}" for i in range(begin, end + 1)]
     n = args.num_codes
     k = args.num_completions
+    input_dir = args.path 
+    cache_dir = input_dir.replace("code", "cache")
+    log_dir = input_dir.replace("code", "log")
+    save_dir = Path(input_dir.replace("code", "result"), f"{n}x{k}")
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)
     mkdir_override(log_dir)

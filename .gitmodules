@@ -1,6 +1,6 @@
 [submodule "apps_metric"]
 	path = apps_metric
-	url = https://github.com/wyt2000/apps_metric.git
+	url = git@github.com:wyt2000/apps_metric.git
 [submodule "Synthesizer/parsel"]
 	path = Synthesizer/parsel
-	url = https://github.com/wyt2000/parsel.git
+	url = git@github.com:wyt2000/parsel.git

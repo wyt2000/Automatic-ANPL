@@ -1,6 +1,7 @@
 import os
 import traceback
 from .parsel import parsel, codex, graph
+from .Synthesizer import AbstractSynthesizer
 
 exec_imports = (
     "import sys\nimport time\nimport itertools\nfrom itertools import accumulate, product, permutations, "
@@ -19,7 +20,7 @@ for line in stdin:
 print({root}(inp))
 '''
 
-class ParselSynthesizer:
+class ParselSynthesizer(AbstractSynthesizer):
 
     # TODO: handle starter code.
     def transform(self, target_code, root):

@@ -12,8 +12,10 @@ def get_codes(target_dir: str,
     for path in paths:
         name = path.stem.split('_')
         problem_id = int(name[1])
+        if problem_id - 3000 >= num_problems: continue
         code_id = int(name[2])
         with open(path, 'r') as f:
+            s = generations[problem_id - 3000][code_id]
             generations[problem_id - 3000][code_id] = f.read()
     return generations
 
@@ -28,4 +30,9 @@ if __name__ == '__main__':
     generations = get_codes(args.target, args.num_problems, args.num_codes, args.num_completions)
     results = apps_metric().compute(predictions=generations, k_list=[args.num_codes], level="competition")
     print(results)
+
+    #for i in range(8):
+    #    gens = [[gen[i]] for gen in generations]
+    #    results = apps_metric().compute(predictions=gens, k_list=[args.num_codes], level="competition")
+    #    print(results)
 

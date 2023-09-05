@@ -94,12 +94,23 @@ max_score(input_str: str) -> str: Simple function returning the maximum score Al
     to_output_str(scores: list[int], neighbors: dict[int, list[int]], root: int, max_extra:int ) -> str: Returns the string of the maximum score Alex can get. If the root isn't in neighbors, return the score of the root. Otherwise, this is the sum of the scores of the cities left in neighbors, plus the returned encountered max_extra.
 \"\"\"
 
-# If there are multiple lines in the output, you should highlight to return a multi-line str in your function's natural language definition, for example:
-    to_output_str(cnt: int, ans_list: list[int]) -> str: Returns a multi-line string. The first line is cnt, and the next line contains elements of ans_list, separated by spaces.
-
 # Translate the following solution plan into the above format:
 {solution}
-# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! There should be only one top function in Parsel code, which has no indentation. You shouldn't output any Python code! You shouldn't copy the examples above!
+
+# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function!
+
+# If there are multiple lines in the output format, you should highlight to return a multi-line str in your function's natural language definition, for example:
+# Output: 
+#   The first line contains one integer $n$ - total count of the answer.
+#   The second line contains $n$ integers speparated by spaces.
+# So the output function should be:
+    to_output_str(cnt: int, ans_list: list[int]) -> str: Returns a multi-line string. The first line is cnt, and the next line contains elements of ans_list, separated by spaces.
+
+# There should be only one top function in Parsel code, which has no indentation.
+
+# The natural language definition of the top function should be I/O descriptions of the program and calling relationships of other functions. It shouldn't be empty! 
+
+# You shouldn't output any Python code! You shouldn't copy the examples above!
 """
 
 _code_description = """Omit explanations or any additional text."""

@@ -12,7 +12,7 @@ class GPTClient:
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:")
+        self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:\s*(.*)")
 
     async def delayed_completion(self, delay_in_seconds, **kwargs):
         '''
@@ -29,9 +29,16 @@ class GPTClient:
         return [response["message"]["content"] for response in responses["choices"]]
 
     def extract_code(self, response):
-        code = response.split('\n')
-        code = '\n'.join([line for line in code if self.pattern.match(line)])
-        return code
+        code = []
+        last_desc = 'invalid'
+        for line in response.split('\n'):
+            if m := self.pattern.match(line):
+                last_desc = m.group(1)
+                code.append(line)
+            else:
+                if len(last_desc) == 0:
+                    code[-1] += ' ' + line.lstrip()
+        return '\n'.join(code)
 
     async def request_for_solutions(self,
                                     task_name: str,
@@ -87,11 +94,26 @@ class GPTClient:
                 messages         = messages,
                 **completion_kwargs
             )
-            response = self.get_response_list(responses)[0]
-            response = self.extract_code(response)
+            raw_response = self.get_response_list(responses)[0]
+            response = self.extract_code(raw_response)
             self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
             with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
                 f.write(response)
+            #with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}.raw'), 'w') as f:
+            #    f.write(raw_response)
             return response
 
-
+if __name__ == '__main__':
+    client = GPTClient()
+    code = '''main(a, b, c):
+    desc1
+    func(d, e, f):
+        desc2'''
+    code = client.extract_code(code)
+    print(code)
+    code = '''main(a, b, c): desc1
+    code1 
+    func(d, e, f):
+        desc2'''
+    code = client.extract_code(code)
+    print(code)

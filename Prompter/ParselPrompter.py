@@ -20,13 +20,13 @@ _solution_prompt = """Question:
 {question}
 -----Solution-----
 
-Propose a clever and efficient high-level solution for this problem. Consider all edge cases and failure modes.
+Describe the input and output format by copying from the question decription first, then propose a clever and efficient high-level solution for this problem. Consider all edge cases and failure modes.
 
 Some common strategies include:
     Constructive algorithms, Binary search, Depth-first search (DFS) and similar algorithms, Dynamic programming, Bitmasks, Brute force, Greedy algorithms, Graphs, Two pointers, Trees, Geometry, Graph matchings, Hashing, Probabilities, Data structures, Sortings, Games, Number theory, Combinatorics, Divide and conquer, Disjoint set union (DSU), Expression parsing
 
 Let's think step by step to come up with a clever algorithm.
-You should only output exactly high-level solution for this problem. You shouldn't output any pseudocode or code.
+You should only output I/O descriptions and high-level solution for this problem. You shouldn't output any pseudocode or code.
 """
 
 _translation_prompt = """
@@ -96,7 +96,12 @@ max_score(input_str: str) -> str: Simple function returning the maximum score Al
 
 # Translate the following solution plan into the above format:
 {solution}
-# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! There should be only one top function in Parsel code, which has no indentation. You shouldn't output any Python code! You shouldn't copy the examples above!"""
+
+# If there are multiple lines in the output description, you should highlight to return a multi-line str in your function description, for example:
+    to_output_str(cnt: int, ans_list: list[int]) -> str: Returns a multi-line string. The first line is cnt, and the next line contains elements of ans_list, separated by spaces.
+
+# You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! There should be only one top function in Parsel code, which has no indentation. 
+# You shouldn't output any Python code! You shouldn't copy the examples above!"""
 
 _code_description = """Omit explanations or any additional text."""
 

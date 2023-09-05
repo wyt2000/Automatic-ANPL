@@ -57,13 +57,14 @@ largest_binary_number(input_str: str) -> str: Returns the largest binary number 
 
 # Here is an example of the format applied to identifying the winner of the following game:
 # It is so boring in the summer holiday, isn't it? So Alice and Bob have invented a new game to play. The rules are as follows. First, they get a set of n distinct integers. And then they take turns to make the following moves. During each move, either Alice or Bob (the player whose turn is the current) can choose two distinct integers x and y from the set, such that the set doesn't contain their absolute difference |x - y|. Then this player adds integer |x - y| to the set (so, the size of the set increases by one).
-# If the current player has no valid move, he (or she) loses the game. The question is who will finally win the game if both players play optimally. Remember that Alice always moves first.
+# If the current player has no valid move, he (or she) loses the game. The question is who will finally win the game if both players play optimally and the number of moves. Remember that Alice always moves first.
 \"\"\"
-identify_winner(input_str: str) -> str: Returns the winner of the game.
+identify_winner(input_str: str) -> str: Returns a multi-line string. The first line is 'Alice' if the number of moves is odd and 'Bob' if the number of moves is even, the second line is the number of moves.
     parse_input(input_str: str) -> list[int]: Takes a string containing the length on the first line and the integers on the second and returns the list of integers
     num_moves(l: list[int]) -> int: The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list.
         all_gcd(l: list[int]) -> int: Returns the greatest common divisor of all elements in the list
-    to_output_str(num_moves: int) -> str: Returns the string 'Alice' if the number of moves is odd and 'Bob' if the number of moves is even
+    to_output_str(num_moves: int) -> str: Returns a multi-line string. The first line is 'Alice' if the number of moves is odd and 'Bob' if the number of moves is even, the second line is the number of moves.
+
 \"\"\"
 
 # Limak is a little bear who loves to play. Today he is playing by destroying block towers. He built n towers in a row. The i-th tower is made of h_i identical blocks. For clarification see picture for the first sample.
@@ -97,7 +98,7 @@ max_score(input_str: str) -> str: Simple function returning the maximum score Al
 # Translate the following solution plan into the above format:
 {solution}
 
-# If there are multiple lines in the output description, you should highlight to return a multi-line str in your function description, for example:
+# If there are multiple lines in the output, you should highlight to return a multi-line str in your function's natural language definition, for example:
     to_output_str(cnt: int, ans_list: list[int]) -> str: Returns a multi-line string. The first line is cnt, and the next line contains elements of ans_list, separated by spaces.
 
 # You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! There should be only one top function in Parsel code, which has no indentation. 

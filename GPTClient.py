@@ -10,17 +10,25 @@ from Prompter.Prompter import AbstractPrompter
 
 class GPTClient:
 
-    def __init__(self):
+    def __init__(self, retry_times=10, retry_interval=10):
         self.logger = logging.getLogger(__name__)
         self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:\s*(.*)")
+        self.retry_times = retry_times
+        self.retry_interval = retry_interval
 
     async def delayed_completion(self, delay_in_seconds, **kwargs):
         '''
         Delay `delay_in_seconds`, then async call `ChatCompletion`.
         '''
         await asyncio.sleep(delay_in_seconds)
-        response = await openai.ChatCompletion.acreate(**kwargs)
-        return response
+        for i in range(self.retry_times):
+            try:
+                response = await openai.ChatCompletion.acreate(**kwargs)
+                return response
+            except Exception as err:
+                self.logger.exception(err)
+                await asyncio.sleep(self.retry_interval)
+                self.logger.debug(f"Retry times: {i + 1}.")
 
     def get_response_list(self, responses):
         '''

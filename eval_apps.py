@@ -30,6 +30,7 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
     generations = get_codes(args.target, args.start, args.num_problems, args.num_codes, args.num_completions)
+    #generations = [[gen[0]] for gen in generations]
     results = apps_metric().compute(predictions=generations, k_list=[args.num_codes], level="introductory")
     print(results)
 

@@ -58,13 +58,28 @@ largest_binary_number(input_str: str) -> str: Returns the largest binary number 
 # Here is an example of the format applied to identifying the winner of the following game:
 # It is so boring in the summer holiday, isn't it? So Alice and Bob have invented a new game to play. The rules are as follows. First, they get a set of n distinct integers. And then they take turns to make the following moves. During each move, either Alice or Bob (the player whose turn is the current) can choose two distinct integers x and y from the set, such that the set doesn't contain their absolute difference |x - y|. Then this player adds integer |x - y| to the set (so, the size of the set increases by one).
 # If the current player has no valid move, he (or she) loses the game. The question is who will finally win the game and how many times he moves if both players play optimally. Remember that Alice always moves first.
+# Input: The first line is the number of the integers, the second line is the integers.
 # Output: The first line is the winner's name, and the second line is the number of moves.
 \"\"\"
 identify_winner(input_str: str) -> str: Parse the input to list and call num_moves to get the number of moves. Return to_output_str(num_moves). 
-    parse_input(input_str: str) -> list[int]: Takes a string containing the length on the first line and the integers on the second and returns the list of integers
+    parse_input(input_str: str) -> (int, list[int]): Takes a string containing the length on the first line and the integers on the second and returns the length and the list of integers
     num_moves(l: list[int]) -> int: The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list.
         all_gcd(l: list[int]) -> int: Returns the greatest common divisor of all elements in the list
     to_output_str(num_moves: int) -> str: Returns a multi-line string. The first line is 'Alice' if the number of moves is odd and 'Bob' if the number of moves is even, the second line is the number of moves.
+\"\"\"
+
+# Limak is a little bear who loves to play. Today he is playing by destroying block towers. He built n towers in a row. The i-th tower is made of h_i identical blocks. For clarification see picture for the first sample.
+# Limak will repeat the following operation till everything is destroyed.
+# Block is called internal if it has all four neighbors, i.e. it has each side (top, left, down and right) adjacent to other block or to the floor. Otherwise, block is boundary. In one operation Limak destroys all boundary blocks. His paws are very fast and he destroys all those blocks at the same time.
+# Limak is ready to start. You task is to count how many operations will it take him to destroy all towers.
+\"\"\"
+destroy_towers(input_str: str) -> str: Parse the input to get towel heights. Then call side_ones to modify the height list. Destory from left and right of the list to get the number of operations it takes to destroy all towers. Convert it to str and return.
+    parse_input(input_str: str) -> (int, list[int]): Takes a string containing the number of towers on the first line and the heights of the towers on the second and return the number of towers and the list of heights
+    side_ones(heights_list: list[int]) -> list[int]: From a list of ints, set the first and last elements to 1 and return the list
+    destroy_from_left(side_list: list[int]) -> list[int]: Copy the list and set each element to the minimum of itself and one more than the element to its left, starting from the second element
+    destroy_from_right(side_list: list[int]) -> list[int]: Copy the list and set each element to the minimum of itself and one more than the element to its right, starting from the second to last element
+    min_list(l1: list[int], l2: list[int]) -> list[int]: Return a list of the minimum of the corresponding elements of l1 and l2
+    to_output_str(min_list: list[int]) -> str: Return the string representation of the maximum element in the list
 \"\"\"
 
 # Translate the following solution plan into the above format:

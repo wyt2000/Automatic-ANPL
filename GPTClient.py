@@ -16,7 +16,7 @@ class GPTClient:
         self.retry_times = retry_times
         self.retry_interval = retry_interval
 
-    async def delayed_completion(self, delay_in_seconds, **kwargs):
+    async def delayed_completion(self, task_name, delay_in_seconds, **kwargs):
         '''
         Delay `delay_in_seconds`, then async call `ChatCompletion`.
         '''
@@ -25,10 +25,13 @@ class GPTClient:
             try:
                 response = await openai.ChatCompletion.acreate(**kwargs)
                 return response
+            except openai.error.InvalidRequestError as err:
+                self.logger.debug(f"{task_name}: InvalidRequestError!")
+                raise err
             except Exception as err:
                 self.logger.exception(err)
                 await asyncio.sleep(self.retry_interval)
-                self.logger.debug(f"Retry times: {i + 1}.")
+                self.logger.debug(f"{task_name}: Retry {i + 1} times.")
 
     def get_response_list(self, responses):
         '''
@@ -66,6 +69,7 @@ class GPTClient:
             ]
             self.logger.debug(f'{task_name}: Requesting for high-level solution...')
             responses = await self.delayed_completion(
+                task_name        = task_name,
                 delay_in_seconds = delay_in_seconds,
                 messages         = messages,
                 **completion_kwargs
@@ -98,6 +102,7 @@ class GPTClient:
             ]
             self.logger.debug(f'{task_name}: Requesting for target code ...')
             responses = await self.delayed_completion(
+                task_name        = task_name,
                 delay_in_seconds = delay_in_seconds,
                 messages         = messages,
                 **completion_kwargs

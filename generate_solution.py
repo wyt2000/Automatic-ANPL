@@ -27,7 +27,7 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('main')
     client = GPTClient()
-    sampler = APPSProblemSampler(difficulties=['introductory'])
+    sampler = APPSProblemSampler(difficulties=['competition'])
     prompter = ParselPrompter()
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens

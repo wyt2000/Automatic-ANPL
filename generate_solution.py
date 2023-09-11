@@ -45,7 +45,7 @@ if __name__ == '__main__':
     semaphone = asyncio.Semaphore(num_workers)
     async def batch_tasks():
         tasks = []
-        for data in sampler.sample_from_head(num_problems):
+        for data in sampler.sample_randomly(num_problems):
             task = asyncio.create_task(
                 request(
                     semaphone,

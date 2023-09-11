@@ -36,7 +36,8 @@ class APPSProblemSampler(ProblemSampler):
     def sample_from_head(self, num_problems):
         yield from self.sample(range(num_problems))
 
-    def sample_randomly(self, num_problems):
+    def sample_randomly(self, num_problems, seed=114514):
+        random.seed(seed)
         yield from self.sample(random.sample(range(len(self.apps)), num_problems))
 
 if __name__ == '__main__':

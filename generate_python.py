@@ -47,8 +47,6 @@ if __name__ == '__main__':
 
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-p", "--path", help="Path of input code folder", type=str, required=True)
-    argparser.add_argument("-b", "--begin", help="Begin problem id", type=int, default=4000)
-    argparser.add_argument("-e", "--end", help="End problem id", type=int, default=4019)
     argparser.add_argument("-n", "--num_codes", help="Number of code for each problem", type=int, default=1)
     argparser.add_argument("-k", "--num_completions", help="Number of function implementations for each code", type=int, default=4)
     args = argparser.parse_args()
@@ -56,9 +54,9 @@ if __name__ == '__main__':
     synthesizer = ParselSynthesizer()
 
     suffix_name = "ss"
-    begin = args.begin 
-    end = args.end 
-    tasks = [f"apps_{i}" for i in range(begin, end + 1)]
+    paths = list(Path(args.path).glob(f"*.{suffix_name}"))
+    tasks = {f"apps_{path.stem.split('_')[1]}" for path in paths}
+    tasks = sorted(tasks)
     n = args.num_codes
     k = args.num_completions
     input_dir = args.path 
@@ -68,7 +66,8 @@ if __name__ == '__main__':
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)
     mkdir_override(log_dir)
-    logger.debug(f"Synthesizing {end - begin + 1} problems : use {n} code, generate {k} python code for each function!")
+    logger.debug(f"Synthesizing {len(tasks)} problems : use {n} code, generate {k} python code for each function!")
+    logger.debug(tasks)
 
     for task in tasks:
         generate(task, synthesizer, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)

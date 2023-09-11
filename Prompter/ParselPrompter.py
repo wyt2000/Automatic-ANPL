@@ -89,7 +89,9 @@ destroy_towers(input_str: str) -> str: Parse the input to get towel heights. The
 
 # There should be only one top function in Parsel code, which has no indentation.
 
-# The natural language definition of the top function should be I/O descriptions of the program and calling relationships of other functions. It shouldn't be empty!
+# Each function (especially the top function) should have a non-empty natural language definition!
+
+# The natural language definition of the top function should be I/O descriptions of the program and calling relationships of other functions. 
 
 # You shouldn't output any Python code! You shouldn't copy the examples above!
 """

@@ -20,6 +20,10 @@ for line in stdin:
 print({root}(inp))
 '''
 
+_question_prefix = "----- Question -----\n"
+
+_question_suffix = "\n----- Solution -----\n"
+
 class ParselSynthesizer(AbstractSynthesizer):
 
     # TODO: handle starter code.
@@ -30,6 +34,7 @@ class ParselSynthesizer(AbstractSynthesizer):
                    parsel_code: str,
                    save_path_prefix: str,
                    cache_path_prefix: str,
+                   question: str,
                    inputs: list[str],
                    outputs: list[str],
                    num_completions_list: list[int] = [1]):
@@ -44,6 +49,8 @@ class ParselSynthesizer(AbstractSynthesizer):
             except:
                 asserts += [f"{repr(inp)} -> {repr(out)}"]
         root.asserts = asserts
+        for fn in defined_fns.values():
+            fn.prefix = _question_prefix + question + _question_suffix
         results = {}
         for num_completions in num_completions_list:
             codeGen = codex.CodeGen(

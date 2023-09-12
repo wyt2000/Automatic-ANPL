@@ -30,6 +30,7 @@ def generate(problem_id: int,
              ):
 
     task_name = f"apps_{problem_id}"
+    question = sampler.apps[problem_id]["question"]
     input_output = sampler.apps[problem_id]["input_output"]
     input_output = json.loads(input_output)
     inputs = input_output["inputs"]
@@ -46,6 +47,7 @@ def generate(problem_id: int,
                         code,
                         Path(save_dir, f"{task_name}_{i}"),
                         Path(cache_dir, f"{task_name}_{i}"),
+                        question,
                         inputs,
                         outputs,
                         [k]

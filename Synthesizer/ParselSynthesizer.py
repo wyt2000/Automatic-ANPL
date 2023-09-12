@@ -30,19 +30,28 @@ class ParselSynthesizer(AbstractSynthesizer):
                    parsel_code: str,
                    save_path_prefix: str,
                    cache_path_prefix: str,
+                   inputs: list[str],
+                   outputs: list[str],
                    num_completions_list: list[int] = [1]):
 
         parsel_code = parsel_code.strip().splitlines()
-        _, defined_fns = parsel.get_graph(parsel_code)
-        root = graph.get_root(defined_fns)
+        root, defined_fns = parsel.get_graph(parsel_code)
+        root_name = graph.get_root(defined_fns)
+        asserts = []
+        for inp, out in zip(inputs, outputs):
+            try:
+                asserts += [f"{repr(inp.rstrip())} -> {repr(out.rstrip())}"]
+            except:
+                asserts += [f"{repr(inp)} -> {repr(out)}"]
+        root.asserts = asserts
         results = {}
         for num_completions in num_completions_list:
             codeGen = codex.CodeGen(
                 cache = f'{cache_path_prefix}.json'
             )
             compiled_fns = parsel.parsel_graph(defined_fns, codeGen, num_completions=num_completions)
-            target_code = parsel.fns_to_str(defined_fns[root], set())
-            target_code = self.transform(target_code, root)
+            target_code = parsel.fns_to_str(defined_fns[root_name], set())
+            target_code = self.transform(target_code, root_name)
             results[num_completions] = target_code
             with open(f'{save_path_prefix}_{num_completions}.py', 'w') as f:
                 f.write(target_code)

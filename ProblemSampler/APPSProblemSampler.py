@@ -1,7 +1,7 @@
 import json
 import random
 from dataclasses import dataclass
-from ProblemSampler import ProblemData, ProblemSampler
+from .ProblemSampler import ProblemData, ProblemSampler
 
 # for huggingface
 import datasets
@@ -28,8 +28,10 @@ class APPSProblemSampler(ProblemSampler):
     def __init__(self, path='codeparrot/apps', split='test', difficulties=['all']):
         datasets.config.DEFAULT_MAX_BATCH_SIZE = 10
         self.apps = load_dataset(path=path, split=split, difficulties=difficulties)
-        self.valid_ids = [i for i in range(len(self.apps)) if self.apps[i]["starter_code"] == ''] # not support starter_code now.
-
+        self.valid_ids = [
+                i for i in range(len(self.apps)) 
+                if self.apps[i]["starter_code"] == '' # not support starter_code now.
+        ] 
     def sample(self, data_indices):
         for idx in data_indices: 
             yield APPSProblemData(self.apps[idx])

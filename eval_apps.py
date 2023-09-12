@@ -20,6 +20,7 @@ def get_codes(target_dir: str, num_codes: int):
         problem_id = int(name[1])
         code_id = int(name[2])
         with open(path, 'r') as f:
+            if code_id >= num_codes: continue
             generations[problem_id][code_id] = f.read()
     return list(generations.keys()), list(generations.values())
 
@@ -34,6 +35,6 @@ if __name__ == '__main__':
     for problem_id in problem_ids:
         msg += f"{problem_id} "
     logger.debug(msg)
-    results = apps_metric().compute(problem_ids=problem_ids, predictions=generations, k_list=[args.num_codes])
+    results = apps_metric().compute(problem_ids=problem_ids, predictions=generations, k_list=[args.num_codes], debug=True)
     logger.info(results)
 

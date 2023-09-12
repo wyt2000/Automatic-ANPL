@@ -3,20 +3,23 @@ os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ParselSynthesizer import ParselSynthesizer
+from ProblemSampler.APPSProblemSampler import APPSProblemSampler
+
 from pathlib import Path
 from utils import mkdir_override, mkdir_no_override
 import logging 
 import logging.config
 from contextlib import redirect_stdout
 from contextlib import redirect_stderr
-
+import json
 import argparse
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
-def generate(task_name: str,
+def generate(problem_id: int,
              synthesizer: AbstractSynthesizer,
+             sampler: APPSProblemSampler,
              n: int,
              k: int,
              input_dir: str,
@@ -25,6 +28,12 @@ def generate(task_name: str,
              log_dir: str,
              suffix_name: str
              ):
+
+    task_name = f"apps_{problem_id}"
+    input_output = sampler.apps[problem_id]["input_output"]
+    input_output = json.loads(input_output)
+    inputs = input_output["inputs"]
+    outputs = input_output["outputs"]
 
     for i in range(n):
         logger.debug(f"Synthesizing {task_name}_{i}...")
@@ -37,6 +46,8 @@ def generate(task_name: str,
                         code,
                         Path(save_dir, f"{task_name}_{i}"),
                         Path(cache_dir, f"{task_name}_{i}"),
+                        inputs,
+                        outputs,
                         [k]
                     )
         except Exception as err:
@@ -52,11 +63,13 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
     synthesizer = ParselSynthesizer()
+    sampler = APPSProblemSampler(difficulties=['all'])
 
     suffix_name = "ss"
     paths = list(Path(args.path).glob(f"*.{suffix_name}"))
-    tasks = {f"apps_{path.stem.split('_')[1]}" for path in paths}
-    tasks = sorted(tasks)
+    problem_ids = {int(path.stem.split('_')[1]) for path in paths}
+    problem_ids = sorted(problem_ids)
+
     n = args.num_codes
     k = args.num_completions
     input_dir = args.path 
@@ -66,9 +79,9 @@ if __name__ == '__main__':
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)
     mkdir_override(log_dir)
-    logger.debug(f"Synthesizing {len(tasks)} problems : use {n} code, generate {k} python code for each function!")
-    logger.debug(tasks)
+    logger.debug(f"Synthesizing {len(problem_ids)} problems : use {n} code, generate {k} python code for each function!")
+    logger.debug(problem_ids)
 
-    for task in tasks:
-        generate(task, synthesizer, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)
+    for problem_id in problem_ids:
+        generate(problem_id, synthesizer, sampler, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)
 

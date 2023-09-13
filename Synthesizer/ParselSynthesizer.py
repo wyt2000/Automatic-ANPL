@@ -20,9 +20,9 @@ for line in stdin:
 print({root}(inp))
 '''
 
-_question_prefix = "----- Question -----\n"
+_question_prefix = "----- Background -----\n"
 
-_question_suffix = "\n----- Solution -----\n"
+_question_suffix = "\n----- Task -----\n"
 
 class ParselSynthesizer(AbstractSynthesizer):
 

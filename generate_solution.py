@@ -27,7 +27,7 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('main')
     client = GPTClient()
-    sampler = APPSProblemSampler(difficulties=['competition'])
+    sampler = APPSProblemSampler(difficulties=['all'])
     prompter = ParselPrompter()
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
@@ -41,11 +41,12 @@ if __name__ == '__main__':
     mkdir_override(save_dir)
 
     logger.debug(f"Generating {num_samples} solutions for {num_problems} problems...")
-
+    # sample_list = [3158, 3811, 3876, 3107, 3784, 3621, 3070, 3113, 3665, 3629, 3882, 3075, 3338, 3859, 3888, 3119, 3820, 3633, 3082, 3125, 3833, 3677, 3894, 3087, 3518, 3907, 3900, 3131] 
     semaphone = asyncio.Semaphore(num_workers)
     async def batch_tasks():
         tasks = []
         for data in sampler.sample_randomly(num_problems):
+        # for data in sampler.sample(sample_list):
             task = asyncio.create_task(
                 request(
                     semaphone,

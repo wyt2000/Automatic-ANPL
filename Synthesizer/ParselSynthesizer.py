@@ -24,6 +24,12 @@ _question_prefix = "----- Background -----\n"
 
 _question_suffix = "\n----- Task -----\n"
 
+def verify_code(parsel_code):
+    parsel_code = parsel_code.strip().splitlines()
+    root, defined_fns = parsel.get_graph(parsel_code)
+    # if len(defined_fns) > 7:
+    #     raise ValueError(f"Too many functions!")
+
 class ParselSynthesizer(AbstractSynthesizer):
 
     # TODO: handle starter code.

@@ -38,9 +38,9 @@ def generate(problem_id: int,
 
     for i in range(n):
         logger.debug(f"Synthesizing {task_name}_{i}...")
-        with open(Path(input_dir, f"{task_name}_{i}.{suffix_name}")) as f:
-            code = f.read()
         try:
+            with open(Path(input_dir, f"{task_name}_{i}.{suffix_name}")) as f:
+                code = f.read()
             with open(Path(log_dir, f"{task_name}_{i}.log"), "w") as log_file:
                 with redirect_stdout(log_file), redirect_stderr(log_file):
                     synthesizer.synthesize(

@@ -7,10 +7,11 @@ import json
 import asyncio
 import re
 from Prompter.Prompter import AbstractPrompter
+from Synthesizer.ParselSynthesizer import verify_code
 
 class GPTClient:
 
-    def __init__(self, retry_times=10, retry_interval=10):
+    def __init__(self, retry_times=10, retry_interval=5):
         self.logger = logging.getLogger(__name__)
         self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:\s*(.*)")
         self.retry_times = retry_times
@@ -82,6 +83,7 @@ class GPTClient:
             return responses
 
     # TODO: Unify request api.
+    # TODO: Refactor program verification.
     async def request_for_codes(self,
                                 task_name: str,
                                 starter_code: str,
@@ -101,20 +103,25 @@ class GPTClient:
                 {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
             ]
             self.logger.debug(f'{task_name}: Requesting for target code ...')
-            responses = await self.delayed_completion(
-                task_name        = task_name,
-                delay_in_seconds = delay_in_seconds,
-                messages         = messages,
-                **completion_kwargs
-            )
-            raw_response = self.get_response_list(responses)[0]
-            response = self.extract_code(raw_response)
-            self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
-            with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
-                f.write(response)
-            #with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}.raw'), 'w') as f:
-            #    f.write(raw_response)
-            return response
+            for i in range(self.retry_times):
+                responses = await self.delayed_completion(
+                    task_name        = task_name,
+                    delay_in_seconds = delay_in_seconds,
+                    messages         = messages,
+                    **completion_kwargs
+                )
+                response = self.get_response_list(responses)[0]
+                response = self.extract_code(response)
+                try:
+                    verify_code(response)
+                except Exception as err:
+                    self.logger.exception(err)
+                    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
+                    continue
+                self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
+                with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
+                    f.write(response)
+                return response
 
 if __name__ == '__main__':
     client = GPTClient()

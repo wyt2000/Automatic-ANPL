@@ -87,7 +87,7 @@ destroy_towers(input_str: str) -> str: Parse the input to get towel heights. The
 
 # You should return Parsel code consist with Parsel grammar mentioned above, whose functions are defined by natural language in only one single line for each function! 
 
-# There should be only one top function in Parsel code, which has no indentation.
+# There should be only one top function in your code, which has no indentation.
 
 # Each function (especially the top function) should have a non-empty natural language definition!
 

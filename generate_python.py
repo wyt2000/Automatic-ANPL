@@ -1,5 +1,5 @@
-import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1'
+#import os
+#os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ParselSynthesizer import ParselSynthesizer

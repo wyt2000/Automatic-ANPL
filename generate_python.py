@@ -76,7 +76,7 @@ if __name__ == '__main__':
     k = args.num_completions
     input_dir = args.path 
     cache_dir = input_dir.replace("code", "cache")
-    log_dir = input_dir.replace("code", "log")
+    log_dir = Path(input_dir.replace("code", "log"), f"{n}x{k}")
     save_dir = Path(input_dir.replace("code", "result"), f"{n}x{k}")
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)

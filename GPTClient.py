@@ -111,13 +111,13 @@ class GPTClient:
                     **completion_kwargs
                 )
                 response = self.get_response_list(responses)[0]
-                response = self.extract_code(response)
-                try:
-                    verify_code(response)
-                except Exception as err:
-                    self.logger.exception(err)
-                    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
-                    continue
+                #response = self.extract_code(response)
+                #try:
+                #    verify_code(response)
+                #except Exception as err:
+                #    self.logger.exception(err)
+                #    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
+                #    continue
                 self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
                 with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
                     f.write(response)

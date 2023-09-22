@@ -1,6 +1,6 @@
 from GPTClient import GPTClient
 from Prompter.GPTPrompter import GPTPrompter
-from Prompter.ParselPrompter import ParselPrompter 
+from Prompter.ANPLPrompter import ANPLPrompter 
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler
 
 from utils import mkdir_override
@@ -27,8 +27,8 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('main')
     client = GPTClient()
-    sampler = APPSProblemSampler(difficulties=['all'])
-    prompter = ParselPrompter()
+    sampler = APPSProblemSampler(difficulties=['competition'])
+    prompter = ANPLPrompter()
 
     rate_limit   = 90000 / 1000 # 90000 tokens, one call less than 1000 tokens
     num_problems = args.num_problems 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     delay_in_seconds = 60.0 / (rate_limit / num_workers)
 
     timestr = time.strftime("%m%d%H%M%S")
-    save_dir = f'parsel_apps_solution_{timestr}/'
+    save_dir = f'anpl_apps_solution_{timestr}/'
     mkdir_override(save_dir)
 
     logger.debug(f"Generating {num_samples} solutions for {num_problems} problems...")

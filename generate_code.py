@@ -1,6 +1,6 @@
 from GPTClient import GPTClient
 from Prompter.GPTPrompter import GPTPrompter
-from Prompter.ParselPrompter import ParselPrompter 
+from Prompter.ANPLPrompter import ANPLPrompter
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler
 
 from utils import mkdir_override
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     logging.config.fileConfig('logging.conf')
     logger = logging.getLogger('main')
     client = GPTClient()
-    prompter = ParselPrompter()
+    prompter = ANPLPrompter()
 
     save_dir = args.path.replace("solution", "code") 
     mkdir_override(save_dir)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
                             "logit_bias"        : {755:-100}
                         },
                         "starter_code" : "", #TODO: add started code.
-                        "suffix_name"  : "ss",
+                        "suffix_name"  : "anpl",
                         "prompter"     : prompter,
                         "save_dir"     : save_dir,
                         "delay_in_seconds" : delay_in_seconds,

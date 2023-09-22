@@ -7,7 +7,7 @@ import json
 import asyncio
 import re
 from Prompter.Prompter import AbstractPrompter
-from Synthesizer.ParselSynthesizer import verify_code
+from Synthesizer.ANPLSynthesizer import verify_code
 
 class GPTClient:
 
@@ -41,16 +41,7 @@ class GPTClient:
         return [response["message"]["content"] for response in responses["choices"]]
 
     def extract_code(self, response):
-        code = []
-        last_desc = 'invalid'
-        for line in response.split('\n'):
-            if m := self.pattern.match(line):
-                last_desc = m.group(1)
-                code.append(line)
-            else:
-                if len(last_desc) == 0:
-                    code[-1] += ' ' + line.lstrip()
-        return '\n'.join(code)
+        return response.strip('`')
 
     async def request_for_solutions(self,
                                     task_name: str,
@@ -111,13 +102,13 @@ class GPTClient:
                     **completion_kwargs
                 )
                 response = self.get_response_list(responses)[0]
-                #response = self.extract_code(response)
-                #try:
-                #    verify_code(response)
-                #except Exception as err:
-                #    self.logger.exception(err)
-                #    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
-                #    continue
+                response = self.extract_code(response)
+                try:
+                    verify_code(response)
+                except Exception as err:
+                    self.logger.exception(err)
+                    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
+                    continue
                 self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
                 with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
                     f.write(response)

@@ -59,7 +59,6 @@ if __name__ == '__main__':
                             "model"        : "gpt-3.5-turbo-0301",
                             "temperature"       : 0.2,
                             "presence_penalty"  : 0.1,
-                            "logit_bias"        : {755:-100}
                         },
                         "starter_code" : "", #TODO: add started code.
                         "suffix_name"  : "anpl",

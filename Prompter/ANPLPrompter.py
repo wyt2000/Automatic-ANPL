@@ -71,10 +71,18 @@ def parse_input(input_str: str) -> list[int]:
     Takes a string containing the length on the first line and the integers on the second and returns the list of integers.
     '''
 
+def all_gcd(l: list[int]) -> int:
+    '''
+    Returns the greatest common divisor of all elements in the list.
+    '''
+
 def num_moves(l: list[int]) -> int:
     '''
     The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list. Return the the number of moves.
     '''
+    mx = max(l)
+    ans = mx // all_gcd(l) - len(l)
+    return ans
 
 def to_output_str(num_moves: int) -> str:
     '''
@@ -142,7 +150,7 @@ def main(input_str: str) -> str:
 {solution}
 
 
-# You should return ANPL code consist with ANPL grammar mentioned above, which must have one main function with implementation and other functions only defined by docstring.
+# You should return ANPL code consist with ANPL grammar mentioned above, which must have one main function with implementation.
 """
 
 

@@ -98,54 +98,6 @@ def main(input_str: str) -> str:
     return to_output_str(moves_count)
 ```
 
-# Here is an example of the format applied to finding a biggest number according to the rules:
-# Limak is a little bear who loves to play. Today he is playing by destroying block towers. He built n towers in a row. The i-th tower is made of h_i identical blocks. For clarification see picture for the first sample.
-# Limak will repeat the following operation till everything is destroyed.
-# Block is called internal if it has all four neighbors, i.e. it has each side (top, left, down and right) adjacent to other block or to the floor. Otherwise, block is boundary. In one operation Limak destroys all boundary blocks. His paws are very fast and he destroys all those blocks at the same time.
-# Limak is ready to start. You task is to count how many operations will it take him to destroy all towers.
-```
-def parse_input(input_str: str) -> str:
-    '''
-    Takes a string containing the number of towers on the first line and the heights of the towers on the second and returns the list of heights.
-    '''
-
-def side_ones(heights_list: list[int]) -> list[int]:
-    '''
-    From a list of ints, set the first and last elements to 1 and return the list.
-    '''
-
-def destroy_from_left(side_list: list[int]) -> list[int]: 
-    '''
-    Copy the list and set each each element to the minimum of itself and one more than the element to its left, starting from the second element.
-    '''
-
-def destroy_from_right(side_list: list[int]) -> list[int]:
-    '''
-    Copy the list and set each each element to the minimum of itself and one more than the element to its right, starting from the second to last element.
-    '''
-
-def min_list(l1: list[int], l2: list[int]) -> list[int]:
-    '''
-    Return a list of the minimum of the corresponding elements of l1 and l2.
-    '''
-
-def to_output_str(num_moves: list[int]) -> str:
-    '''
-    Return the string representation of the maximum element in the list.
-    '''
-
-def main(input_str: str) -> str:
-    '''
-    Returns the winner of the game.
-    '''
-    heights_list = parse_input(input_str)
-    slist = side_ones(heights_list)
-    l1 = destroy_from_left(slist)
-    l2 = destroy_from_right(slist)
-    ans_list = min_list(l1, l2)
-    return to_output_str(ans_list)
-```
-
 # Translate the following solution plan into the above format:
 {solution}
 

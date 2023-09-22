@@ -4,3 +4,6 @@
 [submodule "Synthesizer/parsel"]
 	path = Synthesizer/parsel
 	url = git@github.com:wyt2000/parsel.git
+[submodule "Synthesizer/ANPL"]
+	path = Synthesizer/ANPL
+	url = git@github.com:wyt2000/ANPL.git

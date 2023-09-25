@@ -37,6 +37,7 @@ class ParselSynthesizer(AbstractSynthesizer):
         return exec_imports + target_code + _io_template.format(root=root)
 
     def synthesize(self,
+                   task_name, str,
                    parsel_code: str,
                    save_path_prefix: str,
                    cache_path_prefix: str,

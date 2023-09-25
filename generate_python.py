@@ -1,8 +1,5 @@
-#import os
-#os.environ['OPENBLAS_NUM_THREADS'] = '1'
-
 from Synthesizer.Synthesizer import AbstractSynthesizer 
-from Synthesizer.ParselSynthesizer import ParselSynthesizer
+from Synthesizer.ANPLSynthesizer import ANPLSynthesizer 
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler
 
 from pathlib import Path
@@ -44,6 +41,7 @@ def generate(problem_id: int,
             with open(Path(log_dir, f"{task_name}_{i}.log"), "w") as log_file:
                 with redirect_stdout(log_file), redirect_stderr(log_file):
                     synthesizer.synthesize(
+                        f"{task_name}_{i}",
                         code,
                         Path(save_dir, f"{task_name}_{i}"),
                         Path(cache_dir, f"{task_name}_{i}"),
@@ -64,10 +62,10 @@ if __name__ == '__main__':
     argparser.add_argument("-k", "--num_completions", help="Number of function implementations for each code", type=int, default=4)
     args = argparser.parse_args()
 
-    synthesizer = ParselSynthesizer()
+    synthesizer = ANPLSynthesizer()
     sampler = APPSProblemSampler(difficulties=['all'])
 
-    suffix_name = "ss"
+    suffix_name = 'anpl'
     paths = list(Path(args.path).glob(f"*.{suffix_name}"))
     problem_ids = {int(path.stem.split('_')[1]) for path in paths}
     problem_ids = sorted(problem_ids)

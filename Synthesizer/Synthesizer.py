@@ -8,10 +8,14 @@ class AbstractSynthesizer(ABC):
 
     @abstractmethod
     def synthesize(self,
+                   task_name: str,
                    code: str,
                    save_path_prefix: str,
                    *args):
         '''
+        :param task_name: identify task for logger.
+        :type code: str
+
         :param code: Synthesizer's DSL code.
         :type code: str
 

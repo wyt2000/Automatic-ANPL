@@ -20,9 +20,6 @@ def verify_code(anpl_code):
 
 class ANPLSynthesizer(AbstractSynthesizer):
 
-    def __init__(self):
-        self.compiler = ANPLCompiler()
-
     def synthesize(self,
                    task_name: str,
                    anpl_code: str,
@@ -35,11 +32,12 @@ class ANPLSynthesizer(AbstractSynthesizer):
 
         prefix = _question_prefix + question + _question_suffix
         cache = Cache(file_path=f'{cache_path_prefix}.json')
+        compiler = ANPLCompiler()
         results = {}
         for num_completions in num_completions_list:
             target_code = None
             try:
-                target_code = self.compiler.compile(
+                target_code = compiler.compile(
                     task_name       = task_name,
                     entry           = 'main',
                     code            = anpl_code,

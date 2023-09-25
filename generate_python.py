@@ -38,8 +38,13 @@ def generate(problem_id: int,
         try:
             with open(Path(input_dir, f"{task_name}_{i}.{suffix_name}")) as f:
                 code = f.read()
-            with open(Path(log_dir, f"{task_name}_{i}.log"), "w") as log_file:
+            log_path = Path(log_dir, f"{task_name}_{i}.log")
+            with open(log_path, "w") as log_file:
                 with redirect_stdout(log_file), redirect_stderr(log_file):
+                    file_handler = logging.FileHandler(log_path)
+                    root_logger = logging.getLogger('root')
+                    root_handlers = [root_logger.handlers[0]]
+                    root_logger.handlers = [file_handler]
                     synthesizer.synthesize(
                         f"{task_name}_{i}",
                         code,
@@ -50,6 +55,8 @@ def generate(problem_id: int,
                         outputs,
                         [k]
                     )
+                    file_handler.close()
+                    root_logger.handlers = root_handlers
         except Exception as err:
             logger.exception(err)
         logger.debug(f"Synthesizing {task_name}_{i} done!")

@@ -39,26 +39,25 @@ def generate(problem_id: int,
             with open(Path(input_dir, f"{task_name}_{i}.{suffix_name}")) as f:
                 code = f.read()
             log_path = Path(log_dir, f"{task_name}_{i}.log")
-            with open(log_path, "w") as log_file:
-                with redirect_stdout(log_file), redirect_stderr(log_file):
-                    file_handler = logging.FileHandler(log_path)
-                    root_logger = logging.getLogger('root')
-                    root_handlers = [root_logger.handlers[0]]
-                    root_logger.handlers = [file_handler]
-                    synthesizer.synthesize(
-                        f"{task_name}_{i}",
-                        code,
-                        Path(save_dir, f"{task_name}_{i}"),
-                        Path(cache_dir, f"{task_name}_{i}"),
-                        question,
-                        inputs,
-                        outputs,
-                        [k]
-                    )
-                    file_handler.close()
-                    root_logger.handlers = root_handlers
+            file_handler = logging.FileHandler(log_path)
+            root_logger = logging.getLogger('root')
+            root_handlers = [root_logger.handlers[0]]
+            root_logger.handlers = [file_handler]
+            synthesizer.synthesize(
+                f"{task_name}_{i}",
+                code,
+                Path(save_dir, f"{task_name}_{i}"),
+                Path(cache_dir, f"{task_name}_{i}"),
+                question,
+                inputs,
+                outputs,
+                [k]
+            )
         except Exception as err:
             logger.exception(err)
+        finally:
+            file_handler.close()
+            root_logger.handlers = root_handlers
         logger.debug(f"Synthesizing {task_name}_{i} done!")
 
 if __name__ == '__main__':

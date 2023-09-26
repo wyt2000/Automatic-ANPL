@@ -48,7 +48,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
                 )
                 results[num_completions] = target_code
             except Exception as err:
-                pass
+                traceback.print_exc()
             finally:
                 cache.dump()
             if not target_code: 

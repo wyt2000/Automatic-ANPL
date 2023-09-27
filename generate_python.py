@@ -1,3 +1,6 @@
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1' # handle OOM in IPRC server
+
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ANPLSynthesizer import ANPLSynthesizer 
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler

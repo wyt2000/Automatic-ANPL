@@ -2,6 +2,9 @@ from .Prompter import AbstractPrompter
 
 class ANPLPrompter(AbstractPrompter):
     
+    def get_golden_io(self, **kwargs):
+        return _golden_io_prompt.format(**kwargs) + self.get_code_description(**kwargs)
+    
     def get_background(self, **kwargs):
         return _background.format(**kwargs)
 
@@ -15,6 +18,18 @@ class ANPLPrompter(AbstractPrompter):
         return _code_description.format(**kwargs)
 
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
+
+_golden_io_prompt = """-----Question-----
+{question}
+-----Task-----
+Give an input-output example for this problem in the following format:
+```
+-----Input-----
+(Input)
+-----Output-----
+(Output)
+```
+"""
 
 _solution_prompt = """Question:
 {question}

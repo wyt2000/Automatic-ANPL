@@ -43,6 +43,36 @@ class GPTClient:
     def extract_code(self, response):
         return response.strip('`')
 
+    async def request_for_golden_io(self,
+                                    task_name: str,
+                                    question: str,
+                                    prompter: AbstractPrompter,
+                                    save_dir: str,
+                                    completion_kwargs: dict = {}, 
+                                    delay_in_seconds: int = 1.0):
+        '''
+        Request from chatGPT to get high-level solution for question.
+        '''
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            openai.aiosession.set(session)
+            messages = [
+                {"role": "system", "content": prompter.get_background()},
+                {"role": "user", "content": prompter.get_golden_io(question=question)}
+            ]
+            self.logger.debug(f'{task_name}: Requesting for golden io...')
+            responses = await self.delayed_completion(
+                task_name        = task_name,
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
+            )
+            responses = self.get_response_list(responses)
+            self.logger.debug(f'{task_name}: Requesting for golden io done!')
+            for i, response in enumerate(responses):
+                with open(pathlib.Path(save_dir, f'{task_name}_{i}.io'), 'w') as f:
+                    f.write(response)
+            return responses
+
     async def request_for_solutions(self,
                                     task_name: str,
                                     question: str,

@@ -40,7 +40,6 @@ async def solve_problem(client: GPTClient,
             save_dir  = save_dir,
             delay_in_seconds = delay_in_seconds
         )
-        logger.debug(golden_ios)
         restart_times += 1
     
 

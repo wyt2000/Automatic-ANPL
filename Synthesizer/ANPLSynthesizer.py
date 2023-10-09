@@ -29,32 +29,34 @@ class ANPLSynthesizer(AbstractSynthesizer):
                    inputs: list[str],
                    outputs: list[str],
                    num_completions_list: list[int] = [1]):
-
+        entry = 'main'
         prefix = _question_prefix + question + _question_suffix
         cache = Cache(file_path=f'{cache_path_prefix}.json')
         compiler = ANPLCompiler()
         results = {}
         for num_completions in num_completions_list:
             target_code = None
+            success = False
             try:
-                target_code = compiler.compile(
+                target_code, success = compiler.compile(
                     task_name       = task_name,
-                    entry           = 'main',
+                    entry           = entry,
                     code            = anpl_code,
                     cache           = cache,
-                    input_outputs   = (inputs, outputs),
+                    system_tests    = (inputs, outputs),
                     num_completions = num_completions,
                     prefix          = prefix
                 )
                 results[num_completions] = target_code
             except Exception as err:
                 traceback.print_exc()
+                success = False
             finally:
                 cache.dump()
-            if not target_code: 
+            if not success: 
                 continue
             with open(f'{save_path_prefix}_{num_completions}.py', 'w') as f:
-                f.write(target_code)
+                f.write(compiler.transfrom(entry, target_code))
         if not results:
             raise Exception(f"{task_name}: ANPL Synthesis Failed!")
         return results

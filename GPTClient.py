@@ -40,8 +40,24 @@ class GPTClient:
         '''
         return [response["message"]["content"] for response in responses["choices"]]
 
-    def extract_code(self, response):
+    def extract_code(self, response: str):
         return response.strip('`')
+
+    def extract_io(self, response: str):
+        inp, out = [], []
+        isinp, isout = False, False 
+        for line in response.splitlines():
+            if '-Input-' in line:
+                isinp, isout = True, False
+                continue
+            if '-Output-' in line:
+                isout, isinp = True, False
+                continue
+            if isinp:
+                inp.append(line)
+            elif isout:
+                out.append(line)
+        return '\n'.join(inp), '\n'.join(out)
 
     async def request_for_golden_io(self,
                                     task_name: str,
@@ -67,10 +83,11 @@ class GPTClient:
                 **completion_kwargs
             )
             responses = self.get_response_list(responses)
+            responses = [self.extract_io(response) for response in responses]
             self.logger.debug(f'{task_name}: Requesting for golden io done!')
             for i, response in enumerate(responses):
                 with open(pathlib.Path(save_dir, f'{task_name}_{i}.io'), 'w') as f:
-                    f.write(response)
+                    f.write(json.dumps(response))
             return responses
 
     async def request_for_solutions(self,
@@ -146,15 +163,14 @@ class GPTClient:
 
 if __name__ == '__main__':
     client = GPTClient()
-    code = '''main(a, b, c):
-    desc1
-    func(d, e, f):
-        desc2'''
-    code = client.extract_code(code)
-    print(code)
-    code = '''main(a, b, c): desc1
-    code1 
-    func(d, e, f):
-        desc2'''
-    code = client.extract_code(code)
-    print(code)
+    io = '''-----Input-----
+3
+1 1 1
+2 0 2
+3 1 1
+-----Output-----
+1
+8
+4'''
+    io = client.extract_io(io)
+    print(io)

@@ -1,5 +1,6 @@
 import os
 import traceback
+import timeout_decorator
 from .ANPL.anpl.parser import ANPLParser
 from .Synthesizer import AbstractSynthesizer
 from .ANPL.ANPLCompiler import ANPLCompiler
@@ -9,6 +10,7 @@ _question_prefix = "----- Background -----\n"
 
 _question_suffix = "\n----- Task -----\n"
 
+# Check anpl code is valid in syntax
 def verify_code(anpl_code):
     anpl_parser = ANPLParser()
     anpl = anpl_parser.try_parse(anpl_code, from_user=False)
@@ -17,6 +19,17 @@ def verify_code(anpl_code):
     implemented_funs = {f.name for f in anpl.funs.values() if f.code}
     if 'main' not in implemented_funs:
         raise Exception("There should be one implemented main function!")
+
+# TODO: Move it to utils
+# Test python code by ANPL synthesizer
+@timeout_decorator.timeout(1)
+def eval_python(task_name: str,
+                code: str,
+                input_outputs: tuple[list[str], list[str]]):
+    entry = "main"
+    assert_str = ANPLCompiler.get_assert_str(entry, input_outputs)
+    code, passed_asserts = ANPLCompiler.eval_implementation(code, assert_str, ['', []])
+    return passed_asserts 
 
 class ANPLSynthesizer(AbstractSynthesizer):
 
@@ -53,8 +66,6 @@ class ANPLSynthesizer(AbstractSynthesizer):
                 success = False
             finally:
                 cache.dump()
-            with open(f'{save_path_prefix}_{num_completions}_{str(success)}.py', 'w') as f:
-                f.write(compiler.transfrom(entry, target_code))
         if not results:
             raise Exception(f"{task_name}: ANPL Synthesis Failed!")
         return results

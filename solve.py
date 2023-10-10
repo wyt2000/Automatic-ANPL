@@ -6,7 +6,7 @@ from ProblemSampler.APPSProblemSampler import APPSProblemSampler, APPSProblemDat
 from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
-from Synthesizer.ANPLSynthesizer import ANPLSynthesizer 
+from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python
 from utils import mkdir_override, mkdir_no_override, redirect_loggers
 
 import logging
@@ -30,25 +30,39 @@ async def solve_problem(task_name_prefix: str,
                         save_dir: str,
                         cache_dir: str,
                         delay_in_seconds: int = 1,
-                        max_restart_times: int = 1):
+                        max_restart_times: int = 1,
+                        max_solution_debug_times: int = 1,
+                        num_counterexamples: int = 8):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
     mkdir_no_override(cache_dir)
     restart_times = 0
-    debug_solution_times = 0
+    solution_debug_times = 0
+    program_debug_times = 0
     solution = None
+    program = None
+    success = False
     system_tests = json.loads(data.input_output)
+    inputs, outputs = system_tests["inputs"], system_tests["outputs"]
+    best_attempt = ["", []]
+
+    # Start a new generation of solution
+    def restart():
+        restart_times += 1
+        solution_debug_times, program_debug_times = 0, 0
+        solution, program = None, None
 
     # Try to solve the problem until reach max_restart_times
     while restart_times < max_restart_times:
-        task_name = f"{task_name_prefix}_{restart_times}_{debug_solution_times}"
-
-        # Generate new solution or use debugged solution
+        
+        # New start
         if solution is None:
-            logger.debug(f"{task_name_prefix}_{restart_times}: Generating new solution...")
+            # Generate new solution or use debugged solution
+            task_name = f"{task_name_prefix}_{restart_times}"
+            logger.debug(f"{task_name}: Generating new solution...")
             solution = await client.request_for_solutions(
-                task_name         = f"{task_name_prefix}_{restart_times}",
+                task_name         = f"{task_name}",
                 completion_kwargs = {
                     "model"       : model_name,
                     "temperature" : 0.6,
@@ -61,48 +75,83 @@ async def solve_problem(task_name_prefix: str,
             )
             solution = solution[0]
 
-        # Generate anpl code from solution
-        logger.debug(f"{task_name}: Generating anpl code...")
-        anpl_code = await client.request_for_codes(
-            task_name         = task_name,
-            completion_kwargs = {
-                "model"             : model_name,
-                "temperature"       : 0.2,
-                "presence_penalty"  : 0.1,
-            },
-            starter_code      = "",
-            solution          = solution,
-            suffix_name       = "anpl",
-            prompter          = prompter,
-            save_dir          = save_dir,
-            delay_in_seconds  = delay_in_seconds
-        )
+            # Generate anpl code from solution
+            task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}"
+            logger.debug(f"{task_name}: Generating anpl code...")
+            anpl_code = await client.request_for_codes(
+                task_name         = task_name,
+                completion_kwargs = {
+                    "model"             : model_name,
+                    "temperature"       : 0.2,
+                    "presence_penalty"  : 0.1,
+                },
+                starter_code      = "",
+                solution          = solution,
+                suffix_name       = "anpl",
+                prompter          = prompter,
+                save_dir          = save_dir,
+                delay_in_seconds  = delay_in_seconds
+            )
 
-        # Synthesize python code from anpl code
-        logger.debug(f"{task_name}: Synthesizer python code...")
-        program, success = None, False
+        # New program generation
+        if program is None:
+            # Synthesize python code from anpl code
+            logger.debug(f"{task_name}: Synthesizing python code...")
+            try:
+                log_path = pathlib.Path(save_dir, f"{task_name}.log")
+                with redirect_loggers(log_path):
+                    results = synthesizer.synthesize(
+                        task_name               = task_name,
+                        anpl_code               = anpl_code,
+                        save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
+                        cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
+                        question                = data.question,
+                        inputs                  = inputs,
+                        outputs                 = outputs,
+                        num_completions_list    = [num_completions]
+                    )
+                    program, _ = results[num_completions]
+            except Exception as err:
+                logger.exception(err)
+                restart()
+                continue
+
+        # Test the modified program 
+        task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}_{program_debug_times}"
+        passed_asserts = []
         try:
-            log_path = pathlib.Path(save_dir, f"{task_name}.log")
-            with redirect_loggers(log_path):
-                results = synthesizer.synthesize(
-                    task_name               = task_name,
-                    anpl_code               = anpl_code,
-                    save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
-                    cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
-                    question                = data.question,
-                    inputs                  = system_tests["inputs"],
-                    outputs                 = system_tests["outputs"],
-                    num_completions_list    = [num_completions]
-                )
-                program, success = results[0]
+            passed_asserts = eval_python(task_name, program, (inputs, outputs))
         except Exception as err:
             logger.exception(err)
+            pass
 
+        # Update the best attempt
+        if len(passed_asserts) >= len(best_attempt[1]):
+            best_attempt = [program, passed_asserts]
+
+        # Check if all system tests passed
+        if len(passed_asserts) == len(inputs):
+            success = True
+
+        # Save the program
+        with open(pathlib.Path(save_dir, f"{task_name}_{str(success)}.py"), "w") as f:
+            f.write(program)
+
+        # Exit if all system tests passed
         if success:
             logger.debug(f"{task_name}: Successfully solve the problem!")
             return True
-        logger.debug(f"{task_name}: Debug Start!")
-        
+        logger.debug(f"{task_name}: System Test Failed!")
+        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(inputs)} system tests!")
+
+        # Restart to generate new solution if the limit of solution debug reached 
+        if solution_debug_times == max_solution_debug_times:
+            restart()
+            continue
+
+        # Generate counterexamples from question and program 
+        logger.debug(f"{task_name}: Generating counterexamples...")
+
         restart_times += 1
     
     logger.debug(f"{task_name}: Can't solve the problem!")
@@ -113,11 +162,12 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-p", "--num_problems", help="Number of problems", type=int, default=1)
     argparser.add_argument("-k", "--num_completions", help="Number of function implementations for each code", type=int, default=4)
+    argparser.add_argument("-c", "--cache_dir", help="Path of the cache to save GPT response", type=str, required=True)
     args = argparser.parse_args()
 
     timestr = time.strftime("%m%d%H%M%S")
     save_prefix = f'anpl_apps_results_{timestr}'
-    cache_prefix = f'anpl_apps_cache_{timestr}'
+    cache_prefix = args.cache_dir
     mkdir_override(save_prefix)
     mkdir_no_override(cache_prefix)
 

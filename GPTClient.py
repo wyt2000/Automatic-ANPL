@@ -30,7 +30,7 @@ class GPTClient:
         # Look up cache
         cache_key = (task_name, messages) 
         if cache_value := self.cache.load(*cache_key):
-            logger.debug(f"{task_name}: Cache hit!")
+            self.logger.debug(f"{task_name}: Cache hit!")
             return cache_value
 
         # Wait and send request

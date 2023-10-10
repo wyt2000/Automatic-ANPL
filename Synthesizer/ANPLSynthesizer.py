@@ -31,6 +31,10 @@ def eval_python(task_name: str,
     code, passed_asserts = ANPLCompiler.eval_implementation(code, assert_str, ['', []])
     return passed_asserts 
 
+# Add import and stdin for code
+def wrap_code(code: str):
+    return ANPLCompiler.transform('main', code)
+
 class ANPLSynthesizer(AbstractSynthesizer):
 
     def synthesize(self,

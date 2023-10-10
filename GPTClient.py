@@ -23,13 +23,13 @@ class GPTClient:
         self.retry_interval = retry_interval
         self.cache = Cache(cache_path)
 
-    async def delayed_completion(self, task_name, delay_in_seconds, messages, **kwargs):
+    async def delayed_completion(self, task_name, delay_in_seconds, messages, use_cache=True, **kwargs):
         '''
         Delay `delay_in_seconds`, then async call `ChatCompletion`.
         '''
+        cache_key = (task_name, messages)
         # Look up cache
-        cache_key = (task_name, messages) 
-        if cache_value := self.cache.load(*cache_key):
+        if use_cache and (cache_value := self.cache.load(*cache_key)) is not None:
             self.logger.debug(f"{task_name}: Cache hit!")
             return cache_value
 
@@ -41,7 +41,8 @@ class GPTClient:
                     messages = messages,
                     **kwargs
                 )
-                self.cache.save(response, *cache_key)
+                if use_cache:
+                    self.cache.save(response, *cache_key)
                 return response
             except openai.error.InvalidRequestError as err:
                 self.logger.debug(f"{task_name}: InvalidRequestError!")
@@ -82,7 +83,7 @@ class GPTClient:
                                     prompter: AbstractPrompter,
                                     save_dir: str,
                                     completion_kwargs: dict = {}, 
-                                    delay_in_seconds: int = 1.0):
+                                    delay_in_seconds: float = 1.0):
         '''
         Request from chatGPT to get high-level solution for question.
         '''
@@ -116,7 +117,7 @@ class GPTClient:
                                 prompter: AbstractPrompter,
                                 save_dir: str,
                                 completion_kwargs: dict = {}, 
-                                delay_in_seconds: int = 1.0):
+                                delay_in_seconds: float = 1.0):
         '''
         Request from chatGPT to get code for high-level solution.
         '''
@@ -154,7 +155,7 @@ class GPTClient:
                                           prompter: AbstractPrompter,
                                           save_dir: str,
                                           completion_kwargs: dict = {}, 
-                                          delay_in_seconds: int = 1.0):
+                                          delay_in_seconds: float = 1.0):
         '''
         Request from chatGPT to get counterexample for question and program.
         '''

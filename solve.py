@@ -6,7 +6,7 @@ from ProblemSampler.APPSProblemSampler import APPSProblemSampler, APPSProblemDat
 from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
-from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python
+from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code
 from utils import mkdir_override, mkdir_no_override, redirect_loggers
 
 import logging
@@ -15,7 +15,6 @@ import argparse
 import asyncio
 import json
 import pathlib
-import time
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
@@ -29,7 +28,7 @@ async def solve_problem(task_name_prefix: str,
                         num_completions: int,
                         save_dir: str,
                         cache_dir: str,
-                        delay_in_seconds: int = 1,
+                        delay_in_seconds: float = 1.0,
                         max_restart_times: int = 1,
                         max_solution_debug_times: int = 1,
                         num_counterexamples: int = 8):
@@ -135,7 +134,7 @@ async def solve_problem(task_name_prefix: str,
 
         # Save the program
         with open(pathlib.Path(save_dir, f"{task_name}_{str(success)}.py"), "w") as f:
-            f.write(program)
+            f.write(wrap_code(program))
 
         # Exit if all system tests passed
         if success:
@@ -151,7 +150,36 @@ async def solve_problem(task_name_prefix: str,
 
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
+        counterexamples = await client.request_for_counterexamples(
+            task_name         = task_name,
+            completion_kwargs = {
+                "model"       : model_name,
+                "temperature" : 0.6,
+            },
+            question          = data.question,
+            program           = program,
+            prompter          = prompter,
+            save_dir          = save_dir,
+            delay_in_seconds  = delay_in_seconds
+        )
 
+        golden_io = [] 
+        for inp, out in counterexamples:
+            try:
+                passed_asserts = eval_python(task_name, program, ([inp], [out]))
+                if len(passed_asserts) == 0:
+                    golden_io = [inp, out]
+                    break
+            except Exception as err:
+                logger.exception(err)
+                pass
+
+        if len(golden_io) == 0:
+            logger.debug("{task_name}: Counterexample not found, restart!")
+            restart()
+            continue
+
+        logger.debug(golden_io)
         restart_times += 1
     
     logger.debug(f"{task_name}: Can't solve the problem!")
@@ -162,12 +190,11 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-p", "--num_problems", help="Number of problems", type=int, default=1)
     argparser.add_argument("-k", "--num_completions", help="Number of function implementations for each code", type=int, default=4)
-    argparser.add_argument("-c", "--cache_dir", help="Path of the cache to save GPT response", type=str, required=True)
+    argparser.add_argument("-s", "--save_path", help="Path to save the results and logs", type=str, required=True)
     args = argparser.parse_args()
 
-    timestr = time.strftime("%m%d%H%M%S")
-    save_prefix = f'anpl_apps_results_{timestr}'
-    cache_prefix = args.cache_dir
+    save_prefix = args.save_path
+    cache_prefix = f"{save_prefix}_cache"
     mkdir_override(save_prefix)
     mkdir_no_override(cache_prefix)
 

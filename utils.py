@@ -1,12 +1,11 @@
 import os
-os.environ['OPENBLAS_NUM_THREADS'] = '1' 
-
 import shutil
 import pathlib
 import coloredlogs
 import importlib
 import logging 
 import logging.config
+import json
 from contextlib import contextmanager
 
 def mkdir_override(dir_path):
@@ -65,4 +64,29 @@ def redirect_loggers(log_path: str):
     finally:
         file_handler.close()
         root_logger.handlers = root_handlers
+
+class Cache:
+    '''
+    Save the responses from GPT.
+    '''
+    def __init__(self, file_path='cache.json', clean=False):
+        self.file_path = file_path
+        if clean or not os.path.exists(file_path):
+            self.data = {}
+            return
+        with open(file_path, 'r') as f:
+            self.data = json.loads(f.read())
+
+    def get_key(self, *args):
+        return str(tuple(args))
+
+    def save(self, responses, *args):
+        self.data[self.get_key(*args)] = responses
+
+    def load(self, *args):
+        return self.data.get(self.get_key(*args))
+
+    def dump(self):
+        with open(self.file_path, 'w') as f:
+            f.write(json.dumps(self.data))
 

@@ -1,3 +1,6 @@
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1' 
+
 from GPTClient import GPTClient
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler, APPSProblemData
 from Prompter.Prompter import AbstractPrompter
@@ -58,8 +61,8 @@ async def solve_problem(task_name_prefix: str,
             )
             solution = solution[0]
 
-        logger.debug(f"{task_name}: Generating anpl code...")
         # Generate anpl code from solution
+        logger.debug(f"{task_name}: Generating anpl code...")
         anpl_code = await client.request_for_codes(
             task_name         = task_name,
             completion_kwargs = {
@@ -112,16 +115,16 @@ if __name__ == '__main__':
     argparser.add_argument("-k", "--num_completions", help="Number of function implementations for each code", type=int, default=4)
     args = argparser.parse_args()
 
-    sampler = APPSProblemSampler(difficulties=['competition'])
-    client = GPTClient()
-    prompter = ANPLPrompter()
-    synthesizer = ANPLSynthesizer()
-
     timestr = time.strftime("%m%d%H%M%S")
     save_prefix = f'anpl_apps_results_{timestr}'
     cache_prefix = f'anpl_apps_cache_{timestr}'
     mkdir_override(save_prefix)
     mkdir_no_override(cache_prefix)
+
+    sampler = APPSProblemSampler(difficulties=['competition'])
+    client = GPTClient(cache_path=pathlib.Path(cache_prefix, "client_cache.json"))
+    prompter = ANPLPrompter()
+    synthesizer = ANPLSynthesizer()
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
     for data in sampler.sample_randomly(args.num_problems):
@@ -143,4 +146,6 @@ if __name__ == '__main__':
             )
         except Exception as err:
             logger.exception(err)
+        finally:
+            client.cache.dump()
 

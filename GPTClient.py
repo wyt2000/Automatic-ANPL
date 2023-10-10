@@ -8,23 +8,40 @@ import asyncio
 import re
 from Prompter.Prompter import AbstractPrompter
 from Synthesizer.ANPLSynthesizer import verify_code
+from utils import Cache
 
 class GPTClient:
 
-    def __init__(self, retry_times=10, retry_interval=5):
+    def __init__(self,
+                 retry_times=10,
+                 retry_interval=5,
+                 cache_path='cache.json'):
+
         self.logger = logging.getLogger(__name__)
         self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:\s*(.*)")
         self.retry_times = retry_times
         self.retry_interval = retry_interval
+        self.cache = Cache(cache_path)
 
-    async def delayed_completion(self, task_name, delay_in_seconds, **kwargs):
+    async def delayed_completion(self, task_name, delay_in_seconds, messages, **kwargs):
         '''
         Delay `delay_in_seconds`, then async call `ChatCompletion`.
         '''
+        # Look up cache
+        cache_key = (task_name, messages) 
+        if cache_value := self.cache.load(*cache_key):
+            logger.debug(f"{task_name}: Cache hit!")
+            return cache_value
+
+        # Wait and send request
         await asyncio.sleep(delay_in_seconds)
         for i in range(self.retry_times):
             try:
-                response = await openai.ChatCompletion.acreate(**kwargs)
+                response = await openai.ChatCompletion.acreate(
+                    messages = messages,
+                    **kwargs
+                )
+                self.cache.save(response, *cache_key)
                 return response
             except openai.error.InvalidRequestError as err:
                 self.logger.debug(f"{task_name}: InvalidRequestError!")

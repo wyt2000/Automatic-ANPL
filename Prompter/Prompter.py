@@ -6,13 +6,6 @@ class AbstractPrompter(ABC):
     '''
 
     @abstractmethod
-    def get_golden_io(self, **kwargs):
-        '''
-        How to generate testcases.
-        '''
-        pass
-
-    @abstractmethod
     def get_background(self, **kwargs):
         '''
         Backgroud information of the task and the synthesizer.
@@ -33,9 +26,17 @@ class AbstractPrompter(ABC):
         '''
 
     @abstractmethod
+    def get_counterexample_prompt(self, **kwargs):
+        '''
+        How to generate counterexample from question and program.
+        '''
+        pass
+
+    @abstractmethod
     def get_code_description(self, **kwargs):
         '''
         Other information about output codes.
         '''
         pass
+
 

@@ -3,6 +3,9 @@ import shutil
 import pathlib
 import coloredlogs
 import importlib
+import logging 
+import logging.config
+from contextlib import contextmanager
 
 def mkdir_override(dir_path):
     '''
@@ -45,3 +48,16 @@ def make_object(module_name, class_name, **kwargs):
     module = importlib.import_module(module_name)
     cls = getattr(module, class_name)
     return cls(**kwargs)
+
+@contextmanager
+def redirect_loggers(log_path: str):
+    file_handler = logging.FileHandler(log_path)
+    root_logger = logging.getLogger('root')
+    root_handlers = [root_logger.handlers[0]]
+    root_logger.handlers = [file_handler]
+    try:
+        yield 
+    finally:
+        file_handler.close()
+        root_logger.handlers = root_handlers
+

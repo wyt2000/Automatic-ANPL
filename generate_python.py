@@ -6,18 +6,17 @@ from Synthesizer.ANPLSynthesizer import ANPLSynthesizer
 from ProblemSampler.APPSProblemSampler import APPSProblemSampler
 
 from pathlib import Path
-from utils import mkdir_override, mkdir_no_override
+from utils import mkdir_override, mkdir_no_override, redirect_loggers
 import logging 
 import logging.config
-from contextlib import redirect_stdout
-from contextlib import redirect_stderr
+from contextlib import contextmanager
 import json
 import argparse
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
-def generate(problem_id: int,
+def generate_python(problem_id: int,
              synthesizer: AbstractSynthesizer,
              sampler: APPSProblemSampler,
              n: int,
@@ -42,25 +41,19 @@ def generate(problem_id: int,
             with open(Path(input_dir, f"{task_name}_{i}.{suffix_name}")) as f:
                 code = f.read()
             log_path = Path(log_dir, f"{task_name}_{i}.log")
-            file_handler = logging.FileHandler(log_path)
-            root_logger = logging.getLogger('root')
-            root_handlers = [root_logger.handlers[0]]
-            root_logger.handlers = [file_handler]
-            synthesizer.synthesize(
-                f"{task_name}_{i}",
-                code,
-                Path(save_dir, f"{task_name}_{i}"),
-                Path(cache_dir, f"{task_name}_{i}"),
-                question,
-                inputs,
-                outputs,
-                [k]
-            )
+            with redirect_loggers(log_path):
+                synthesizer.synthesize(
+                    f"{task_name}_{i}",
+                    code,
+                    Path(save_dir, f"{task_name}_{i}"),
+                    Path(cache_dir, f"{task_name}_{i}"),
+                    question,
+                    inputs,
+                    outputs,
+                    [k]
+                )
         except Exception as err:
             logger.exception(err)
-        finally:
-            file_handler.close()
-            root_logger.handlers = root_handlers
         logger.debug(f"Synthesizing {task_name}_{i} done!")
 
 if __name__ == '__main__':
@@ -92,5 +85,5 @@ if __name__ == '__main__':
     logger.debug(problem_ids)
 
     for problem_id in problem_ids:
-        generate(problem_id, synthesizer, sampler, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)
+        generate_python(problem_id, synthesizer, sampler, n, k, input_dir, save_dir, cache_dir, log_dir, suffix_name)
 

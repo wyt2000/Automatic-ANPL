@@ -47,15 +47,13 @@ class ANPLSynthesizer(AbstractSynthesizer):
                     num_completions = num_completions,
                     prefix          = prefix
                 )
-                results[num_completions] = target_code
+                results[num_completions] = [target_code, success]
             except Exception as err:
                 traceback.print_exc()
                 success = False
             finally:
                 cache.dump()
-            if not success: 
-                continue
-            with open(f'{save_path_prefix}_{num_completions}.py', 'w') as f:
+            with open(f'{save_path_prefix}_{num_completions}_{str(success)}.py', 'w') as f:
                 f.write(compiler.transfrom(entry, target_code))
         if not results:
             raise Exception(f"{task_name}: ANPL Synthesis Failed!")

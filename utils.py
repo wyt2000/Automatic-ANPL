@@ -1,4 +1,6 @@
 import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1' 
+
 import shutil
 import pathlib
 import coloredlogs
@@ -51,6 +53,9 @@ def make_object(module_name, class_name, **kwargs):
 
 @contextmanager
 def redirect_loggers(log_path: str):
+    '''
+    Redirect loggers output to file
+    '''
     file_handler = logging.FileHandler(log_path)
     root_logger = logging.getLogger('root')
     root_handlers = [root_logger.handlers[0]]

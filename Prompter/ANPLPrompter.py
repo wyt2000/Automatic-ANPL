@@ -24,7 +24,7 @@ _counterexample_prompt = """-----Question-----
 -----Solution-----
 {program}
 -----Task-----
-There are some mistakes in the solution program, please give an input and the correct output, which will let the program return a wrong answer. 
+There are some mistakes in the solution program, please give an input consist with the the question and the correct output, which will let the program return a wrong answer. 
 Your output should be in the following format:
 ```
 -----Input-----

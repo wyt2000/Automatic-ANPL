@@ -175,9 +175,6 @@ class GPTClient:
             responses = self.get_response_list(responses)
             responses = [self.extract_io(response) for response in responses]
             self.logger.debug(f'{task_name}: Requesting for counterexample done!')
-            for i, response in enumerate(responses):
-                with open(pathlib.Path(save_dir, f'{task_name}_{i}.io'), 'w') as f:
-                    f.write(json.dumps(response))
             return responses
 
 

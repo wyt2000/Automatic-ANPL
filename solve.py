@@ -31,7 +31,7 @@ async def solve_problem(task_name_prefix: str,
                         delay_in_seconds: float = 1.0,
                         max_restart_times: int = 1,
                         max_solution_debug_times: int = 1,
-                        num_counterexamples: int = 8):
+                        num_counterexamples: int = 4):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
@@ -155,6 +155,7 @@ async def solve_problem(task_name_prefix: str,
             completion_kwargs = {
                 "model"       : model_name,
                 "temperature" : 0.6,
+                "n"           : num_counterexamples
             },
             question          = data.question,
             program           = program,
@@ -163,8 +164,10 @@ async def solve_problem(task_name_prefix: str,
             delay_in_seconds  = delay_in_seconds
         )
 
+        # Check if the program can pass the counterexample
         golden_io = [] 
         for inp, out in counterexamples:
+            if not inp or not out: continue
             try:
                 passed_asserts = eval_python(task_name, program, ([inp], [out]))
                 if len(passed_asserts) == 0:
@@ -174,12 +177,16 @@ async def solve_problem(task_name_prefix: str,
                 logger.exception(err)
                 pass
 
+        # Restart if counterexample generation failed
         if len(golden_io) == 0:
             logger.debug("{task_name}: Counterexample not found, restart!")
             restart()
             continue
 
-        logger.debug(golden_io)
+        # Save counterexample
+        with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
+            f.write(json.dumps(golden_io))
+
         restart_times += 1
     
     logger.debug(f"{task_name}: Can't solve the problem!")

@@ -26,13 +26,15 @@ class TraceException(Exception):
     def __init__(self,
                  lineno: int,
                  func_name: str,
+                 code: str,
                  *args):
         super().__init__(*args)
         self.lineno = lineno
         self.func_name = func_name
+        self.code = code
 
     def __repr__(self):
-        return f"{super().__repr__()} at line {self.lineno} in function \'{self.func_name}\'"
+        return f"{super().args[0].__repr__()} at line {self.lineno} in function \'{self.func_name}\': {self.code.strip()}"
 
 class IOExample:
     '''
@@ -56,10 +58,12 @@ class IOCollector:
     Wrap func in module to record input/output when exec.
     '''
     def __init__(self,
+                 code: str, # for lineno -> line str
                  func_names: list[str],
                  module: ModuleType,
                  limit: int= 3):
 
+        self.full_code  = code.splitlines()
         self.func_names = func_names
         self.func_ios   = {}
         self.limit      = limit
@@ -93,10 +97,16 @@ class IOCollector:
                 output = func(*args, **kwargs)
             except Exception as e:
                 te = traceback.TracebackException.from_exception(e)
-                if isinstance(e, TraceException): te.stack.pop() # skip wrapper function
-                lineno = te.stack[-1].lineno if te.stack else -1
-                func_name = te.stack[-1].name if te.stack else ""
-                exc = TraceException(lineno, func_name, e.args[0] if isinstance(e, TraceException) else e)
+                if isinstance(e, TraceException): # skip wrapper function
+                    te.stack.pop() 
+                    e = e.args[0]
+                elif isinstance(e, timeout_decorator.TimeoutError): # skip call stack in timeout decorator  
+                    while te.stack and te.stack[-1].name != func.__name__:
+                        te.stack.pop()
+                lineno = te.stack[1].lineno if te.stack else -1
+                func_name = te.stack[1].name if te.stack else ""
+                code = self.full_code[lineno - 1] if lineno != -1 else ""
+                exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
 
             # Save trace as IOExample
@@ -135,7 +145,7 @@ def exec_with_trace(code: str,
     '''
     # Load module from code and find entry function
     module = import_module_from_string(code)
-    io = IOCollector(func_names, module)
+    io = IOCollector(code, func_names, module)
     entry_func = getattr(module, entry_name, None)
     if not (entry_func and isinstance(entry_func, FunctionType)):
         raise ValueError(f"Couldn't find entry function {entry}")
@@ -151,9 +161,12 @@ def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
     # Parse code to ast.Node
     try:
         root = ast.parse(code)
-    except Exception as err:
-        raise Exception("Syntax Error in code!")
-    assert isinstance(root, ast.Module)
+    except Exception as e:
+        te = traceback.TracebackException.from_exception(e)
+        lineno = te.stack[0].lineno
+        return None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
+    if not isinstance(root, ast.Module):
+        return None, Exception("The code couldn't be parsed as ast.Module!")
 
     # Get function names
     func_names = []
@@ -165,7 +178,16 @@ def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
     return exec_with_trace(code, func_names, inputs)
 
 if __name__ == '__main__':
-    # TEST 1: function I/O trace
+    print("# TEST 0: Compile Error")
+    code = '''
+def main(input_str: str):
+    +- 
+    inputs = parse_input(input_str)
+    return add_list(inputs)
+    '''
+    ios, exc = trace_code(code, "1 2 3 4 5")
+    print(ios, exc)
+    print("# TEST 1: function I/O trace")
     code = '''
 def add(x: int, i: int):
     return x + i
@@ -183,10 +205,43 @@ def main(input_str: str):
     ios, exc = trace_code(code, "1 2 3 4 5")
     print(ios, exc)
     
-    # TEST 2: Runtime Error
+    print("# TEST 2: Runtime Error")
     code = '''
 def g(inputs: str):
     return inputs[100]
+def f(inputs: str):
+    return g(inputs) 
+def parse_input(input_str: str):
+    return input_str
+def main(input_str: str):
+    inputs = parse_input(input_str)
+    return f(inputs)
+    '''
+    ios, exc = trace_code(code, "123")
+    print(ios, exc)
+
+    print("# TEST 3: Time limit exceeded")
+    code = '''
+from time import sleep
+def g(inputs: str):
+    sleep(5)
+    return -1
+def f(inputs: str):
+    return g(inputs) 
+def parse_input(input_str: str):
+    return input_str
+def main(input_str: str):
+    inputs = parse_input(input_str)
+    return f(inputs)
+    '''
+    ios, exc = trace_code(code, "123")
+    print(ios, exc)
+
+    print("# TEST 4: Memory limit exceeded")
+    code = '''
+def g(inputs: str):
+    a = [0] * 1000000000
+    return -1
 def f(inputs: str):
     return g(inputs) 
 def parse_input(input_str: str):

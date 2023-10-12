@@ -61,7 +61,7 @@ class IOCollector:
                  code: str, # for lineno -> line str
                  func_names: list[str],
                  module: ModuleType,
-                 limit: int= 3):
+                 limit: int= 5):
 
         self.full_code  = code.splitlines()
         self.func_names = func_names

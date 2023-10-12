@@ -91,13 +91,12 @@ class IOCollector:
             exc = None
             try:
                 output = func(*args, **kwargs)
-            except TraceException as te:
-                exc = te
             except Exception as e:
                 te = traceback.TracebackException.from_exception(e)
+                if isinstance(e, TraceException): te.stack.pop() # skip wrapper function
                 lineno = te.stack[-1].lineno if te.stack else -1
                 func_name = te.stack[-1].name if te.stack else ""
-                exc = TraceException(lineno, func_name, f"{e.__class__.__name__}: {e}")
+                exc = TraceException(lineno, func_name, e.args[0] if isinstance(e, TraceException) else e)
             frozen_output = deepcopy(output)
 
             # Save trace as IOExample
@@ -107,9 +106,10 @@ class IOCollector:
             if len(self.func_ios[func_name]) < self.limit:
                 self.func_ios[func_name].append(IOExample(frozen_inputs, frozen_output, exc))
 
-            # Handle exception
+            # Handle nested exception
             if exc:
                 raise exc
+
             return output
         return wrapper
 
@@ -185,13 +185,15 @@ def main(input_str: str):
     
     # TEST 2: Runtime Error
     code = '''
-def re(inputs: str):
+def g(inputs: str):
     return inputs[100]
+def f(inputs: str):
+    return g(inputs) 
 def parse_input(input_str: str):
     return input_str
 def main(input_str: str):
     inputs = parse_input(input_str)
-    return re(inputs)
+    return f(inputs)
     '''
     ios, exc = trace_code(code, "123")
     print(ios, exc)

@@ -234,9 +234,9 @@ class GPTClient:
             responses = self.get_response_list(responses)
             self.logger.debug(f'{task_name}: Requesting for debugged function {func_name} done!')
             for i, response in enumerate(responses):
-                response = self.extract_func(response, func_name)
-                with open(pathlib.Path(save_dir, f'{task_name}_{func_name}_{i}.py'), 'w') as f:
-                    f.write(response)
+                responses[i] = self.extract_func(response, func_name)
+            with open(pathlib.Path(save_dir, f'{task_name}_{func_name}.json'), 'w') as f:
+                f.write(json.dumps(responses))
             return responses
 
 

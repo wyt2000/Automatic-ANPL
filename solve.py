@@ -17,6 +17,7 @@ import asyncio
 import json
 import pathlib
 
+
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
@@ -34,7 +35,8 @@ async def solve_problem(task_name_prefix: str,
                         delay_in_seconds: float = 1.0,
                         max_restart_times: int = 1,
                         max_solution_debug_times: int = 1,
-                        num_counterexamples: int = 4):
+                        num_counterexamples: int = 4,
+                        max_attempts: int = 1000):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
@@ -192,18 +194,18 @@ async def solve_problem(task_name_prefix: str,
             f.write(json.dumps(golden_io))
 
         # Generate traces for each function under golden input
-        func_codes, func_traces, exception = trace_code(program, golden_io[0])
-
-        logger.debug(func_traces)
-
-        # Request for function debug
-        for func_name, traces in func_traces.func_ios.items():
-            await client.request_for_debugged_function(
+        func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0])
+        
+        # Request for function debug in function dependency sequence
+        implementation_sets = [set() for i in range(len(func_names_sorted))]
+        for i, func_name in enumerate(func_names_sorted):
+            traces = func_traces.func_ios[func_name]
+            debugged_funcs = await client.request_for_debugged_function(
                 task_name         = task_name,
                 completion_kwargs = {
                     "model"             : model_name,
                     "temperature"       : 0.6, # high temperature to make more difference
-                    "n"                 : 4 
+                    "n"                 : num_completions 
                 },
                 solution    = solution,
                 program     = program,
@@ -214,6 +216,7 @@ async def solve_problem(task_name_prefix: str,
                 save_dir    = save_dir,
                 delay_in_seconds  = delay_in_seconds
             )
+            implementation_sets[i].update([func for func in debugged_funcs if func])
 
         restart_times += 1
     

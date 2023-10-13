@@ -7,6 +7,7 @@ from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code
+from Tracer import trace_code
 from utils import mkdir_override, mkdir_no_override, redirect_loggers
 
 import logging
@@ -18,6 +19,8 @@ import pathlib
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
+
+program_prefix = "from typing import *\n"
 
 async def solve_problem(task_name_prefix: str,
                         model_name: str,
@@ -110,6 +113,7 @@ async def solve_problem(task_name_prefix: str,
                         num_completions_list    = [num_completions]
                     )
                     program, _ = results[num_completions]
+                    program = program_prefix + "\n" + program
             except Exception as err:
                 logger.exception(err)
                 restart()
@@ -134,7 +138,7 @@ async def solve_problem(task_name_prefix: str,
 
         # Save the program
         with open(pathlib.Path(save_dir, f"{task_name}_{str(success)}.py"), "w") as f:
-            f.write(wrap_code(program))
+            f.write(program)
 
         # Exit if all system tests passed
         if success:
@@ -186,6 +190,13 @@ async def solve_problem(task_name_prefix: str,
         # Save counterexample
         with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
             f.write(json.dumps(golden_io))
+
+        logger.debug(golden_io)
+
+        trace, exception = trace_code(program, golden_io[0])
+
+        logger.debug(trace)
+        logger.debug(exception)
 
         restart_times += 1
     

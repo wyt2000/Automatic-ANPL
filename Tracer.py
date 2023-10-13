@@ -103,8 +103,8 @@ class IOCollector:
                 elif isinstance(e, timeout_decorator.TimeoutError): # skip call stack in timeout decorator  
                     while te.stack and te.stack[-1].name != func.__name__:
                         te.stack.pop()
-                lineno = te.stack[1].lineno if te.stack else -1
-                func_name = te.stack[1].name if te.stack else ""
+                lineno = te.stack[-1].lineno if te.stack else -1
+                func_name = te.stack[-1].name if te.stack else ""
                 code = self.full_code[lineno - 1] if lineno != -1 else ""
                 exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
@@ -148,13 +148,17 @@ def exec_with_trace(code: str,
     io = IOCollector(code, func_names, module)
     entry_func = getattr(module, entry_name, None)
     if not (entry_func and isinstance(entry_func, FunctionType)):
-        raise ValueError(f"Couldn't find entry function {entry}")
+        raise ValueError(f"Couldn't find entry function {entry_name}")
     exc = None
     try:
         exec_with_limit(entry_func, inputs)
     except Exception as err:
         exc = err 
     return io, exc 
+
+# Convert ast.FunctionDef to code str
+def unparse_function(func: ast.FunctionDef):
+    pass
 
 # Trace all functions in code
 def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
@@ -165,8 +169,6 @@ def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
         te = traceback.TracebackException.from_exception(e)
         lineno = te.stack[0].lineno
         return None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
-    if not isinstance(root, ast.Module):
-        return None, Exception("The code couldn't be parsed as ast.Module!")
 
     # Get function names
     func_names = []

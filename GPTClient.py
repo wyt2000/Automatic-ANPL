@@ -9,6 +9,7 @@ import re
 from Prompter.Prompter import AbstractPrompter
 from Synthesizer.ANPLSynthesizer import verify_code
 from utils import Cache
+from Tracer import IOExample
 
 class GPTClient:
 
@@ -60,6 +61,12 @@ class GPTClient:
 
     def extract_code(self, response: str):
         return response.strip('`')
+
+    def extract_func(self, response: str):
+        response = response.strip('`')
+        if response.startswith('python'):
+            response = response[6:]
+        return response
 
     def extract_io(self, response: str):
         inp, out = [], []
@@ -176,6 +183,48 @@ class GPTClient:
             responses = [self.extract_io(response) for response in responses]
             self.logger.debug(f'{task_name}: Requesting for counterexample done!')
             return responses
+
+    async def request_for_debugged_function(self,
+                                            task_name: str,
+                                            question: str,
+                                            program: str,
+                                            func_name: str,
+                                            func_code: str,
+                                            func_traces: list[IOExample],
+                                            prompter: AbstractPrompter,
+                                            save_dir: str,
+                                            completion_kwargs: dict = {}, 
+                                            delay_in_seconds: float = 1.0):
+        '''
+        Request from chatGPT to get repaired function by question, program and traces.
+        '''
+        # Add trace before function code
+        function_with_traces = ""
+        for trace in func_traces:
+            function_with_traces += f"# {repr(trace)}"
+        function_with_traces += func_code
+        
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            openai.aiosession.set(session)
+            messages = [
+                {"role": "system", "content": prompter.get_background()},
+                {"role": "user", "content": prompter.get_function_debug_prompt(question=question, func_name=func_name, program=program, function_with_traces=function_with_traces)}
+            ]
+            self.logger.debug(f'{task_name}: Requesting for debugged function {func_name}...')
+            responses = await self.delayed_completion(
+                task_name        = task_name,
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
+            )
+            responses = self.get_response_list(responses)
+            self.logger.debug(f'{task_name}: Requesting for debugged function {func_name} done!')
+            for i, response in enumerate(responses):
+                response = self.extract_func(response)
+                with open(pathlib.Path(save_dir, f'{task_name}_{func_name}_{i}.py'), 'w') as f:
+                    f.write(response)
+            return responses
+
 
 
 if __name__ == '__main__':

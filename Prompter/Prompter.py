@@ -33,10 +33,20 @@ class AbstractPrompter(ABC):
         pass
 
     @abstractmethod
+    def get_function_debug_prompt(self, **kwargs):
+        '''
+        How to debug by function traces.
+        '''
+        pass
+
+
+    @abstractmethod
     def get_code_description(self, **kwargs):
         '''
         Other information about output codes.
         '''
         pass
+
+
 
 

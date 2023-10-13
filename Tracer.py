@@ -156,14 +156,8 @@ def exec_with_trace(code: str,
         exc = err 
     return io, exc 
 
-# Convert ast.FunctionDef to code str
-def unparse_function(func: ast.FunctionDef):
-    m = ast.Module([], [])
-    m.body.append(func)
-    return ast.unparse(m)
-
 # Trace all functions in code
-def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
+def trace_code(code: str, inputs: str) -> list[dict[str, str], IOCollector, Exception]:
     # Parse code to ast.Node
     try:
         root = ast.parse(code)
@@ -177,7 +171,7 @@ def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
     for node in root.body:
         if isinstance(node, ast.FunctionDef):
             func: ast.FunctionDef = node
-            func_codes[func.name] = unparse_function(func)
+            func_codes[func.name] = ast.unparse(func)
 
     try:
         ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs)

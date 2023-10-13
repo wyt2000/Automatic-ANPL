@@ -13,18 +13,39 @@ class ANPLPrompter(AbstractPrompter):
 
     def get_counterexample_prompt(self, **kwargs):
         return _counterexample_prompt.format(**kwargs)
+    
+    def get_function_debug_prompt(self, **kwargs):
+        return _function_debug_prompt.format(**kwargs)
 
     def get_code_description(self, **kwargs):
         return _code_description.format(**kwargs)
 
+    
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
+
+_function_debug_prompt = """-----Question-----
+{question}
+Here is a program to solve the problem mentioned above.
+-----Solution-----
+{program}
+-----Function-----
+Here is a function of the solution program with input-output traces. 
+{function_with_traces}
+-----Task-----
+There are some mistakes or exceptions in the function, return the fixed function.
+Your output should be in the following format:
+```
+(The code of the function {func_name})
+```
+Omit explanations or any additional text.
+"""
 
 _counterexample_prompt = """-----Question-----
 {question}
 -----Solution-----
 {program}
 -----Task-----
-There are some mistakes in the solution program, please give an input consist with the the question and the correct output, which will let the program return a wrong answer. 
+There are some mistakes in the solution program, please give an input consistent with the the question and the correct output, which will let the program return a wrong answer. 
 Your output should be in the following format:
 ```
 -----Input-----

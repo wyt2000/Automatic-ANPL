@@ -191,12 +191,29 @@ async def solve_problem(task_name_prefix: str,
         with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
             f.write(json.dumps(golden_io))
 
-        logger.debug(golden_io)
+        # Generate traces for each function under golden input
+        func_codes, func_traces, exception = trace_code(program, golden_io[0])
 
-        trace, exception = trace_code(program, golden_io[0])
+        logger.debug(func_traces)
 
-        logger.debug(trace)
-        logger.debug(exception)
+        # Request for function debug
+        for func_name, traces in func_traces.func_ios.items():
+            await client.request_for_debugged_function(
+                task_name         = task_name,
+                completion_kwargs = {
+                    "model"             : model_name,
+                    "temperature"       : 0.6, # high temperature to make more difference
+                    "n"                 : 4 
+                },
+                question    = data.question,
+                program     = program,
+                func_name   = func_name,
+                func_code   = func_codes[func_name],
+                func_traces = traces,
+                prompter    = prompter,
+                save_dir    = save_dir,
+                delay_in_seconds  = delay_in_seconds
+            )
 
         restart_times += 1
     

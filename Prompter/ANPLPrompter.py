@@ -23,21 +23,22 @@ class ANPLPrompter(AbstractPrompter):
     
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
 
-_function_debug_prompt = """-----Question-----
-{question}
-Here is a program to solve the problem mentioned above.
------Solution-----
+_function_debug_prompt = """-----Solution-----
+Here is a high-level solution of a programming competition problem.
+{solution}
+-----Program-----
+Here is an program implementation of the solution.
 {program}
 -----Function-----
-Here is a function of the solution program with input-output traces. 
+Here is a function of the program with input-output traces. 
 {function_with_traces}
 -----Task-----
 There are some mistakes or exceptions in the function, return the fixed function.
 Your output should be in the following format:
 ```
-(The code of the function {func_name})
+def {func_name}(...):
 ```
-Omit explanations or any additional text.
+You should only output the function code! Omit explanations or any additional text!
 """
 
 _counterexample_prompt = """-----Question-----

@@ -205,7 +205,7 @@ async def solve_problem(task_name_prefix: str,
                     "temperature"       : 0.6, # high temperature to make more difference
                     "n"                 : 4 
                 },
-                question    = data.question,
+                solution    = solution,
                 program     = program,
                 func_name   = func_name,
                 func_code   = func_codes[func_name],

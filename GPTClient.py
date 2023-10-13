@@ -19,7 +19,7 @@ class GPTClient:
                  cache_path='cache.json'):
 
         self.logger = logging.getLogger(__name__)
-        self.pattern = re.compile("^\s*[^\d\W]\w*\(.*\).*\:\s*(.*)")
+        self.pattern = re.compile("^def\s+([^\d\W]\w*)\(.*\).*\:")
         self.retry_times = retry_times
         self.retry_interval = retry_interval
         self.cache = Cache(cache_path)
@@ -62,11 +62,25 @@ class GPTClient:
     def extract_code(self, response: str):
         return response.strip('`')
 
-    def extract_func(self, response: str):
-        response = response.strip('`')
-        if response.startswith('python'):
-            response = response[6:]
-        return response
+    # filter other functions
+    def extract_func(self, response: str, target: str):
+        has_target = False
+        is_target = False 
+        code = []
+        for line in response.splitlines():
+            indent = len(line) - len(line.lstrip())
+            if len(line) > 0 and indent == 0:
+                if m := self.pattern.match(line):
+                    func_name = m.group(1)
+                    is_target = (func_name == target)
+                    has_target |= is_target
+                else:
+                    is_target = False 
+            if is_target or line.startswith("import") or line.startswith("from"):
+                code.append(line)
+        if not has_target:
+            return ''
+        return '\n'.join(code) 
 
     def extract_io(self, response: str):
         inp, out = [], []
@@ -186,7 +200,7 @@ class GPTClient:
 
     async def request_for_debugged_function(self,
                                             task_name: str,
-                                            question: str,
+                                            solution: str,
                                             program: str,
                                             func_name: str,
                                             func_code: str,
@@ -196,19 +210,19 @@ class GPTClient:
                                             completion_kwargs: dict = {}, 
                                             delay_in_seconds: float = 1.0):
         '''
-        Request from chatGPT to get repaired function by question, program and traces.
+        Request from chatGPT to get repaired function by solution, program and traces.
         '''
         # Add trace before function code
-        function_with_traces = ""
+        function_with_traces = "# Trace: \n"
         for trace in func_traces:
-            function_with_traces += f"# {repr(trace)}"
+            function_with_traces += f"#    - {repr(trace)}\n"
         function_with_traces += func_code
         
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
             messages = [
                 {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_function_debug_prompt(question=question, func_name=func_name, program=program, function_with_traces=function_with_traces)}
+                {"role": "user", "content": prompter.get_function_debug_prompt(solution=solution, func_name=func_name, program=program, function_with_traces=function_with_traces)}
             ]
             self.logger.debug(f'{task_name}: Requesting for debugged function {func_name}...')
             responses = await self.delayed_completion(
@@ -220,7 +234,7 @@ class GPTClient:
             responses = self.get_response_list(responses)
             self.logger.debug(f'{task_name}: Requesting for debugged function {func_name} done!')
             for i, response in enumerate(responses):
-                response = self.extract_func(response)
+                response = self.extract_func(response, func_name)
                 with open(pathlib.Path(save_dir, f'{task_name}_{func_name}_{i}.py'), 'w') as f:
                     f.write(response)
             return responses

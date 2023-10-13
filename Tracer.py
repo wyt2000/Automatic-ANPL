@@ -158,7 +158,9 @@ def exec_with_trace(code: str,
 
 # Convert ast.FunctionDef to code str
 def unparse_function(func: ast.FunctionDef):
-    pass
+    m = ast.Module([], [])
+    m.body.append(func)
+    return ast.unparse(m)
 
 # Trace all functions in code
 def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
@@ -168,16 +170,20 @@ def trace_code(code: str, inputs: str) -> list[IOCollector, Exception]:
     except Exception as e:
         te = traceback.TracebackException.from_exception(e)
         lineno = te.stack[0].lineno
-        return None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
+        return None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
 
-    # Get function names
-    func_names = []
+    # Get function names and codes
+    func_codes = {} 
     for node in root.body:
         if isinstance(node, ast.FunctionDef):
             func: ast.FunctionDef = node
-            func_names.append(func.name)
+            func_codes[func.name] = unparse_function(func)
 
-    return exec_with_trace(code, func_names, inputs)
+    try:
+        ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs)
+        return func_codes, ios, exc
+    except Exception as exc:
+        return func_codes, None, exc
 
 if __name__ == '__main__':
     print("# TEST 0: Compile Error")
@@ -187,7 +193,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return add_list(inputs)
     '''
-    ios, exc = trace_code(code, "1 2 3 4 5")
+    _, ios, exc = trace_code(code, "1 2 3 4 5")
     print(ios, exc)
     print("# TEST 1: function I/O trace")
     code = '''
@@ -204,7 +210,8 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return add_list(inputs)
     '''
-    ios, exc = trace_code(code, "1 2 3 4 5")
+    func_codes, ios, exc = trace_code(code, "1 2 3 4 5")
+    print(func_codes)
     print(ios, exc)
     
     print("# TEST 2: Runtime Error")
@@ -219,7 +226,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    ios, exc = trace_code(code, "123")
+    _, ios, exc = trace_code(code, "123")
     print(ios, exc)
 
     print("# TEST 3: Time limit exceeded")
@@ -236,7 +243,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    ios, exc = trace_code(code, "123")
+    _, ios, exc = trace_code(code, "123")
     print(ios, exc)
 
     print("# TEST 4: Memory limit exceeded")
@@ -252,7 +259,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    ios, exc = trace_code(code, "123")
+    _, ios, exc = trace_code(code, "123")
     print(ios, exc)
 
 

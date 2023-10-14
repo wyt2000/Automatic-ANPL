@@ -6,9 +6,9 @@ from ProblemSampler.APPSProblemSampler import APPSProblemSampler, APPSProblemDat
 from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
-from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code
+from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code, get_assert_str, eval_sampled_codes
 from Tracer import trace_code
-from utils import mkdir_override, mkdir_no_override, redirect_loggers
+from utils import mkdir_override, mkdir_no_override, redirect_loggers, sample_product
 
 import logging
 import logging.config
@@ -16,12 +16,24 @@ import argparse
 import asyncio
 import json
 import pathlib
-
+import functools
+import operator
+import random
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
 program_prefix = "from typing import *\n"
+
+# Compose sampled functions as a complete python code, yield as generator
+def generate_code(indices_sets: list[list[str]],
+                  func_candidate_sets: list[list[str]]):
+    for indices in indices_sets:
+        code = ''
+        for i, j in enumerate(indices):
+            code += func_candidate_sets[i][j]
+            code += '\n\n'
+        yield code
 
 async def solve_problem(task_name_prefix: str,
                         model_name: str,
@@ -35,8 +47,10 @@ async def solve_problem(task_name_prefix: str,
                         delay_in_seconds: float = 1.0,
                         max_restart_times: int = 1,
                         max_solution_debug_times: int = 1,
+                        max_program_debug_times: int = 2,
                         num_counterexamples: int = 4,
-                        max_attempts: int = 1000):
+                        max_attempts: int = 1000,
+                        seed=42):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
@@ -53,6 +67,7 @@ async def solve_problem(task_name_prefix: str,
 
     # Start a new generation of solution
     def restart():
+        nonlocal restart_times
         restart_times += 1
         solution_debug_times, program_debug_times = 0, 0
         solution, program = None, None
@@ -193,12 +208,20 @@ async def solve_problem(task_name_prefix: str,
         with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
             f.write(json.dumps(golden_io))
 
+        #TODO!: high-level solution reflection
+        if program_debug_times == max_program_debug_times:
+            restart()
+            continue
+
         # Generate traces for each function under golden input
         func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0])
+        logger.debug(func_traces)
         
         # Request for function debug in function dependency sequence
-        implementation_sets = [set() for i in range(len(func_names_sorted))]
+        implementations = [{func_codes[name]} for name in func_names_sorted]
         for i, func_name in enumerate(func_names_sorted):
+            if func_name not in func_traces.func_ios:
+                continue
             traces = func_traces.func_ios[func_name]
             debugged_funcs = await client.request_for_debugged_function(
                 task_name         = task_name,
@@ -216,10 +239,33 @@ async def solve_problem(task_name_prefix: str,
                 save_dir    = save_dir,
                 delay_in_seconds  = delay_in_seconds
             )
-            implementation_sets[i].update([func for func in debugged_funcs if func])
+            implementations[i].update([func for func in debugged_funcs if func])
 
-        restart_times += 1
-    
+        # TODO: Unify with ANPL code
+        # Collect candidates as a 2D-list (func x candidate).
+        func_candidate_sets = [list(candidate) for candidate in implementations]
+        func_candidate_sets_dims = [len(s) for s in func_candidate_sets]
+        num_candidates = functools.reduce(operator.mul, func_candidate_sets_dims, 1)
+
+        # Randomly sample debugged functions.
+        n_to_try = min(max_attempts, num_candidates)
+        random.seed(seed)
+        indices_sets = sample_product(func_candidate_sets, num_candidates, n_to_try)
+        code_generator = generate_code(indices_sets, func_candidate_sets)
+        assert_str = get_assert_str((inputs, outputs))
+
+        # Eval all sampled code to find best_attempt
+        program_debug_times += 1
+        task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}_{program_debug_times}"
+        program, _ = eval_sampled_codes(
+           task_name      = task_name,
+           code_generator = code_generator,
+           assert_str     = assert_str,
+           n_to_try       = n_to_try
+        )
+        program = program_prefix + "\n" + program
+        # Goto Test the modified program 
+
     logger.debug(f"{task_name}: Can't solve the problem!")
     return False
 

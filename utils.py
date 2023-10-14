@@ -6,6 +6,9 @@ import importlib
 import logging 
 import logging.config
 import json
+import functools
+import operator
+import random
 from contextlib import contextmanager
 
 def mkdir_override(dir_path):
@@ -89,4 +92,22 @@ class Cache:
     def dump(self):
         with open(self.file_path, 'w') as f:
             f.write(json.dumps(self.data))
+
+def product_to_tensor_idx(prod, dims, idx):
+    ans = []
+    for dim in dims:
+        prod //= dim
+        ans.append(idx // prod)
+        idx %= prod
+    return ans
+
+def sample_product(arrs, n, k):
+    indices = random.sample(range(n), k)
+    dims = [len(arr) for arr in arrs]
+    prod = functools.reduce(operator.mul, dims, 1)
+    return [
+        product_to_tensor_idx(prod, dims, idx)
+        for idx in indices
+    ]
+
 

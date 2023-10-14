@@ -43,10 +43,10 @@ You should only output the function code! Omit explanations or any additional te
 
 _counterexample_prompt = """-----Question-----
 {question}
------Solution-----
+-----Program-----
 {program}
 -----Task-----
-There are some mistakes in the solution program, please give an input consistent with the the question and the correct output, which will let the program return a wrong answer. 
+Give an input example of the question and its corresponding correct output, the program will return an incorrect output for this input. 
 Your output should be in the following format:
 ```
 -----Input-----
@@ -54,7 +54,7 @@ Your output should be in the following format:
 -----Output-----
 (Output)
 ```
-Omit explanations or any additional text.
+You should only return the input-output example! Omit explanations or any additional text!
 """
 
 _solution_prompt = """Question:

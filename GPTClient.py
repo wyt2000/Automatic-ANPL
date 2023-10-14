@@ -96,7 +96,9 @@ class GPTClient:
                 inp.append(line)
             elif isout:
                 out.append(line)
-        return '\n'.join(inp), '\n'.join(out)
+        inp = '\n'.join(inp).strip('`')
+        out = '\n'.join(out).strip('`')
+        return inp, out
 
     async def request_for_solutions(self,
                                     task_name: str,
@@ -235,8 +237,6 @@ class GPTClient:
             self.logger.debug(f'{task_name}: Requesting for debugged function {func_name} done!')
             for i, response in enumerate(responses):
                 responses[i] = self.extract_func(response, func_name)
-            with open(pathlib.Path(save_dir, f'{task_name}_{func_name}.json'), 'w') as f:
-                f.write(json.dumps(responses))
             return responses
 
 

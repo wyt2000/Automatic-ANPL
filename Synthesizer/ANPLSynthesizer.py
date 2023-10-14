@@ -1,6 +1,8 @@
 import os
 import traceback
 import timeout_decorator
+from typing import Iterator 
+
 from .ANPL.anpl.parser import ANPLParser
 from .Synthesizer import AbstractSynthesizer
 from .ANPL.ANPLCompiler import ANPLCompiler
@@ -26,10 +28,23 @@ def verify_code(anpl_code):
 def eval_python(task_name: str,
                 code: str,
                 input_outputs: tuple[list[str], list[str]]):
-    entry = "main"
-    assert_str = ANPLCompiler.get_assert_str(entry, input_outputs)
+    assert_str = ANPLCompiler.get_assert_str(input_outputs)
     code, passed_asserts = ANPLCompiler.eval_implementation(code, assert_str, ['', []])
     return passed_asserts 
+
+# Convert io list to assert str
+def get_assert_str(input_outputs: tuple[list[str], list[str]], entry='main'):
+    return ANPLCompiler.get_assert_str(input_outputs, entry)
+
+
+# Eval codes from generator with the limit of time.
+def eval_sampled_codes(task_name: str,
+                       code_generator: Iterator[str],
+                       assert_str: str,
+                       n_to_try: int):
+    compiler = ANPLCompiler()
+    return compiler.eval_sampled_codes(task_name, code_generator, assert_str, n_to_try)
+
 
 # Add import and stdin for code
 def wrap_code(code: str):

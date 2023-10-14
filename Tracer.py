@@ -51,7 +51,7 @@ class IOExample:
     def __repr__(self):
         if self.exception is None:
             return f'input: {repr(self.input)}, output: {repr(self.output)}'
-        return f'input: {repr(self.input)}, {repr(self.exception)}'
+        return f'input: {repr(self.input)}, exception: {repr(self.exception)}'
 
 class IOCollector:
     '''

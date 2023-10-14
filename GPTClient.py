@@ -217,7 +217,7 @@ class GPTClient:
         # Add trace before function code
         function_with_traces = "# Trace: \n"
         for trace in func_traces:
-            function_with_traces += f"#    - {repr(trace)}\n"
+            function_with_traces += f"# {repr(trace)}\n"
         function_with_traces += func_code
         
         async with aiohttp.ClientSession(trust_env=True) as session:
@@ -226,7 +226,6 @@ class GPTClient:
                 {"role": "system", "content": prompter.get_background()},
                 {"role": "user", "content": prompter.get_function_debug_prompt(solution=solution, func_name=func_name, program=program, function_with_traces=function_with_traces)}
             ]
-            self.logger.debug(f'{task_name}: Requesting for debugged function {func_name}...')
             responses = await self.delayed_completion(
                 task_name        = task_name,
                 delay_in_seconds = delay_in_seconds,
@@ -234,7 +233,6 @@ class GPTClient:
                 **completion_kwargs
             )
             responses = self.get_response_list(responses)
-            self.logger.debug(f'{task_name}: Requesting for debugged function {func_name} done!')
             for i, response in enumerate(responses):
                 responses[i] = self.extract_func(response, func_name)
             return responses

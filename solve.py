@@ -19,6 +19,7 @@ import pathlib
 import functools
 import operator
 import random
+import ast
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
@@ -215,9 +216,9 @@ async def solve_problem(task_name_prefix: str,
 
         # Generate traces for each function under golden input
         func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0])
-        logger.debug(func_traces)
         
         # Request for function debug in function dependency sequence
+        logger.debug(f'{task_name}: Requesting for debugged function...')
         implementations = [{func_codes[name]} for name in func_names_sorted]
         for i, func_name in enumerate(func_names_sorted):
             if func_name not in func_traces.func_ios:
@@ -239,7 +240,14 @@ async def solve_problem(task_name_prefix: str,
                 save_dir    = save_dir,
                 delay_in_seconds  = delay_in_seconds
             )
-            implementations[i].update([func for func in debugged_funcs if func])
+            # Filter syntax error funcs
+            for func in debugged_funcs:
+                try:
+                    ast.parse(func)
+                    implementations[i].add(func)
+                except Exception as e:
+                    pass
+        logger.debug(f'{task_name}: Request for debugged function done!')
 
         # TODO: Unify with ANPL code
         # Collect candidates as a 2D-list (func x candidate).
@@ -257,13 +265,21 @@ async def solve_problem(task_name_prefix: str,
         # Eval all sampled code to find best_attempt
         program_debug_times += 1
         task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}_{program_debug_times}"
-        program, _ = eval_sampled_codes(
-           task_name      = task_name,
-           code_generator = code_generator,
-           assert_str     = assert_str,
-           n_to_try       = n_to_try
-        )
-        program = program_prefix + "\n" + program
+        try:
+            log_path = pathlib.Path(save_dir, f"{task_name}.log")
+            with redirect_loggers(log_path):
+                program, _ = eval_sampled_codes(
+                   task_name      = task_name,
+                   code_generator = code_generator,
+                   assert_str     = assert_str,
+                   n_to_try       = n_to_try
+                )
+                program = program_prefix + "\n" + program
+        except Exception as err:
+            logger.exception(err)
+            restart()
+            continue
+
         # Goto Test the modified program 
 
     logger.debug(f"{task_name}: Can't solve the problem!")

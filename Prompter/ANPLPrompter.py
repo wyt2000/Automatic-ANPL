@@ -146,9 +146,6 @@ def num_moves(l: list[int]) -> int:
     '''
     The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list. Return the the number of moves.
     '''
-    mx = max(l)
-    ans = mx // all_gcd(l) - len(l)
-    return ans
 
 def to_output_str(num_moves: int) -> str:
     '''
@@ -167,8 +164,7 @@ def main(input_str: str) -> str:
 # Translate the following solution plan into the above format:
 {solution}
 
-
-# You should return ANPL code consist with ANPL grammar mentioned above, which must have one main function with implementation.
+# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one main function with implementation, other functions are declared by docstring and their implementations are omitted.
 """
 
 

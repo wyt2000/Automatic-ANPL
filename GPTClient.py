@@ -61,7 +61,18 @@ class GPTClient:
         return [response["message"]["content"] for response in responses["choices"]]
 
     def extract_code(self, response: str):
-        return response.strip('`')
+        code = []
+        is_target = False
+        for line in response.splitlines():
+            if '`' in line:
+                if is_target:
+                    break
+                else:
+                    is_target = True
+                    continue
+            if is_target:
+                code.append(line)
+        return '\n'.join(code)
 
     # filter other functions
     def extract_func(self, response: str, target: str):
@@ -97,8 +108,8 @@ class GPTClient:
                 inp.append(line)
             elif isout:
                 out.append(line)
-        inp = '\n'.join(inp).strip('`')
-        out = '\n'.join(out).strip('`')
+        inp = self.extract_code('\n'.join(inp))
+        out = self.extract_code('\n'.join(out))
         return inp, out
 
     async def request_for_solutions(self,
@@ -272,14 +283,17 @@ class GPTClient:
 
 if __name__ == '__main__':
     client = GPTClient()
-    io = '''-----Input-----
-3
-1 1 1
-2 0 2
-3 1 1
------Output-----
-1
-8
-4'''
-    io = client.extract_io(io)
-    print(io)
+    code = '''
+
+abc
+```
+def
+sdfsdafsdsa
+fadsfsafs
+sfadfsafa
+```
+xyz
+
+'''
+    code = client.extract_code(code)
+    print(code)

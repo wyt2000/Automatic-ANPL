@@ -139,11 +139,6 @@ def parse_input(input_str: str) -> list[int]:
     Takes a string containing the length on the first line and the integers on the second and returns the list of integers.
     '''
 
-def all_gcd(l: list[int]) -> int:
-    '''
-    Returns the greatest common divisor of all elements in the list.
-    '''
-
 def num_moves(l: list[int]) -> int:
     '''
     The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list. Return the the number of moves.

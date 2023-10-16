@@ -176,6 +176,7 @@ class GPTClient:
                     verify_code(response)
                 except Exception as err:
                     self.logger.exception(err)
+                    self.logger.debug(response)
                     self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
                     continue
                 self.logger.debug(f'{task_name}: Requesting for target code of solution done!')

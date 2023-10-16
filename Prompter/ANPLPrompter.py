@@ -26,26 +26,18 @@ class ANPLPrompter(AbstractPrompter):
     
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
 
-_solution_debug_prompt = """Here is a programming competition problem.
------Question-----
+_solution_debug_prompt = """-----Question-----
 {question}
-
-There is an input example of the question and its corresponding correct output.
------Input-----
-{input}
------Output-----
-{output}
-
-Here is a high-level solution of the problem. 
 -----Solution-----
 {solution}
-
-There are some errors in the high-level solution. 
-The generated code cannot pass the input-output test case given above. 
-Modify the errors in the high-level solution so that the generated code can pass the test case.
-You should only output high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
+The solution failed to pass the following input-output testcase.
+-----Input-----
+{inputs}
+-----Output-----
+{outputs}
+-----Task-----
+Give correct high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
 """
-
 
 _function_debug_prompt = """Here is a high-level solution of a programming competition problem.
 -----Solution-----

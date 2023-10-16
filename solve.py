@@ -20,6 +20,7 @@ import functools
 import operator
 import random
 import ast
+import tqdm
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
@@ -46,10 +47,10 @@ async def solve_problem(task_name_prefix: str,
                         save_dir: str,
                         cache_dir: str,
                         delay_in_seconds: float = 1.0,
-                        max_restart_times: int = 1,
-                        max_solution_debug_times: int = 1,
+                        max_restart_times: int = 2,
+                        max_solution_debug_times: int = 2,
                         max_program_debug_times: int = 2,
-                        num_counterexamples: int = 4,
+                        num_counterexamples: int = 16,
                         max_attempts: int = 1000,
                         seed=42):
 
@@ -61,6 +62,7 @@ async def solve_problem(task_name_prefix: str,
     program_debug_times = 0
     solution = None
     program = None
+    anpl_code = None
     success = False
     system_tests = json.loads(data.input_output)
     inputs, outputs = system_tests["inputs"], system_tests["outputs"]
@@ -71,7 +73,7 @@ async def solve_problem(task_name_prefix: str,
         nonlocal restart_times
         restart_times += 1
         solution_debug_times, program_debug_times = 0, 0
-        solution, program = None, None
+        solution, anpl_code, program = None, None, None
 
     # Try to solve the problem until reach max_restart_times
     while restart_times < max_restart_times:
@@ -95,7 +97,8 @@ async def solve_problem(task_name_prefix: str,
             )
             solution = solution[0]
 
-            # Generate anpl code from solution
+        # Generate anpl code from solution
+        if anpl_code is None:
             task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}"
             logger.debug(f"{task_name}: Generating anpl code...")
             anpl_code = await client.request_for_codes(
@@ -209,9 +212,27 @@ async def solve_problem(task_name_prefix: str,
         with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
             f.write(json.dumps(golden_io))
 
-        #TODO!: high-level solution reflection
+        # High-level solution reflection if program_debug_times reach limit
         if program_debug_times == max_program_debug_times:
-            restart()
+            solution_debug_times += 1
+            program_debug_times = 0
+            anpl_code, program = None, None
+            task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}"
+            solution = await client.request_for_debugged_solution(
+                task_name         = f"{task_name}",
+                completion_kwargs = {
+                    "model"       : model_name,
+                    "temperature" : 0.6,
+                    "logit_bias"  : {755:-100}
+                },
+                question          = data.question,
+                old_solution      = solution,
+                inputs            = golden_io[0],
+                outputs           = golden_io[1],
+                prompter          = prompter,
+                save_dir          = save_dir,
+                delay_in_seconds  = delay_in_seconds
+            )
             continue
 
         # Generate traces for each function under golden input
@@ -220,33 +241,36 @@ async def solve_problem(task_name_prefix: str,
         # Request for function debug in function dependency sequence
         logger.debug(f'{task_name}: Requesting for debugged function...')
         implementations = [{func_codes[name]} for name in func_names_sorted]
-        for i, func_name in enumerate(func_names_sorted):
-            if func_name not in func_traces.func_ios:
-                continue
-            traces = func_traces.func_ios[func_name]
-            debugged_funcs = await client.request_for_debugged_function(
-                task_name         = task_name,
-                completion_kwargs = {
-                    "model"             : model_name,
-                    "temperature"       : 0.6, # high temperature to make more difference
-                    "n"                 : num_completions 
-                },
-                solution    = solution,
-                program     = program,
-                func_name   = func_name,
-                func_code   = func_codes[func_name],
-                func_traces = traces,
-                prompter    = prompter,
-                save_dir    = save_dir,
-                delay_in_seconds  = delay_in_seconds
-            )
-            # Filter syntax error funcs
-            for func in debugged_funcs:
-                try:
-                    ast.parse(func)
-                    implementations[i].add(func)
-                except Exception as e:
-                    pass
+        with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
+            for i, func_name in enumerate(func_names_sorted):
+                if func_name not in func_traces.func_ios:
+                    pbar.update(1)
+                    continue
+                traces = func_traces.func_ios[func_name]
+                debugged_funcs = await client.request_for_debugged_function(
+                    task_name         = task_name,
+                    completion_kwargs = {
+                        "model"             : model_name,
+                        "temperature"       : 0.6, # high temperature to make more difference
+                        "n"                 : num_completions 
+                    },
+                    solution    = solution,
+                    program     = program,
+                    func_name   = func_name,
+                    func_code   = func_codes[func_name],
+                    func_traces = traces,
+                    prompter    = prompter,
+                    save_dir    = save_dir,
+                    delay_in_seconds  = delay_in_seconds
+                )
+                # Filter syntax error funcs
+                for func in debugged_funcs:
+                    try:
+                        ast.parse(func)
+                        implementations[i].add(func)
+                    except Exception as e:
+                        pass
+                pbar.update(1)
         logger.debug(f'{task_name}: Request for debugged function done!')
 
         # TODO: Unify with ANPL code

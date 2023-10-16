@@ -24,7 +24,8 @@ class GPTClient:
         self.retry_interval = retry_interval
         self.cache = Cache(cache_path)
 
-    async def delayed_completion(self, task_name, delay_in_seconds, messages, use_cache=True, **kwargs):
+    # TODO: move cache to request
+    async def delayed_completion(self, task_name, delay_in_seconds, messages, use_cache=False, **kwargs):
         '''
         Delay `delay_in_seconds`, then async call `ChatCompletion`.
         '''
@@ -263,12 +264,11 @@ class GPTClient:
                 messages         = messages,
                 **completion_kwargs
             )
-            responses = self.get_response_list(responses)[0]
+            response = self.get_response_list(responses)[0]
             self.logger.debug(f'{task_name}: Requesting for debugged high-level solution done!')
-            for i, response in enumerate(responses):
-                with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
-                    f.write(response)
-            return responses
+            with open(pathlib.Path(save_dir, f'{task_name}.plan'), 'w') as f:
+                f.write(response)
+            return response
 
 if __name__ == '__main__':
     client = GPTClient()

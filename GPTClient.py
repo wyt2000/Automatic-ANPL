@@ -74,21 +74,21 @@ class GPTClient:
                 code.append(line)
         return '\n'.join(code)
 
-    # filter other functions
-    def extract_func(self, response: str, target: str):
+    # filter other functions, but allow decompose
+    def extract_func(self, response: str, target: str, holes: set[str]):
         has_target = False
-        is_target = False 
+        ok = False 
         code = []
         for line in response.splitlines():
             indent = len(line) - len(line.lstrip())
             if len(line) > 0 and indent == 0:
                 if m := self.pattern.match(line):
                     func_name = m.group(1)
-                    is_target = (func_name == target)
-                    has_target |= is_target
+                    ok = ((func_name == target) or (func_name not in holes))
+                    has_target |= (func_name == target) 
                 else:
-                    is_target = False 
-            if is_target or line.startswith("import") or line.startswith("from"):
+                    ok = False 
+            if ok or line.startswith("import") or line.startswith("from"):
                 code.append(line)
         if not has_target:
             return ''
@@ -218,6 +218,7 @@ class GPTClient:
                                             solution: str,
                                             program: str,
                                             func_name: str,
+                                            holes: set[str],
                                             func_code: str,
                                             func_traces: list[IOExample],
                                             prompter: AbstractPrompter,
@@ -247,7 +248,7 @@ class GPTClient:
             )
             responses = self.get_response_list(responses)
             for i, response in enumerate(responses):
-                responses[i] = self.extract_func(response, func_name)
+                responses[i] = self.extract_func(response, func_name, holes)
             return responses
 
     async def request_for_debugged_solution(self,

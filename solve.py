@@ -330,13 +330,16 @@ if __name__ == '__main__':
     mkdir_override(save_prefix)
     mkdir_no_override(cache_prefix)
 
-    sampler = APPSProblemSampler(difficulties=['competition'])
+    # sampler = APPSProblemSampler(difficulties=['competition'])
+    sampler = APPSProblemSampler(difficulties=['all'])
     client = GPTClient(cache_path=pathlib.Path(cache_prefix, "client_cache.json"))
     prompter = ANPLPrompter()
     synthesizer = ANPLSynthesizer()
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
-    for data in sampler.sample_randomly(args.num_problems):
+    sample_list = [3075, 3113, 3131, 3158, 3338, 3677, 3811, 3820, 3900] 
+    # for data in sampler.sample_randomly(args.num_problems):
+    for data in sampler.sample(sample_list):
         try:
             save_dir = pathlib.Path(save_prefix, f"{data.problem_id}")
             cache_dir = pathlib.Path(cache_prefix, f"{data.problem_id}")

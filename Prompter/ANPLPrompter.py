@@ -38,7 +38,8 @@ The solution failed to pass the following input-output testcase.
 -----Output-----
 {outputs}
 
-Modify the high-level solution to pass the input-ouput testcase. Return the correct high-level solution with I/O descriptions.
+Give the correct high-level solution which can pass the input-output testcase mentioned above and I/O descriptions.
+You should only output fixed high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
 """
 
 _function_debug_prompt = """Here is a high-level solution of a programming competition problem.
@@ -72,13 +73,13 @@ Your output should be in the following format:
 
 -----Input-----
 ```
-(Input)
+Input
 ```
 (Explanation for input if need)
 
 -----Output-----
 ```
-(Output)
+Output
 ```
 (Explanation for input if need)
 

@@ -161,7 +161,7 @@ def main(input_str: str) -> str:
 # Translate the following solution plan into the above format:
 {solution}
 
-# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one function with implementation named `main`, other functions are declared by docstring. All non-main functions should be called in main function.
+# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one function with implementation named `main`. The `main` function must call all other functions. All functions except `main` function should only be declared by docstring and their implementations should be omited.
 """
 
 

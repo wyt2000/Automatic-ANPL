@@ -30,13 +30,15 @@ _solution_debug_prompt = """-----Question-----
 {question}
 -----Solution-----
 {solution}
+-----Task-----
 The solution failed to pass the following input-output testcase.
+
 -----Input-----
 {inputs}
 -----Output-----
 {outputs}
------Task-----
-Give correct high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
+
+Give the fixed high-level solution with correct I/O descriptions for this problem.
 """
 
 _function_debug_prompt = """Here is a high-level solution of a programming competition problem.
@@ -52,7 +54,7 @@ Here is a function of the program with input-output traces.
 {function_with_traces}
 
 -----Task-----
-There are some mistakes or exceptions in the function, return the fixed function.
+There are some mistakes or exceptions in the function, return the fixed function. You can decompose it into more sub-functions.
 Your output should be in the following format:
 ```
 def {func_name}(...):
@@ -164,7 +166,7 @@ def main(input_str: str) -> str:
 # Translate the following solution plan into the above format:
 {solution}
 
-# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one main function with implementation, other functions are declared by docstring and their implementations are omitted.
+# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one function with implementation named `main`, other functions are declared by docstring.
 """
 
 

@@ -48,10 +48,10 @@ async def solve_problem(task_name_prefix: str,
                         cache_dir: str,
                         delay_in_seconds: float = 1.0,
                         max_restart_times: int = 2,
-                        max_solution_debug_times: int = 2,
-                        max_program_debug_times: int = 2,
+                        max_solution_debug_times: int = 1,
+                        max_program_debug_times: int = 1,
                         num_counterexamples: int = 16,
-                        max_attempts: int = 1000,
+                        max_attempts: int = 100000,
                         seed=42):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
@@ -71,7 +71,10 @@ async def solve_problem(task_name_prefix: str,
     # Start a new generation of solution
     def restart():
         nonlocal restart_times
+        nonlocal solution_debug_times, program_debug_times
+        nonlocal solution, anpl_code, program
         restart_times += 1
+        logger.debug(f"{task_name_prefix}: restart {restart_times} times")
         solution_debug_times, program_debug_times = 0, 0
         solution, anpl_code, program = None, None, None
 
@@ -168,10 +171,6 @@ async def solve_problem(task_name_prefix: str,
         logger.debug(f"{task_name}: System Test Failed!")
         logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(inputs)} system tests!")
 
-        # Restart to generate new solution if the limit of solution debug reached 
-        if solution_debug_times == max_solution_debug_times:
-            restart()
-            continue
 
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
@@ -214,6 +213,10 @@ async def solve_problem(task_name_prefix: str,
 
         # High-level solution reflection if program_debug_times reach limit
         if program_debug_times == max_program_debug_times:
+            # Restart to generate new solution if the limit of solution debug reached 
+            if solution_debug_times == max_solution_debug_times:
+                restart()
+                continue
             solution_debug_times += 1
             program_debug_times = 0
             anpl_code, program = None, None
@@ -237,7 +240,11 @@ async def solve_problem(task_name_prefix: str,
 
         # Generate traces for each function under golden input
         func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0])
-        
+        if func_traces is None:
+            logger.debug(f'{task_name}: Couldn\'t get function traces, restart!')
+            restart()
+            continue
+
         # Request for function debug in function dependency sequence
         logger.debug(f'{task_name}: Requesting for debugged function...')
         implementations = [{func_codes[name]} for name in func_names_sorted]

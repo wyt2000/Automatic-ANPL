@@ -65,15 +65,21 @@ _counterexample_prompt = """-----Question-----
 -----Program-----
 {program}
 -----Task-----
-Give an input example of the question and its corresponding correct output, the program will return an incorrect output for this input. 
+Give an input example of the question and its corresponding correct output, which meet the input-output requirements of the question, but the program will return an incorrect output for this input. 
 Your output should be in the following format:
-```
+
 -----Input-----
+```
 (Input)
+```
+(Explanation for input if need)
+
 -----Output-----
+```
 (Output)
 ```
-You should only return the input-output example! Omit explanations or any additional text!
+(Explanation for input if need)
+
 """
 
 _solution_prompt = """Question:

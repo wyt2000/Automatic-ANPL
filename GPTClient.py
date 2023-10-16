@@ -237,7 +237,38 @@ class GPTClient:
                 responses[i] = self.extract_func(response, func_name)
             return responses
 
-
+    async def request_for_debugged_solution(self,
+                                            task_name: str,
+                                            question: str,
+                                            old_solution: str,
+                                            inputs: str,
+                                            outputs: str,
+                                            prompter: AbstractPrompter,
+                                            save_dir: str,
+                                            completion_kwargs: dict = {}, 
+                                            delay_in_seconds: float = 1.0):
+        '''
+        Request from chatGPT to get repaired high-level solution for question and counterexample.
+        '''
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            openai.aiosession.set(session)
+            messages = [
+                {"role": "system", "content": prompter.get_background()},
+                {"role": "user", "content": prompter.get_solution_debug_prompt(question=question, solution=old_solution, inputs=inputs, outputs=outputs)}
+            ]
+            self.logger.debug(f'{task_name}: Requesting for debugged high-level solution...')
+            responses = await self.delayed_completion(
+                task_name        = task_name,
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
+            )
+            responses = self.get_response_list(responses)[0]
+            self.logger.debug(f'{task_name}: Requesting for debugged high-level solution done!')
+            for i, response in enumerate(responses):
+                with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
+                    f.write(response)
+            return responses
 
 if __name__ == '__main__':
     client = GPTClient()

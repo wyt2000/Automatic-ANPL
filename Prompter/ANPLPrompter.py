@@ -17,11 +17,27 @@ class ANPLPrompter(AbstractPrompter):
     def get_function_debug_prompt(self, **kwargs):
         return _function_debug_prompt.format(**kwargs)
 
+    def get_solution_debug_prompt(self, **kwargs):
+        return _solution_debug_prompt.format(**kwargs)
+
     def get_code_description(self, **kwargs):
         return _code_description.format(**kwargs)
 
     
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
+
+_solution_debug_prompt = """-----Question-----
+{question}
+-----Solution-----
+{solution}
+The solution failed to pass the following input-output testcase.
+-----Input-----
+{inputs}
+-----Output-----
+{outputs}
+-----Task-----
+Give correct high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
+"""
 
 _function_debug_prompt = """Here is a high-level solution of a programming competition problem.
 -----Solution-----

@@ -39,6 +39,12 @@ class AbstractPrompter(ABC):
         '''
         pass
 
+    @abstractmethod
+    def get_solution_debug_prompt(self, **kwargs):
+        '''
+        How to debug solution by counterexample.
+        '''
+        pass
 
     @abstractmethod
     def get_code_description(self, **kwargs):

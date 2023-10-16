@@ -38,7 +38,7 @@ The solution failed to pass the following input-output testcase.
 -----Output-----
 {outputs}
 
-Give the fixed high-level solution with correct I/O descriptions for this problem.
+Modify the high-level solution to pass the input-ouput testcase. Return the correct high-level solution with I/O descriptions.
 """
 
 _function_debug_prompt = """Here is a high-level solution of a programming competition problem.
@@ -139,7 +139,17 @@ def parse_input(input_str: str) -> list[int]:
     Takes a string containing the length on the first line and the integers on the second and returns the list of integers.
     '''
 
-def num_moves(l: list[int]) -> int:
+def get_gcd(l: list[int]) -> int:
+    '''
+    Return the greatest common divisor of all elements in the list.
+    '''
+
+def get_largest(l: list[int]) -> int:
+    '''
+    Return the largest element of the list.
+    '''
+
+def num_moves(l: list[int], gcd: int, largest_element: int) -> int:
     '''
     The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list. Return the the number of moves.
     '''
@@ -154,14 +164,14 @@ def main(input_str: str) -> str:
     Returns the winner of the game and the number of moves.
     '''
     input_list = parse_input(input_str)
-    moves_count = num_moves(input_list)
+    moves_count = num_moves(input_list, get_gcd(input_list), get_largest(input_list))
     return to_output_str(moves_count)
 ```
 
 # Translate the following solution plan into the above format:
 {solution}
 
-# You should return ANPL code consist with ANPL grammar mentioned above, which must have only one function with implementation named `main`. The `main` function must call all other functions. All functions except `main` function should only be declared by docstring and their implementations should be omited.
+# Your code must have only one function with implementation named `main`. The `main` function must call ALL of other functions. All functions except `main` function should only be declared by docstring and their implementations should be omited.
 """
 
 

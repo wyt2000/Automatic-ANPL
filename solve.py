@@ -272,6 +272,8 @@ async def solve_problem(task_name_prefix: str,
                 )
                 # Filter syntax error funcs
                 for func in debugged_funcs:
+                    if len(func) == 0:
+                        continue
                     try:
                         ast.parse(func)
                         implementations[i].add(func)

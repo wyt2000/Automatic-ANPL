@@ -47,8 +47,8 @@ async def solve_problem(task_name_prefix: str,
                         save_dir: str,
                         cache_dir: str,
                         delay_in_seconds: float = 1.0,
-                        max_restart_times: int = 2,
-                        max_solution_debug_times: int = 1,
+                        max_restart_times: int = 4,
+                        max_solution_debug_times: int = 0,
                         max_program_debug_times: int = 1,
                         num_counterexamples: int = 16,
                         max_attempts: int = 100000,
@@ -250,10 +250,7 @@ async def solve_problem(task_name_prefix: str,
         implementations = [{func_codes[name]} for name in func_names_sorted]
         with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
             for i, func_name in enumerate(func_names_sorted):
-                if func_name not in func_traces.func_ios:
-                    pbar.update(1)
-                    continue
-                traces = func_traces.func_ios[func_name]
+                traces = func_traces.func_ios.get(func_name, [])
                 debugged_funcs = await client.request_for_debugged_function(
                     task_name         = task_name,
                     completion_kwargs = {

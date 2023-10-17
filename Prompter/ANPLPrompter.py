@@ -55,7 +55,7 @@ Here is a function of the program with input-output traces.
 {function_with_traces}
 
 -----Task-----
-There are some mistakes or exceptions in the function, return the fixed function. You can decompose it into more sub-functions.
+There are some mistakes or exceptions in the function, return the fixed function. You can define helper functions before it to decompose.
 Your output should be in the following format:
 ```
 def {func_name}(...):

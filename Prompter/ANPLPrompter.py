@@ -59,6 +59,9 @@ There are some mistakes or exceptions in the function, return the fixed function
 Your output should be in the following format:
 ```
 def {func_name}(...):
+    '''
+    The description of the function.
+    '''
 ```
 You should only output the function code! Omit explanations or any additional text!
 """

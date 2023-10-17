@@ -21,6 +21,7 @@ import operator
 import random
 import ast
 import tqdm
+import openai
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
@@ -87,38 +88,48 @@ async def solve_problem(task_name_prefix: str,
             # Generate new solution or use debugged solution
             task_name = f"{task_name_prefix}_{restart_times}"
             logger.debug(f"{task_name}: Generating new solution...")
-            solution = await client.request_for_solutions(
-                task_name         = f"{task_name}",
-                completion_kwargs = {
-                    "model"       : model_name,
-                    "temperature" : 0.6,
-                    "logit_bias"  : {755:-100}
-                },
-                question          = data.question,
-                prompter          = prompter,
-                save_dir          = save_dir,
-                delay_in_seconds  = delay_in_seconds
-            )
+            try:
+                solution = await client.request_for_solutions(
+                    task_name         = f"{task_name}",
+                    completion_kwargs = {
+                        "model"       : model_name,
+                        "temperature" : 0.6,
+                        "logit_bias"  : {755:-100}
+                    },
+                    question          = data.question,
+                    prompter          = prompter,
+                    save_dir          = save_dir,
+                    delay_in_seconds  = delay_in_seconds
+                )
+            except Exception as err:
+                logger.exception(err)
+                restart()
+                continue
             solution = solution[0]
 
         # Generate anpl code from solution
         if anpl_code is None:
             task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}"
             logger.debug(f"{task_name}: Generating anpl code...")
-            anpl_code = await client.request_for_codes(
-                task_name         = task_name,
-                completion_kwargs = {
-                    "model"             : model_name,
-                    "temperature"       : 0.2,
-                    "presence_penalty"  : 0.1,
-                },
-                starter_code      = "",
-                solution          = solution,
-                suffix_name       = "anpl",
-                prompter          = prompter,
-                save_dir          = save_dir,
-                delay_in_seconds  = delay_in_seconds
-            )
+            try:
+                anpl_code = await client.request_for_codes(
+                    task_name         = task_name,
+                    completion_kwargs = {
+                        "model"             : model_name,
+                        "temperature"       : 0.2,
+                        "presence_penalty"  : 0.1,
+                    },
+                    starter_code      = "",
+                    solution          = solution,
+                    suffix_name       = "anpl",
+                    prompter          = prompter,
+                    save_dir          = save_dir,
+                    delay_in_seconds  = delay_in_seconds
+                )
+            except Exception as err:
+                logger.exception(err)
+                restart()
+                continue
 
         # New program generation
         if program is None:
@@ -171,22 +182,25 @@ async def solve_problem(task_name_prefix: str,
         logger.debug(f"{task_name}: System Test Failed!")
         logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(inputs)} system tests!")
 
-
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
-        counterexamples = await client.request_for_counterexamples(
-            task_name         = task_name,
-            completion_kwargs = {
-                "model"       : model_name,
-                "temperature" : 0.6,
-                "n"           : num_counterexamples
-            },
-            question          = data.question,
-            program           = program,
-            prompter          = prompter,
-            save_dir          = save_dir,
-            delay_in_seconds  = delay_in_seconds
-        )
+        try:
+            counterexamples = await client.request_for_counterexamples(
+                task_name         = task_name,
+                completion_kwargs = {
+                    "model"       : model_name,
+                    "temperature" : 0.6,
+                    "n"           : num_counterexamples
+                },
+                question          = data.question,
+                program           = program,
+                prompter          = prompter,
+                save_dir          = save_dir,
+                delay_in_seconds  = delay_in_seconds
+            )
+        except Exception as err:
+            logger.exception("{task_name}: Counterexample not found, restart!")
+            restart()
 
         # Check if the program can pass the counterexample
         golden_io = [] 
@@ -223,21 +237,25 @@ async def solve_problem(task_name_prefix: str,
             program_debug_times = 0
             anpl_code, program = None, None
             task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}"
-            solution = await client.request_for_debugged_solution(
-                task_name         = f"{task_name}",
-                completion_kwargs = {
-                    "model"       : model_name,
-                    "temperature" : 0.6,
-                    "logit_bias"  : {755:-100}
-                },
-                question          = data.question,
-                old_solution      = solution,
-                inputs            = golden_io[0],
-                outputs           = golden_io[1],
-                prompter          = prompter,
-                save_dir          = save_dir,
-                delay_in_seconds  = delay_in_seconds
-            )
+            try:
+                solution = await client.request_for_debugged_solution(
+                    task_name         = f"{task_name}",
+                    completion_kwargs = {
+                        "model"       : model_name,
+                        "temperature" : 0.6,
+                        "logit_bias"  : {755:-100}
+                    },
+                    question          = data.question,
+                    old_solution      = solution,
+                    inputs            = golden_io[0],
+                    outputs           = golden_io[1],
+                    prompter          = prompter,
+                    save_dir          = save_dir,
+                    delay_in_seconds  = delay_in_seconds
+                )
+            except Exception as err:
+                logger.exception(err)
+                pass
             continue
 
         # Generate traces for each function under golden input
@@ -253,23 +271,27 @@ async def solve_problem(task_name_prefix: str,
         with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
             for i, func_name in enumerate(func_names_sorted):
                 traces = func_traces.func_ios.get(func_name, [])
-                debugged_funcs = await client.request_for_debugged_function(
-                    task_name         = task_name,
-                    completion_kwargs = {
-                        "model"             : model_name,
-                        "temperature"       : 0.6, # high temperature to make more difference
-                        "n"                 : num_completions // 2
-                    },
-                    solution    = solution,
-                    program     = program,
-                    func_name   = func_name,
-                    holes       = set(func_names_sorted),
-                    func_code   = func_codes[func_name],
-                    func_traces = traces,
-                    prompter    = prompter,
-                    save_dir    = save_dir,
-                    delay_in_seconds  = delay_in_seconds
-                )
+                try:
+                    debugged_funcs = await client.request_for_debugged_function(
+                        task_name         = task_name,
+                        completion_kwargs = {
+                            "model"             : model_name,
+                            "temperature"       : 0.6, # high temperature to make more difference
+                            "n"                 : num_completions // 2
+                        },
+                        solution    = solution,
+                        program     = program,
+                        func_name   = func_name,
+                        holes       = set(func_names_sorted),
+                        func_code   = func_codes[func_name],
+                        func_traces = traces,
+                        prompter    = prompter,
+                        save_dir    = save_dir,
+                        delay_in_seconds  = delay_in_seconds
+                    )
+                except Exception as err:
+                    logger.exception(err)
+                    continue
                 # Filter syntax error funcs
                 for func in debugged_funcs:
                     if len(func) == 0:
@@ -341,8 +363,10 @@ if __name__ == '__main__':
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
 
     sample_list = [3158, 3811, 3876, 3107, 3784, 3621, 3070, 3113, 3665, 3629, 3882, 3075, 3338, 3859, 3888, 3119, 3820, 3633, 3082, 3125, 3833, 3677, 3894, 3087, 3518, 3907, 3900, 3131] 
+    max_retry_times = 3
     # for data in sampler.sample_randomly(args.num_problems):
     for data in sampler.sample(sorted(sample_list)):
+        retry_times = 0
         try:
             save_dir = pathlib.Path(save_prefix, f"{data.problem_id}")
             cache_dir = pathlib.Path(cache_prefix, f"{data.problem_id}")
@@ -361,6 +385,22 @@ if __name__ == '__main__':
             )
         except Exception as err:
             logger.exception(err)
+            if retry_times < max_retry_times:
+                logger.exception("Raise unhandled error, Retry!")
+                asyncio.run(
+                    solve_problem(
+                        task_name_prefix    = f"apps_{data.problem_id}",
+                        model_name          = "gpt-3.5-turbo-0301", 
+                        client              = client,
+                        prompter            = prompter,
+                        synthesizer         = synthesizer,
+                        data                = data,
+                        num_completions     = args.num_completions,
+                        save_dir            = str(save_dir),
+                        cache_dir           = str(cache_dir)
+                    )
+                )
+                retry_times += 1
         finally:
             client.cache.dump()
 

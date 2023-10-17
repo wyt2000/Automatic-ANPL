@@ -100,34 +100,6 @@ You should only output high-level solution and I/O descriptions for this problem
 
 _translation_prompt = """
 The following are examples of ANPL programming language:
-# Here is an example identifying the largest binary number according to some rules:
-# The Little Elephant has an integer a, written in the binary notation. He wants to write this number on a piece of paper.
-# To make sure that the number a fits on the piece of paper, the Little Elephant ought to delete exactly one any digit from number a in the binary record. At that a new number appears. It consists of the remaining binary digits, written in the corresponding order (possible, with leading zeroes).
-# The Little Elephant wants the number he is going to write on the paper to be as large as possible. Help him find the maximum number that he can obtain after deleting exactly one binary digit and print it in the binary notation.
-```
-def remove_zero(binary_str: str) -> str:
-    '''
-    Remove the first zero from the input string.
-    '''
-
-def parse_input(input_str: str) -> str:
-    '''
-    Takes a string and returns the input string.
-    '''
-
-def to_output_str(bigger_str) -> str:
-    '''
-    Returns the bigger string.
-    '''
-
-def main(input_str: str) -> str:
-    '''
-    Returns the largest binary number that can be made by removing at most one digit from the input string.
-    '''
-    b_str = parse_input(input_str)
-    b_str = remove_zero(b_str)
-    return to_output_str(b_str)
-```
 
 # Here is an example of the format applied to identifying the winner of the following game:
 # It is so boring in the summer holiday, isn't it? So Alice and Bob have invented a new game to play. The rules are as follows. First, they get a set of n distinct integers. And then they take turns to make the following moves. During each move, either Alice or Bob (the player whose turn is the current) can choose two distinct integers x and y from the set, such that the set doesn't contain their absolute difference |x - y|. Then this player adds integer |x - y| to the set (so, the size of the set increases by one).
@@ -139,8 +111,12 @@ def parse_input(input_str: str) -> list[int]:
     '''
     Takes a string containing the length on the first line and the integers on the second and returns the list of integers.
     '''
+def all_gcd(l: list[int]) -> int:
+    '''
+    Returns the greatest common divisor of all elements in the list.
+    '''
 
-def num_moves(l: list[int]) -> int:
+def num_moves(l: list[int], gcd: int) -> int:
     '''
     The number of moves is the largest element in the list divided by the greatest common divisor of all elements in the list, minus the length of the list. Return the the number of moves.
     '''
@@ -155,8 +131,52 @@ def main(input_str: str) -> str:
     Returns the winner of the game and the number of moves.
     '''
     input_list = parse_input(input_str)
-    moves_count = num_moves(input_list)
+    moves_count = num_moves(input_list, all_gcd(input_list))
     return to_output_str(moves_count)
+```
+
+# Here is an example of the format applied to finding a biggest number according to some rules:
+```
+def parse_input(input_str: str) -> str:
+    '''
+    Takes a string containing the number of towers on the first line and the heights of the towers on the second and returns the list of heights.
+    '''
+
+def side_ones(heights_list: list[int]) -> list[int]:
+    '''
+    From a list of ints, set the first and last elements to 1 and return the list.
+    '''
+
+def destroy_from_left(side_list: list[int]) -> list[int]: 
+    '''
+    Copy the list and set each each element to the minimum of itself and one more than the element to its left, starting from the second element.
+    '''
+
+def destroy_from_right(side_list: list[int]) -> list[int]:
+    '''
+    Copy the list and set each each element to the minimum of itself and one more than the element to its right, starting from the second to last element.
+    '''
+
+def min_list(l1: list[int], l2: list[int]) -> list[int]:
+    '''
+    Return a list of the minimum of the corresponding elements of l1 and l2.
+    '''
+
+def to_output_str(num_moves: list[int]) -> str:
+    '''
+    Return the string representation of the maximum element in the list.
+    '''
+
+def main(input_str: str) -> str:
+    '''
+    Returns the maximum element after operations.
+    '''
+    heights_list = parse_input(input_str)
+    slist = side_ones(heights_list)
+    l1 = destroy_from_left(slist)
+    l2 = destroy_from_right(slist)
+    ans_list = min_list(l1, l2)
+    return to_output_str(ans_list)
 ```
 
 # Translate the following solution plan into the above format:

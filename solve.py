@@ -49,9 +49,10 @@ async def solve_problem(task_name_prefix: str,
                         delay_in_seconds: float = 1.0,
                         max_restart_times: int = 4,
                         max_solution_debug_times: int = 0,
-                        max_program_debug_times: int = 1,
+                        max_program_debug_times: int = 2,
                         num_counterexamples: int = 16,
                         max_attempts: int = 100000,
+                        max_time: float = 240,
                         seed=42):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
@@ -149,7 +150,6 @@ async def solve_problem(task_name_prefix: str,
         try:
             passed_asserts = eval_python(task_name, program, (inputs, outputs))
         except Exception as err:
-            logger.exception(err)
             pass
 
         # Update the best attempt
@@ -198,7 +198,6 @@ async def solve_problem(task_name_prefix: str,
                     golden_io = [inp, out]
                     break
             except Exception as err:
-                logger.exception(err)
                 pass
 
         # Restart if counterexample generation failed
@@ -208,8 +207,11 @@ async def solve_problem(task_name_prefix: str,
             continue
 
         # Save counterexample
-        with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
-            f.write(json.dumps(golden_io))
+        try:
+            with open(pathlib.Path(save_dir, f'{task_name}.io'), 'w') as f:
+                f.write(json.dumps(golden_io))
+        except Exception as e:
+            pass
 
         # High-level solution reflection if program_debug_times reach limit
         if program_debug_times == max_program_debug_times:
@@ -256,7 +258,7 @@ async def solve_problem(task_name_prefix: str,
                     completion_kwargs = {
                         "model"             : model_name,
                         "temperature"       : 0.6, # high temperature to make more difference
-                        "n"                 : num_completions 
+                        "n"                 : num_completions // 2
                     },
                     solution    = solution,
                     program     = program,
@@ -285,7 +287,7 @@ async def solve_problem(task_name_prefix: str,
         num_candidates = functools.reduce(operator.mul, func_candidate_sets_dims, 1)
 
         # Randomly sample debugged functions.
-        n_to_try = min(max_attempts, num_candidates)
+        n_to_try = min(max_attempts // 2, num_candidates)
         random.seed(seed)
         indices_sets = sample_product(func_candidate_sets, num_candidates, n_to_try)
         code_generator = generate_code(indices_sets, func_candidate_sets)
@@ -301,7 +303,8 @@ async def solve_problem(task_name_prefix: str,
                    task_name      = task_name,
                    code_generator = code_generator,
                    assert_str     = assert_str,
-                   n_to_try       = n_to_try
+                   n_to_try       = n_to_try,
+                   max_time       = max_time / 2
                 )
                 program = program_prefix + "\n" + program
         except Exception as err:
@@ -334,9 +337,10 @@ if __name__ == '__main__':
     synthesizer = ANPLSynthesizer()
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
-    sample_list = [3075, 3113, 3131, 3158, 3338, 3677, 3811, 3820, 3900] 
+
+    sample_list = [3158, 3811, 3876, 3107, 3784, 3621, 3070, 3113, 3665, 3629, 3882, 3075, 3338, 3859, 3888, 3119, 3820, 3633, 3082, 3125, 3833, 3677, 3894, 3087, 3518, 3907, 3900, 3131] 
     # for data in sampler.sample_randomly(args.num_problems):
-    for data in sampler.sample(sample_list):
+    for data in sampler.sample(sorted(sample_list)):
         try:
             save_dir = pathlib.Path(save_prefix, f"{data.problem_id}")
             cache_dir = pathlib.Path(cache_prefix, f"{data.problem_id}")

@@ -25,7 +25,6 @@ def verify_code(anpl_code):
 
 # TODO: Move it to utils
 # Test python code by ANPL synthesizer
-@timeout_decorator.timeout(1.5)
 def eval_python(task_name: str,
                 code: str,
                 input_outputs: tuple[list[str], list[str]]):

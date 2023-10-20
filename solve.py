@@ -54,11 +54,12 @@ async def solve_problem(task_name_prefix: str,
                         max_restart_times: int = 4,
                         max_solution_debug_times: int = 0,
                         max_program_debug_times: int = 2,
+                        num_pretests: int = 16,
                         num_counterexamples: int = 16,
                         max_attempts: int = 100000,
                         max_time: float = 240,
                         seed=42,
-                        use_oracle_io=False):
+                        use_pretests_debug=False):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
@@ -71,7 +72,7 @@ async def solve_problem(task_name_prefix: str,
     anpl_code = None
     success = False
     system_tests = json.loads(data.input_output)
-    inputs, outputs = system_tests["inputs"], system_tests["outputs"]
+    system_tests = (system_tests["inputs"], system_tests["outputs"])
     best_attempt = ["", []]
 
     # Start a new generation of solution
@@ -84,6 +85,23 @@ async def solve_problem(task_name_prefix: str,
         solution_debug_times, program_debug_times = 0, 0
         solution, anpl_code, program = None, None, None
 
+    # Generate pretests
+    pretests = await client.request_for_pretests(
+        task_name         = task_name_prefix,
+        completion_kwargs = {
+            "model"       : model_name,
+            "temperature" : 0.6,
+            "n"           : num_pretests
+        },
+        question          = data.question,
+        prompter          = prompter,
+        save_dir          = save_dir,
+        delay_in_seconds  = delay_in_seconds
+    )
+    logger.debug(pretests)
+    pretests = list(set(pretests))
+    pretests = [[p[0] for p in pretests], [p[1] for p in pretests]]
+    logger.debug(pretests)
     # Try to solve the problem until reach max_restart_times
     while restart_times < max_restart_times:
         
@@ -148,8 +166,8 @@ async def solve_problem(task_name_prefix: str,
                         save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
                         cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
                         question                = data.question,
-                        inputs                  = inputs,
-                        outputs                 = outputs,
+                        inputs                  = pretests[0],
+                        outputs                 = pretests[1],
                         num_completions_list    = [num_completions]
                     )
                     program, _ = results[num_completions]
@@ -163,7 +181,7 @@ async def solve_problem(task_name_prefix: str,
         task_name = f"{task_name_prefix}_{restart_times}_{solution_debug_times}_{program_debug_times}"
         passed_asserts = []
         try:
-            passed_asserts = eval_python(task_name, program, (inputs, outputs))
+            passed_asserts = eval_python(task_name, program, pretests)
         except Exception as err:
             pass
 
@@ -171,25 +189,26 @@ async def solve_problem(task_name_prefix: str,
         if len(passed_asserts) >= len(best_attempt[1]):
             best_attempt = [program, passed_asserts]
 
-        # Check if all system tests passed
-        if len(passed_asserts) == len(inputs):
+        # Check if all pretest passed
+        if len(passed_asserts) == len(pretests[0]):
             success = True
 
         # Save the program
-        with open(pathlib.Path(save_dir, f"{task_name}_{str(success)}.py"), "w") as f:
+        with open(pathlib.Path(save_dir, f"{task_name}.py"), "w") as f:
             f.write(program)
 
-        # Exit if all system tests passed
+        # Break if all pretest tests passed
         if success:
-            logger.debug(f"{task_name}: Successfully solve the problem!")
-            return True
-        logger.debug(f"{task_name}: System Test Failed!")
-        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(inputs)} system tests!")
+            logger.debug(f"{task_name}: Pretest Passed!")
+            break
+
+        logger.debug(f"{task_name}: Pretest Failed!")
+        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(pretests[0])} pretests!")
 
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
-        if use_oracle_io:
-            counterexamples = list(zip(inputs, outputs))
+        if use_pretests_debug:
+            counterexamples = list(zip(pretests[0], pretests[1]))
         else:
             try:
                 counterexamples = await client.request_for_counterexamples(
@@ -322,7 +341,7 @@ async def solve_problem(task_name_prefix: str,
         random.seed(seed)
         indices_sets = sample_product(func_candidate_sets, num_candidates, n_to_try)
         code_generator = generate_code(indices_sets, func_candidate_sets)
-        assert_str = get_assert_str((inputs, outputs))
+        assert_str = get_assert_str(pretests)
 
         # Eval all sampled code to find best_attempt
         program_debug_times += 1
@@ -345,8 +364,26 @@ async def solve_problem(task_name_prefix: str,
 
         # Goto Test the modified program 
 
-    logger.debug(f"{task_name}: Can't solve the problem!")
-    return False
+    # Eval system test
+    logger.debug(f"{task_name_prefix}: Synthesizing done! System testing...")
+    try:
+        passed_asserts = eval_python(task_name_prefix, program, system_tests)
+        if len(passed_asserts) != len(system_tests[0]):
+            logger.debug(f"{task_name_prefix}: System test Failed!")
+            logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts[0])} / {len(system_tests[0])} system tests!")
+            raise Exception("Failed")
+        with open(pathlib.Path(save_dir, f"{task_name_prefix}_accepted.py"), "w") as f:
+            f.write(program)
+        logger.debug(f"{task_name_prefix}: Successfully solve the problem!")
+        return True
+    except Exception as err:
+        try:
+            with open(pathlib.Path(save_dir, f"{task_name_prefix}_failed.py"), "w") as f:
+                f.write(program)
+        except Exception:
+            pass
+        logger.debug(f"{task_name_prefix}: Can't solve the problem!")
+        return False
 
 if __name__ == '__main__':
 
@@ -374,41 +411,28 @@ if __name__ == '__main__':
     # for data in sampler.sample_randomly(args.num_problems):
     for data in sampler.sample(sorted(sample_list)):
         retry_times = 0
+        async def solve_problem_async():
+            await solve_problem(
+                task_name_prefix    = f"apps_{data.problem_id}",
+                model_name          = "gpt-3.5-turbo-0301", 
+                client              = client,
+                prompter            = prompter,
+                synthesizer         = synthesizer,
+                data                = data,
+                num_completions     = args.num_completions,
+                save_dir            = str(save_dir),
+                cache_dir           = str(cache_dir),
+                use_pretests_debug  = True
+            )
         try:
             save_dir = pathlib.Path(save_prefix, f"{data.problem_id}")
             cache_dir = pathlib.Path(cache_prefix, f"{data.problem_id}")
-            asyncio.run(
-                solve_problem(
-                    task_name_prefix    = f"apps_{data.problem_id}",
-                    model_name          = "gpt-3.5-turbo-0301", 
-                    client              = client,
-                    prompter            = prompter,
-                    synthesizer         = synthesizer,
-                    data                = data,
-                    num_completions     = args.num_completions,
-                    save_dir            = str(save_dir),
-                    cache_dir           = str(cache_dir),
-                    use_oracle_io       = True
-                )
-            )
+            asyncio.run(solve_problem_async())
         except Exception as err:
             logger.exception(err)
             if retry_times < max_retry_times:
                 logger.exception("Raise unhandled error, Retry!")
-                asyncio.run(
-                    solve_problem(
-                        task_name_prefix    = f"apps_{data.problem_id}",
-                        model_name          = "gpt-3.5-turbo-0301", 
-                        client              = client,
-                        prompter            = prompter,
-                        synthesizer         = synthesizer,
-                        data                = data,
-                        num_completions     = args.num_completions,
-                        save_dir            = str(save_dir),
-                        cache_dir           = str(cache_dir),
-                        use_oracle_io       = True
-                    )
-                )
+                asyncio.run(solve_problem_async())
                 retry_times += 1
         finally:
             client.cache.dump()

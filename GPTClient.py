@@ -112,6 +112,34 @@ class GPTClient:
         out = self.extract_code('\n'.join(out))
         return inp, out
 
+    async def request_for_pretests(self,
+                                   task_name: str,
+                                   question: str,
+                                   prompter: AbstractPrompter,
+                                   save_dir: str,
+                                   completion_kwargs: dict = {}, 
+                                   delay_in_seconds: float = 1.0):
+        '''
+        Request from chatGPT to get pretests for question.
+        '''
+        async with aiohttp.ClientSession(trust_env=True) as session:
+            openai.aiosession.set(session)
+            messages = [
+                {"role": "system", "content": prompter.get_background()},
+                {"role": "user", "content": prompter.get_pretest_prompt(question=question)}
+            ]
+            self.logger.debug(f'{task_name}: Requesting for pretests...')
+            responses = await self.delayed_completion(
+                task_name        = task_name,
+                delay_in_seconds = delay_in_seconds,
+                messages         = messages,
+                **completion_kwargs
+            )
+            responses = self.get_response_list(responses)
+            responses = [self.extract_io(response) for response in responses]
+            self.logger.debug(f'{task_name}: Requesting for pretests done!')
+            return responses
+
     async def request_for_solutions(self,
                                     task_name: str,
                                     question: str,

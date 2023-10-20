@@ -5,6 +5,9 @@ class ANPLPrompter(AbstractPrompter):
     def get_background(self, **kwargs):
         return _background.format(**kwargs)
 
+    def get_pretest_prompt(self, **kwargs):
+        return _pretest_prompt.format(**kwargs)
+
     def get_solution_prompt(self, **kwargs):
         return _solution_prompt.format(**kwargs)
 
@@ -25,6 +28,26 @@ class ANPLPrompter(AbstractPrompter):
 
     
 _background = """You are an expert of programming language with significant prior experience in competitive programming. """
+
+_pretest_prompt = """-----Question-----
+{question}
+-----Task-----
+Give an input-output example of the question.
+Your output should be in the following format:
+
+-----Input-----
+```
+Input
+```
+(Explanation for input if need)
+
+-----Output-----
+```
+Output
+```
+(Explanation for input if need)
+
+"""
 
 _solution_debug_prompt = """-----Question-----
 {question}

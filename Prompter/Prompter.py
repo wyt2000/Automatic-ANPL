@@ -13,6 +13,13 @@ class AbstractPrompter(ABC):
         pass
 
     @abstractmethod
+    def get_pretest_prompt(self, **kwargs):
+        '''
+        How to generate pretests from the question. 
+        '''
+        pass
+
+    @abstractmethod
     def get_solution_prompt(self, **kwargs):
         '''
         How to generate high-level solutions.

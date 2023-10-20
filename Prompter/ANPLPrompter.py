@@ -135,7 +135,7 @@ _translation_prompt = """-----Question-----
 {solution}
 
 -----Task-----
-Translate the solution for the problem into python code wrapped by ```, which must have one {entry_point} function with docstring and implementation, and other functions should only be described by docstring, omit their implementations.
+Translate the solution for the problem into python code wrapped by ```, which must have one {func_name} function with docstring and implementation, and other functions should only be described by docstring, omit their implementations.
 
 """
 

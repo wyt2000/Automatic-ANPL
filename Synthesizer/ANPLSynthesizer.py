@@ -14,13 +14,13 @@ _question_prefix = "----- Background -----\n"
 _question_suffix = "\n----- Task -----\n"
 
 # Check anpl code is valid in syntax
-def verify_code(anpl_code):
+def verify_code(anpl_code, entry='main'):
     anpl_parser = ANPLParser()
     anpl = anpl_parser.try_parse(anpl_code, from_user=False)
     if not anpl:
         raise Exception("Compile Error!")
     implemented_funs = {f.name for f in anpl.funs.values() if f.code}
-    if 'main' not in implemented_funs:
+    if entry not in implemented_funs:
         raise Exception("There should be one implemented main function!")
 
 # TODO: Move it to utils
@@ -62,9 +62,9 @@ class ANPLSynthesizer(AbstractSynthesizer):
                    question: str,
                    inputs: list[str],
                    outputs: list[str],
+                   entry = 'main',
                    num_completions_list: list[int] = [1]):
-        entry = 'main'
-        prefix = _question_prefix + question + _question_suffix
+        # prefix = _question_prefix + question + _question_suffix
         cache = Cache(file_path=f'{cache_path_prefix}.json')
         compiler = ANPLCompiler()
         results = {}
@@ -78,8 +78,8 @@ class ANPLSynthesizer(AbstractSynthesizer):
                     code            = anpl_code,
                     cache           = cache,
                     system_tests    = (inputs, outputs),
-                    num_completions = num_completions,
-                    prefix          = prefix
+                    num_completions = num_completions
+                   # prefix          = prefix
                 )
                 results[num_completions] = [target_code, success]
             except Exception as err:

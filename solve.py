@@ -29,6 +29,7 @@ import openai
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
+question_prefix = "Complete the function:\n"
 program_prefix = "from typing import *\n"
 
 # Compose sampled functions as a complete python code, yield as generator
@@ -74,6 +75,7 @@ async def solve_problem(task_name_prefix: str,
     system_tests = json.loads(data.input_output)
     system_tests = (system_tests["inputs"], system_tests["outputs"])
     best_attempt = ["", []]
+    question = question_prefix + data.prompt
 
     # Start a new generation of solution
     def restart():
@@ -93,7 +95,7 @@ async def solve_problem(task_name_prefix: str,
             "temperature" : 0.6,
             "n"           : num_pretests
         },
-        question          = data.question,
+        question          = question,
         prompter          = prompter,
         save_dir          = save_dir,
         delay_in_seconds  = delay_in_seconds
@@ -118,7 +120,7 @@ async def solve_problem(task_name_prefix: str,
                         "temperature" : 0.6,
                         "logit_bias"  : {755:-100}
                     },
-                    question          = data.question,
+                    question          = question,
                     prompter          = prompter,
                     save_dir          = save_dir,
                     delay_in_seconds  = delay_in_seconds
@@ -142,6 +144,8 @@ async def solve_problem(task_name_prefix: str,
                         "presence_penalty"  : 0.1,
                     },
                     starter_code      = "",
+                    func_name         = data.entry_point,
+                    question          = question, 
                     solution          = solution,
                     suffix_name       = "anpl",
                     prompter          = prompter,
@@ -165,7 +169,7 @@ async def solve_problem(task_name_prefix: str,
                         anpl_code               = anpl_code,
                         save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
                         cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
-                        question                = data.question,
+                        question                = question,
                         inputs                  = pretests[0],
                         outputs                 = pretests[1],
                         num_completions_list    = [num_completions]
@@ -218,7 +222,7 @@ async def solve_problem(task_name_prefix: str,
                         "temperature" : 0.6,
                         "n"           : num_counterexamples
                     },
-                    question          = data.question,
+                    question          = question,
                     program           = program,
                     prompter          = prompter,
                     save_dir          = save_dir,
@@ -271,7 +275,7 @@ async def solve_problem(task_name_prefix: str,
                         "temperature" : 0.6,
                         "logit_bias"  : {755:-100}
                     },
-                    question          = data.question,
+                    question          = question,
                     old_solution      = solution,
                     inputs            = golden_io[0],
                     outputs           = golden_io[1],

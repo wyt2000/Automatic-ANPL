@@ -175,6 +175,7 @@ class GPTClient:
     async def request_for_codes(self,
                                 task_name: str,
                                 starter_code: str,
+                                func_name: str,
                                 solution: str,
                                 suffix_name: str,
                                 prompter: AbstractPrompter,
@@ -188,7 +189,7 @@ class GPTClient:
             openai.aiosession.set(session)
             messages = [
                 {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution)}
+                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution, func_name=func_name)}
             ]
             self.logger.debug(f'{task_name}: Requesting for target code ...')
             for i in range(self.retry_times):
@@ -243,6 +244,7 @@ class GPTClient:
 
     async def request_for_debugged_function(self,
                                             task_name: str,
+                                            question: str,
                                             solution: str,
                                             program: str,
                                             func_name: str,
@@ -266,7 +268,7 @@ class GPTClient:
             openai.aiosession.set(session)
             messages = [
                 {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_function_debug_prompt(solution=solution, func_name=func_name, program=program, function_with_traces=function_with_traces)}
+                {"role": "user", "content": prompter.get_function_debug_prompt(question=question, solution=solution, func_name=func_name, program=program, function_with_traces=function_with_traces)}
             ]
             responses = await self.delayed_completion(
                 task_name        = task_name,

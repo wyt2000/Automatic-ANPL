@@ -114,6 +114,7 @@ def parse_input(input_str: str) -> list[int]:
     '''
     Takes a string containing the length on the first line and the integers on the second and returns the list of integers.
     '''
+
 def all_gcd(l: list[int]) -> int:
     '''
     Returns the greatest common divisor of all elements in the list.

@@ -57,7 +57,8 @@ async def solve_problem(task_name_prefix: str,
                         num_counterexamples: int = 16,
                         max_attempts: int = 100000,
                         max_time: float = 240,
-                        seed=42):
+                        seed=42,
+                        use_oracle_io=False):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
     mkdir_override(save_dir)
@@ -187,23 +188,26 @@ async def solve_problem(task_name_prefix: str,
 
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
-        try:
-            counterexamples = await client.request_for_counterexamples(
-                task_name         = task_name,
-                completion_kwargs = {
-                    "model"       : model_name,
-                    "temperature" : 0.6,
-                    "n"           : num_counterexamples
-                },
-                question          = data.question,
-                program           = program,
-                prompter          = prompter,
-                save_dir          = save_dir,
-                delay_in_seconds  = delay_in_seconds
-            )
-        except Exception as err:
-            logger.exception("{task_name}: Counterexample not found, restart!")
-            restart()
+        if use_oracle_io:
+            counterexamples = list(zip(inputs, outputs))
+        else:
+            try:
+                counterexamples = await client.request_for_counterexamples(
+                    task_name         = task_name,
+                    completion_kwargs = {
+                        "model"       : model_name,
+                        "temperature" : 0.6,
+                        "n"           : num_counterexamples
+                    },
+                    question          = data.question,
+                    program           = program,
+                    prompter          = prompter,
+                    save_dir          = save_dir,
+                    delay_in_seconds  = delay_in_seconds
+                )
+            except Exception as err:
+                logger.exception("{task_name}: Counterexample not found, restart!")
+                restart()
 
         # Check if the program can pass the counterexample
         golden_io = [] 
@@ -383,7 +387,8 @@ if __name__ == '__main__':
                     data                = data,
                     num_completions     = args.num_completions,
                     save_dir            = str(save_dir),
-                    cache_dir           = str(cache_dir)
+                    cache_dir           = str(cache_dir),
+                    use_oracle_io       = True
                 )
             )
         except Exception as err:
@@ -400,7 +405,8 @@ if __name__ == '__main__':
                         data                = data,
                         num_completions     = args.num_completions,
                         save_dir            = str(save_dir),
-                        cache_dir           = str(cache_dir)
+                        cache_dir           = str(cache_dir),
+                        use_oracle_io       = True
                     )
                 )
                 retry_times += 1

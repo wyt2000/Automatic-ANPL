@@ -366,17 +366,18 @@ async def solve_problem(task_name_prefix: str,
 
     # Eval system test
     logger.debug(f"{task_name_prefix}: Synthesizing done! System testing...")
+    passed_asserts = []
     try:
         passed_asserts = eval_python(task_name_prefix, program, system_tests)
         if len(passed_asserts) != len(system_tests[0]):
-            logger.debug(f"{task_name_prefix}: System test Failed!")
-            logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts[0])} / {len(system_tests[0])} system tests!")
             raise Exception("Failed")
         with open(pathlib.Path(save_dir, f"{task_name_prefix}_accepted.py"), "w") as f:
             f.write(program)
         logger.debug(f"{task_name_prefix}: Successfully solve the problem!")
         return True
     except Exception as err:
+        logger.debug(f"{task_name_prefix}: System test Failed!")
+        logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts)} / {len(system_tests[0])} system tests!")
         try:
             with open(pathlib.Path(save_dir, f"{task_name_prefix}_failed.py"), "w") as f:
                 f.write(program)

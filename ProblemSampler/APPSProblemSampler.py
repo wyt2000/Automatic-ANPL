@@ -1,6 +1,4 @@
-import json
 import random
-from dataclasses import dataclass
 from .ProblemSampler import ProblemData, ProblemSampler
 
 # for huggingface
@@ -39,7 +37,7 @@ class APPSProblemSampler(ProblemSampler):
     def sample_from_head(self, num_problems):
         yield from self.sample(range(num_problems))
 
-    def sample_randomly(self, num_problems, seed=114514):
+    def sample_randomly(self, num_problems, seed=42):
         random.seed(seed)
         yield from self.sample(random.sample(self.valid_ids, num_problems))
 

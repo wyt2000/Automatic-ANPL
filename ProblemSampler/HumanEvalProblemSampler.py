@@ -1,5 +1,5 @@
 import random
-from ProblemSampler import ProblemData, ProblemSampler
+from .ProblemSampler import ProblemData, ProblemSampler
 
 # for humaneval 
 from human_eval.data import read_problems

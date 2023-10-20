@@ -6,17 +6,6 @@ import datasets
 from datasets import load_dataset 
 
 class APPSProblemData(ProblemData):
-    def __init__(self, sample):
-        '''
-        :param sample: apps data.
-        :type sample: dict[str, str]
-        '''
-        self.sample = sample
-
-    def __getattr__(self, name):
-        if (attr := self.sample.get(name)) is not None:
-            return attr
-        raise AttributeError(f"{self.__class__.__name__} object has no attribute {name}") 
     
     def __repr__(self):
         return f'{self.__class__.__name__}(problem_id={self.problem_id}, url={self.url})'

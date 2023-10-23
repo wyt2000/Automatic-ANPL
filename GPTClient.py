@@ -8,7 +8,7 @@ import asyncio
 import re
 from Prompter.Prompter import AbstractPrompter
 from Synthesizer.ANPLSynthesizer import verify_code
-from utils import Cache
+from utils import Cache, remove_implemented_functions
 from Tracer import IOExample
 
 class GPTClient:
@@ -76,23 +76,8 @@ class GPTClient:
 
     # filter other functions, but allow decompose
     def extract_func(self, response: str, target: str, holes: set[str]):
-        has_target = False
-        ok = False 
-        code = []
-        for line in response.splitlines():
-            indent = len(line) - len(line.lstrip())
-            if len(line) > 0 and indent == 0:
-                if m := self.pattern.match(line):
-                    func_name = m.group(1)
-                    ok = ((func_name == target) or (func_name not in holes))
-                    has_target |= (func_name == target) 
-                else:
-                    ok = False 
-            if ok or line.startswith("import") or line.startswith("from"):
-                code.append(line)
-        if not has_target:
-            return ''
-        return '\n'.join(code) 
+        code = self.extract_code(response)
+        return remove_implemented_functions(code, target, holes - {target})
 
     def extract_io(self, response: str):
         code = self.extract_code(response)

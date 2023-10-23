@@ -9,6 +9,7 @@ import json
 import functools
 import operator
 import random
+import re
 from contextlib import contextmanager
 
 def mkdir_override(dir_path):
@@ -109,4 +110,28 @@ def sample_product(arrs, n, k):
         product_to_tensor_idx(prod, dims, idx)
         for idx in indices
     ]
+
+func_pattern = re.compile("\s*def\s+(.+)\(.*\).*\:")
+# Remove all implemented functions including nested functions
+def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
+    # When meet the line "def {implemented_functions}", omit lines until the line whose indent count <= its
+    has_target = False
+    is_omit = False
+    omit_indent = -1
+    code = []
+    for line in raw_code.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if is_omit: # in scope of implemented functions
+            if indent > omit_indent: continue
+            is_omit = False
+        if m := func_pattern.match(line): # meet func def
+            func_name = m.group(1)
+            if indent == 0 and func_name == target:
+                has_target = True
+            if func_name in implemented_functions: 
+                is_omit = True
+                omit_indent = indent
+                continue
+        code.append(line)
+    return '\n'.join(code) if has_target else ''
 

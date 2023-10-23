@@ -5,7 +5,7 @@ import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1' 
 
 from GPTClient import GPTClient
-from ProblemSampler.APPSProblemSampler import APPSProblemSampler, APPSProblemData
+from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
 from Synthesizer.Synthesizer import AbstractSynthesizer 
@@ -24,7 +24,7 @@ import operator
 import random
 import ast
 import tqdm
-import openai
+import traceback
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
@@ -47,7 +47,7 @@ async def solve_problem(task_name_prefix: str,
                         client: GPTClient,
                         prompter: AbstractPrompter,
                         synthesizer: AbstractSynthesizer,
-                        data: APPSProblemData,
+                        data: HumanEvalProblemData,
                         num_completions: int,
                         save_dir: str,
                         cache_dir: str,
@@ -68,12 +68,11 @@ async def solve_problem(task_name_prefix: str,
     restart_times = 0
     solution_debug_times = 0
     program_debug_times = 0
+    final_submit = None # The final program to test
     solution = None
     program = None
     anpl_code = None
     success = False
-    system_tests = json.loads(data.input_output)
-    system_tests = (system_tests["inputs"], system_tests["outputs"])
     best_attempt = ["", []]
     question = question_prefix + data.prompt
 
@@ -81,9 +80,10 @@ async def solve_problem(task_name_prefix: str,
     def restart():
         nonlocal restart_times
         nonlocal solution_debug_times, program_debug_times
-        nonlocal solution, anpl_code, program
+        nonlocal solution, anpl_code, program, final_submit
         restart_times += 1
         logger.debug(f"{task_name_prefix}: restart {restart_times} times")
+        final_submit = program
         solution_debug_times, program_debug_times = 0, 0
         solution, anpl_code, program = None, None, None
 
@@ -100,10 +100,7 @@ async def solve_problem(task_name_prefix: str,
         save_dir          = save_dir,
         delay_in_seconds  = delay_in_seconds
     )
-    logger.debug(pretests)
     pretests = list(set(pretests))
-    pretests = [[p[0] for p in pretests], [p[1] for p in pretests]]
-    logger.debug(pretests)
     # Try to solve the problem until reach max_restart_times
     while restart_times < max_restart_times:
         
@@ -169,9 +166,9 @@ async def solve_problem(task_name_prefix: str,
                         anpl_code               = anpl_code,
                         save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
                         cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
+                        entry                   = data.entry_point,
                         question                = question,
-                        inputs                  = pretests[0],
-                        outputs                 = pretests[1],
+                        asserts                 = pretests,
                         num_completions_list    = [num_completions]
                     )
                     program, _ = results[num_completions]
@@ -194,7 +191,7 @@ async def solve_problem(task_name_prefix: str,
             best_attempt = [program, passed_asserts]
 
         # Check if all pretest passed
-        if len(passed_asserts) == len(pretests[0]):
+        if len(passed_asserts) == len(pretests):
             success = True
 
         # Save the program
@@ -207,12 +204,12 @@ async def solve_problem(task_name_prefix: str,
             break
 
         logger.debug(f"{task_name}: Pretest Failed!")
-        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(pretests[0])} pretests!")
+        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(pretests)} pretests!")
 
         # Generate counterexamples from question and program 
         logger.debug(f"{task_name}: Generating counterexamples...")
         if use_pretests_debug:
-            counterexamples = list(zip(pretests[0], pretests[1]))
+            counterexamples = pretests
         else:
             try:
                 counterexamples = await client.request_for_counterexamples(
@@ -233,19 +230,18 @@ async def solve_problem(task_name_prefix: str,
                 restart()
 
         # Check if the program can pass the counterexample
-        golden_io = [] 
-        for inp, out in counterexamples:
-            if not inp or not out: continue
+        golden_io = None 
+        for pretest in pretests:
             try:
-                passed_asserts = eval_python(task_name, program, ([inp], [out]))
+                passed_asserts = eval_python(task_name, program, [pretest])
                 if len(passed_asserts) == 0:
-                    golden_io = [inp, out]
+                    golden_io = pretest
                     break
             except Exception as err:
                 pass
 
         # Restart if counterexample generation failed
-        if len(golden_io) == 0:
+        if golden_io is None:
             logger.debug("{task_name}: Counterexample not found, restart!")
             restart()
             continue
@@ -277,8 +273,7 @@ async def solve_problem(task_name_prefix: str,
                     },
                     question          = question,
                     old_solution      = solution,
-                    inputs            = golden_io[0],
-                    outputs           = golden_io[1],
+                    counterexample    = golden_io,
                     prompter          = prompter,
                     save_dir          = save_dir,
                     delay_in_seconds  = delay_in_seconds
@@ -289,7 +284,7 @@ async def solve_problem(task_name_prefix: str,
             continue
 
         # Generate traces for each function under golden input
-        func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0], data.entry_point)
+        func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io, data.entry_point)
         if func_traces is None:
             logger.debug(f'{task_name}: Couldn\'t get function traces, restart!')
             restart()
@@ -309,6 +304,7 @@ async def solve_problem(task_name_prefix: str,
                             "temperature"       : 0.6, # high temperature to make more difference
                             "n"                 : num_completions // 2
                         },
+                        question    = question,
                         solution    = solution,
                         program     = program,
                         func_name   = func_name,
@@ -372,19 +368,19 @@ async def solve_problem(task_name_prefix: str,
     logger.debug(f"{task_name_prefix}: Synthesizing done! System testing...")
     passed_asserts = []
     try:
-        passed_asserts = eval_python(task_name_prefix, program, system_tests)
-        if len(passed_asserts) != len(system_tests[0]):
+        passed_asserts = eval_python(task_name_prefix, final_submit, data.test)
+        if len(passed_asserts) != len(data.test):
             raise Exception("Failed")
         with open(pathlib.Path(save_dir, f"{task_name_prefix}_accepted.py"), "w") as f:
-            f.write(program)
+            f.write(final_submit)
         logger.debug(f"{task_name_prefix}: Successfully solve the problem!")
         return True
     except Exception as err:
         logger.debug(f"{task_name_prefix}: System test Failed!")
-        logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts)} / {len(system_tests[0])} system tests!")
+        logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts)} / {len(data.test)} system tests!")
         try:
             with open(pathlib.Path(save_dir, f"{task_name_prefix}_failed.py"), "w") as f:
-                f.write(program)
+                f.write(final_submit)
         except Exception:
             pass
         logger.debug(f"{task_name_prefix}: Can't solve the problem!")
@@ -403,22 +399,19 @@ if __name__ == '__main__':
     mkdir_override(save_prefix)
     mkdir_no_override(cache_prefix)
 
-    # sampler = APPSProblemSampler(difficulties=['competition'])
-    sampler = APPSProblemSampler(difficulties=['all'])
+    sampler = HumanEvalProblemSampler()
     client = GPTClient(cache_path=pathlib.Path(cache_prefix, "client_cache.json"))
     prompter = ANPLPrompter()
     synthesizer = ANPLSynthesizer()
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
 
-    sample_list = [3158, 3811, 3876, 3107, 3784, 3621, 3070, 3113, 3665, 3629, 3882, 3075, 3338, 3859, 3888, 3119, 3820, 3633, 3082, 3125, 3833, 3677, 3894, 3087, 3518, 3907, 3900, 3131] 
     max_retry_times = 3
-    # for data in sampler.sample_randomly(args.num_problems):
-    for data in sampler.sample(sorted(sample_list)):
+    for data in sampler.sample_randomly(args.num_problems):
         retry_times = 0
         async def solve_problem_async():
             await solve_problem(
-                task_name_prefix    = f"apps_{data.problem_id}",
+                task_name_prefix    = f"{data.task_id}",
                 model_name          = "gpt-3.5-turbo-0301", 
                 client              = client,
                 prompter            = prompter,
@@ -430,8 +423,8 @@ if __name__ == '__main__':
                 use_pretests_debug  = True
             )
         try:
-            save_dir = pathlib.Path(save_prefix, f"{data.problem_id}")
-            cache_dir = pathlib.Path(cache_prefix, f"{data.problem_id}")
+            save_dir = pathlib.Path(save_prefix, f"{data.task_id}")
+            cache_dir = pathlib.Path(cache_prefix, f"{data.task_id}")
             asyncio.run(solve_problem_async())
         except Exception as err:
             logger.exception(err)

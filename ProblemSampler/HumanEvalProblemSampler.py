@@ -5,6 +5,20 @@ from .ProblemSampler import ProblemData, ProblemSampler
 from human_eval.data import read_problems
 
 class HumanEvalProblemData(ProblemData):
+
+    def __init__(self, sample):
+        self.task_id = sample['task_id'].replace('/', '_')
+        self.test = []
+        if 'test' in sample:
+            self.test = [line.strip() for line in sample['test'].splitlines() if line.strip().startswith('assert')]
+        super().__init__(sample)
+
+    def __getattr__(self, name):
+        if name == 'task_id':
+            return self.task_id
+        if name == 'test':
+            return self.test
+        return super().__getattr__(name)
     
     def __repr__(self):
         return f'{self.__class__.__name__}(task_id={self.task_id}, entry_point={self.entry_point})'
@@ -33,4 +47,6 @@ if __name__ == '__main__':
     dataset = sampler.sample_randomly(10)
     for data in dataset:
         print(data)
+        for t in data.test:
+            print(t)
 

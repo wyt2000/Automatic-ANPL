@@ -95,22 +95,8 @@ class GPTClient:
         return '\n'.join(code) 
 
     def extract_io(self, response: str):
-        inp, out = [], []
-        isinp, isout = False, False 
-        for line in response.splitlines():
-            if '-Input-' in line:
-                isinp, isout = True, False
-                continue
-            if '-Output-' in line:
-                isout, isinp = True, False
-                continue
-            if isinp:
-                inp.append(line)
-            elif isout:
-                out.append(line)
-        inp = self.extract_code('\n'.join(inp))
-        out = self.extract_code('\n'.join(out))
-        return inp, out
+        code = self.extract_code(response)
+        return [line.split('#')[0].strip() for line in code.splitlines() if line.strip().startswith('assert')]
 
     async def request_for_pretests(self,
                                    task_name: str,
@@ -136,9 +122,11 @@ class GPTClient:
                 **completion_kwargs
             )
             responses = self.get_response_list(responses)
-            responses = [self.extract_io(response) for response in responses]
+            asserts = set()
+            for response in responses:
+                asserts.update(self.extract_io(response))
             self.logger.debug(f'{task_name}: Requesting for pretests done!')
-            return responses
+            return asserts 
 
     async def request_for_solutions(self,
                                     task_name: str,
@@ -176,6 +164,7 @@ class GPTClient:
                                 task_name: str,
                                 starter_code: str,
                                 func_name: str,
+                                question: str,
                                 solution: str,
                                 suffix_name: str,
                                 prompter: AbstractPrompter,
@@ -189,7 +178,7 @@ class GPTClient:
             openai.aiosession.set(session)
             messages = [
                 {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, solution=solution, func_name=func_name)}
+                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, question=question, solution=solution, func_name=func_name)}
             ]
             self.logger.debug(f'{task_name}: Requesting for target code ...')
             for i in range(self.retry_times):
@@ -202,7 +191,7 @@ class GPTClient:
                 response = self.get_response_list(responses)[0]
                 response = self.extract_code(response)
                 try:
-                    verify_code(response)
+                    verify_code(response, func_name)
                 except Exception as err:
                     self.logger.exception(err)
                     self.logger.debug(response)
@@ -285,8 +274,7 @@ class GPTClient:
                                             task_name: str,
                                             question: str,
                                             old_solution: str,
-                                            inputs: str,
-                                            outputs: str,
+                                            counterexample: str,
                                             prompter: AbstractPrompter,
                                             save_dir: str,
                                             completion_kwargs: dict = {}, 
@@ -298,7 +286,7 @@ class GPTClient:
             openai.aiosession.set(session)
             messages = [
                 {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_solution_debug_prompt(question=question, solution=old_solution, inputs=inputs, outputs=outputs)}
+                {"role": "user", "content": prompter.get_solution_debug_prompt(question=question, solution=old_solution, counterexample=counterexample)}
             ]
             self.logger.debug(f'{task_name}: Requesting for debugged high-level solution...')
             responses = await self.delayed_completion(

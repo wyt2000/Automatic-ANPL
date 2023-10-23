@@ -21,22 +21,21 @@ def verify_code(anpl_code, entry='main'):
         raise Exception("Compile Error!")
     implemented_funs = {f.name for f in anpl.funs.values() if f.code}
     if entry not in implemented_funs:
-        raise Exception("There should be one implemented main function!")
+        raise Exception(f"There should be one implemented function {entry}!")
 
 # TODO: Move it to utils
 # Test python code by ANPL synthesizer
 def eval_python(task_name: str,
                 code: str,
-                input_outputs: tuple[list[str], list[str]]):
-    assert_str = ANPLCompiler.get_assert_str(input_outputs)
+                asserts: list[str]):
+    assert_str = '\n'.join(asserts)
     ast.parse(assert_str)
     code, passed_asserts = ANPLCompiler.eval_implementation(code, assert_str, ['', []])
     return passed_asserts 
 
 # Convert io list to assert str
-def get_assert_str(input_outputs: tuple[list[str], list[str]], entry='main'):
-    return ANPLCompiler.get_assert_str(input_outputs, entry)
-
+def get_assert_str(asserts: list[str]):
+    return '\n'.join(asserts)
 
 # Eval codes from generator with the limit of time.
 def eval_sampled_codes(task_name: str,
@@ -60,9 +59,8 @@ class ANPLSynthesizer(AbstractSynthesizer):
                    save_path_prefix: str,
                    cache_path_prefix: str,
                    question: str,
-                   inputs: list[str],
-                   outputs: list[str],
-                   entry = 'main',
+                   asserts: list[str],
+                   entry: str = 'main',
                    num_completions_list: list[int] = [1]):
         # prefix = _question_prefix + question + _question_suffix
         cache = Cache(file_path=f'{cache_path_prefix}.json')
@@ -77,9 +75,8 @@ class ANPLSynthesizer(AbstractSynthesizer):
                     entry           = entry,
                     code            = anpl_code,
                     cache           = cache,
-                    system_tests    = (inputs, outputs),
+                    asserts         = asserts,
                     num_completions = num_completions
-                   # prefix          = prefix
                 )
                 results[num_completions] = [target_code, success]
             except Exception as err:

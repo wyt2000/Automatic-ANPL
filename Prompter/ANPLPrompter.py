@@ -39,7 +39,6 @@ Your output should be in the following format:
 ```
 assert 
 ```
-(Explanation if need)
 
 """
 
@@ -50,10 +49,8 @@ _solution_debug_prompt = """-----Question-----
 -----Task-----
 The solution failed to pass the following input-output testcase.
 
------Input-----
-{inputs}
------Output-----
-{outputs}
+-----Test-----
+{counterexample}
 
 Give the correct high-level solution which can pass the input-output testcase mentioned above and I/O descriptions.
 You should only output fixed high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
@@ -74,7 +71,7 @@ Here is a function of the program with input-output traces.
 {function_with_traces}
 
 -----Task-----
-There are some mistakes or exceptions in the function, return the fixed function. You can define helper functions before it to decompose it into sub-functions.
+If there are some mistakes or exceptions in the function, return the fixed function. You can define helper functions before it to decompose it into sub-functions.
 Your output should be in the following format:
 ```
 def {func_name}(...):
@@ -129,8 +126,7 @@ _translation_prompt = """-----Question-----
 {solution}
 
 -----Task-----
-Translate the solution for the problem into python code wrapped by ```, which must have one {func_name} function with docstring and implementation, and other functions should only be described by docstring, omit their implementations.
-
+Translate the solution for the problem into python code wrapped by ```. Firstly, you should define some helper functions with docstring before function {func_name} to decompose it. Then define function {func_name} with docstring which calls the helper functions. Each function should be described by docstring.
 """
 
 _code_description = """Omit explanations or any additional text."""

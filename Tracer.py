@@ -20,6 +20,13 @@ def import_module_from_string(source: str):
     exec(source, module.__dict__)
     return module
 
+# Get func lineno from code_str
+def get_lineno_for_function(code: list[str], func_name: str):
+    for i, line in enumerate(code):
+        if f'def {func_name}' in line:
+            return i + 1
+    return -1
+
 class TraceException(Exception):
     '''
     Exception with lineno in str module.
@@ -98,14 +105,20 @@ class IOCollector:
                 output = func(*args, **kwargs)
             except Exception as e:
                 te = traceback.TracebackException.from_exception(e)
-                if isinstance(e, TraceException): # skip wrapper function
+                if isinstance(e, TraceException):
+                    # skip wrapper function
                     te.stack.pop() 
                     e = e.args[0]
-                elif isinstance(e, timeout_decorator.TimeoutError): # skip call stack in timeout decorator  
+                elif isinstance(e, timeout_decorator.TimeoutError): 
+                    # skip call stack in timeout decorator  
                     while te.stack and te.stack[-1].name != func.__name__:
                         te.stack.pop()
                 lineno = te.stack[-1].lineno if te.stack else -1
                 func_name = te.stack[-1].name if te.stack else ""
+                if not func_name or func_name == 'wrapper': 
+                    # Handle exception before entering func, eg: arg number not match 
+                    func_name = func.__name__
+                    lineno = get_lineno_for_function(self.full_code, func_name)
                 code = self.full_code[lineno - 1] if 0 <= lineno - 1 < len(self.full_code) else ""
                 exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
@@ -270,10 +283,22 @@ def main(input_str: str):
     print("# TEST 5: Assert str")
     code = '''
 from typing import List
-def main(arr: str):
+def f(arr: List[int]):
     return sum(arr)
+def main(arr: List[int]):
+    return f(arr) 
     '''
     _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 10, \"Wrong!\" ")
     print(ios, exc)
 
+    print("# TEST 6: Fix args Error")
+    code = '''
+from typing import List
+def f(x: int):
+    return sum(arr)
+def main(arr: List[int]):
+    return f(1, 2) + 2
+    '''
+    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 0, \"Wrong!\" ")
+    print(ios, exc)
 

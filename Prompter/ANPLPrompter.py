@@ -32,20 +32,14 @@ _background = """You are an expert of Python programming language. """
 _pretest_prompt = """-----Question-----
 {question}
 -----Task-----
-Give an input-output example of the question.
+Give an assert test for this question.
 Your output should be in the following format:
 
------Input-----
+-----Test-----
 ```
-Input
+assert 
 ```
-(Explanation for input if need)
-
------Output-----
-```
-Output
-```
-(Explanation for input if need)
+(Explanation if need)
 
 """
 

@@ -11,6 +11,7 @@ from contextlib import redirect_stdout
 import resource
 import code
 import ast
+from typing import Any
 
 # Import program str as module.
 def import_module_from_string(source: str):
@@ -105,7 +106,7 @@ class IOCollector:
                         te.stack.pop()
                 lineno = te.stack[-1].lineno if te.stack else -1
                 func_name = te.stack[-1].name if te.stack else ""
-                code = self.full_code[lineno - 1] if lineno != -1 else ""
+                code = self.full_code[lineno - 1] if 0 <= lineno - 1 < len(self.full_code)  else ""
                 exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
 
@@ -126,23 +127,26 @@ class IOCollector:
 # Run code while catching time and memory limit exception
 @timeout_decorator.timeout(1)
 def exec_with_limit(func: FunctionType,
-                    inputs: str):
+                    inputs: list[Any] | str):
     with redirect_stdout(io.StringIO()):
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)
         resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
+        sys.setrecursionlimit(100)
         try:
-            func(inputs)
+            if isinstance(inputs, list):
+                func(*inputs) # For list[args]
+            elif isinstance(inputs, str):
+                exec(inputs, locals() | {func.__name__: func}) # For assert str
+            else:
+                raise TypeError("Inputs should be either list or assert str!")
         finally:
             resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
 
-# TODO: support non-main function as entry
+# Run code and save traces of func_names, NOT support kwargs 
 def exec_with_trace(code: str,
                     func_names: list[str],
-                    inputs: str,
+                    inputs: list[Any],
                     entry_name: str = 'main') -> list[IOCollector, Exception]:
-    '''
-    Run code and save traces of func_names
-    '''
     # Load module from code and find entry function
     module = import_module_from_string(code)
     io = IOCollector(code, func_names, module)
@@ -153,11 +157,14 @@ def exec_with_trace(code: str,
     try:
         exec_with_limit(entry_func, inputs)
     except Exception as err:
+        traceback.print_exc()
         exc = err 
     return io, exc 
 
 # Trace all functions in code
-def trace_code(code: str, inputs: str) -> list[dict[str, str], IOCollector, Exception]:
+def trace_code(code: str,
+               inputs: list[Any] | str,
+               entry_name: str = 'main') -> list[dict[str, str], IOCollector, Exception]:
     # Parse code to ast.Node
     try:
         root = ast.parse(code)
@@ -176,7 +183,7 @@ def trace_code(code: str, inputs: str) -> list[dict[str, str], IOCollector, Exce
             func_codes[func.name] = ast.unparse(func)
 
     try:
-        ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs)
+        ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs, entry_name)
         return func_names_sorted, func_codes, ios, exc
     except Exception as exc:
         return func_names_sorted, func_codes, None, exc
@@ -189,7 +196,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return add_list(inputs)
     '''
-    _, _, ios, exc = trace_code(code, "1 2 3 4 5")
+    _, _, ios, exc = trace_code(code, ["1 2 3 4 5"])
     print(ios, exc)
     print("# TEST 1: function I/O trace")
     code = '''
@@ -206,7 +213,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return add_list(inputs)
     '''
-    func_names_sorted, func_codes, ios, exc = trace_code(code, "1 2 3 4 5")
+    func_names_sorted, func_codes, ios, exc = trace_code(code, ["1 2 3 4 5"])
     print(func_names_sorted)
     print(func_codes)
     print(ios, exc)
@@ -223,7 +230,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    _, _, ios, exc = trace_code(code, "123")
+    _, _, ios, exc = trace_code(code, ["123"])
     print(ios, exc)
 
     print("# TEST 3: Time limit exceeded")
@@ -240,7 +247,7 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    _, _, ios, exc = trace_code(code, "123")
+    _, _, ios, exc = trace_code(code, ["123"])
     print(ios, exc)
 
     print("# TEST 4: Memory limit exceeded")
@@ -256,7 +263,16 @@ def main(input_str: str):
     inputs = parse_input(input_str)
     return f(inputs)
     '''
-    _, _, ios, exc = trace_code(code, "123")
+    _, _, ios, exc = trace_code(code, ["123"])
+    print(ios, exc)
+
+    print("# TEST 5: Assert str")
+    code = '''
+from typing import List
+def main(arr: List[int]):
+    return sum(arr)
+    '''
+    _, _, ios, exc = trace_code(code, "assert main(1,2,3,4) == 10")
     print(ios, exc)
 
 

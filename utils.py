@@ -110,4 +110,3 @@ def sample_product(arrs, n, k):
         for idx in indices
     ]
 
-

@@ -289,7 +289,7 @@ async def solve_problem(task_name_prefix: str,
             continue
 
         # Generate traces for each function under golden input
-        func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0])
+        func_names_sorted, func_codes, func_traces, exception = trace_code(program, golden_io[0], data.entry_point)
         if func_traces is None:
             logger.debug(f'{task_name}: Couldn\'t get function traces, restart!')
             restart()

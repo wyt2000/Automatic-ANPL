@@ -59,7 +59,7 @@ async def solve_problem(task_name_prefix: str,
                         num_counterexamples: int = 16,
                         max_attempts: int = 100000,
                         max_time: float = 240,
-                        seed=42,
+                        seed = 42,
                         use_pretests_debug=False):
 
     logger.debug(f"{task_name_prefix}: start to solve the problem...")
@@ -73,7 +73,7 @@ async def solve_problem(task_name_prefix: str,
     program = None
     anpl_code = None
     success = False
-    best_attempt = ["", []]
+    all_attempts = {}
     question = question_prefix + data.prompt
 
     # Start a new generation of solution
@@ -169,9 +169,10 @@ async def solve_problem(task_name_prefix: str,
                         entry                   = data.entry_point,
                         question                = question,
                         asserts                 = pretests,
+                        all_attempts            = all_attempts,
                         num_completions_list    = [num_completions]
                     )
-                    program, _ = results[num_completions]
+                    _, program, _ = results[num_completions]
                     program = program_prefix + "\n" + program
             except Exception as err:
                 logger.exception(err)
@@ -185,32 +186,17 @@ async def solve_problem(task_name_prefix: str,
             passed_asserts = eval_python(task_name, program, pretests)
         except Exception as err:
             pass
-
-        # Update the best attempt
-        if len(passed_asserts) >= len(best_attempt[1]):
-            best_attempt = [program, passed_asserts]
-
-        # Check if all pretest passed
-        if len(passed_asserts) == len(pretests):
-            success = True
+        logger.debug(f"{task_name}: Current attempt passed {len(passed_asserts)} / {len(pretests)} pretests!")
 
         # Save the program
         with open(pathlib.Path(save_dir, f"{task_name}.py"), "w") as f:
             f.write(program)
 
-        # Break if all pretest tests passed
-        if success:
-            logger.debug(f"{task_name}: Pretest Passed!")
-            break
-
-        logger.debug(f"{task_name}: Pretest Failed!")
-        logger.debug(f"{task_name}: Best attempt passed {len(best_attempt[1])} / {len(pretests)} pretests!")
-
         # Generate counterexamples from question and program 
-        logger.debug(f"{task_name}: Generating counterexamples...")
         if use_pretests_debug:
             counterexamples = pretests
         else:
+            logger.debug(f"{task_name}: Generating counterexamples...")
             try:
                 counterexamples = await client.request_for_counterexamples(
                     task_name         = task_name,
@@ -349,10 +335,11 @@ async def solve_problem(task_name_prefix: str,
         try:
             log_path = pathlib.Path(save_dir, f"{task_name}.log")
             with redirect_loggers(log_path):
-                program, _ = eval_sampled_codes(
+                _, program, _ = eval_sampled_codes(
                    task_name      = task_name,
                    code_generator = code_generator,
                    assert_str     = assert_str,
+                   all_attempts   = all_attempts,
                    n_to_try       = n_to_try,
                    max_time       = max_time / 2
                 )

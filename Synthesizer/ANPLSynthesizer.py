@@ -41,11 +41,12 @@ def get_assert_str(asserts: list[str]):
 def eval_sampled_codes(task_name: str,
                        code_generator: Iterator[str],
                        assert_str: str,
+                       all_attempts: dict[int, list[int, str, list[str]]],
                        n_to_try: int,
                        max_time: float):
     compiler = ANPLCompiler()
-    return compiler.eval_sampled_codes(task_name, code_generator, assert_str, n_to_try, max_time=max_time)
-
+    compiler.eval_sampled_codes(task_name, code_generator, assert_str, all_attempts, n_to_try, max_time=max_time)
+    return max(all_attempts.values())
 
 # Add import and stdin for code
 def wrap_code(code: str):
@@ -60,6 +61,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
                    cache_path_prefix: str,
                    question: str,
                    asserts: list[str],
+                   all_attempts: dict[int, list[int, str, list[str]]], # score, code, passed_asserts
                    entry: str = 'main',
                    num_completions_list: list[int] = [1]):
         # prefix = _question_prefix + question + _question_suffix
@@ -70,15 +72,16 @@ class ANPLSynthesizer(AbstractSynthesizer):
             target_code = None
             success = False
             try:
-                target_code, success = compiler.compile(
+                compiler.compile(
                     task_name       = task_name,
                     entry           = entry,
                     code            = anpl_code,
+                    all_attempts    = all_attempts,
                     cache           = cache,
                     asserts         = asserts,
                     num_completions = num_completions
                 )
-                results[num_completions] = [target_code, success]
+                results[num_completions] = max(all_attempts.values())
             except Exception as err:
                 traceback.print_exc()
                 success = False

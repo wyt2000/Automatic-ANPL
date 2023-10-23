@@ -73,19 +73,23 @@ async def solve_problem(task_name_prefix: str,
     program = None
     anpl_code = None
     success = False
+    score = 0
     all_attempts = {}
+    best_attempt = ['', 0]
     question = question_prefix + data.prompt
 
     # Start a new generation of solution
     def restart():
         nonlocal restart_times
         nonlocal solution_debug_times, program_debug_times
-        nonlocal solution, anpl_code, program, final_submit
+        nonlocal solution, anpl_code, program, final_submit, score
         restart_times += 1
         logger.debug(f"{task_name_prefix}: restart {restart_times} times")
-        final_submit = program
+        final_submit = best_attempt[0] 
         solution_debug_times, program_debug_times = 0, 0
         solution, anpl_code, program = None, None, None
+        all_attempts.clear()
+        score = 0
 
     # Generate pretests
     pretests = await client.request_for_pretests(
@@ -172,7 +176,7 @@ async def solve_problem(task_name_prefix: str,
                         all_attempts            = all_attempts,
                         num_completions_list    = [num_completions]
                     )
-                    _, program, _ = results[num_completions]
+                    score, program, _ = results[num_completions]
                     program = program_prefix + "\n" + program
             except Exception as err:
                 logger.exception(err)
@@ -191,6 +195,10 @@ async def solve_problem(task_name_prefix: str,
         # Save the program
         with open(pathlib.Path(save_dir, f"{task_name}.py"), "w") as f:
             f.write(program)
+        
+        # Update best_attempt
+        if score >= best_attempt[1]:
+            best_attempt = [program, score]
 
         # Generate counterexamples from question and program 
         if use_pretests_debug:
@@ -335,7 +343,7 @@ async def solve_problem(task_name_prefix: str,
         try:
             log_path = pathlib.Path(save_dir, f"{task_name}.log")
             with redirect_loggers(log_path):
-                _, program, _ = eval_sampled_codes(
+                score, program, _ = eval_sampled_codes(
                    task_name      = task_name,
                    code_generator = code_generator,
                    assert_str     = assert_str,

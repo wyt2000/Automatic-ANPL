@@ -106,7 +106,7 @@ class IOCollector:
                         te.stack.pop()
                 lineno = te.stack[-1].lineno if te.stack else -1
                 func_name = te.stack[-1].name if te.stack else ""
-                code = self.full_code[lineno - 1] if 0 <= lineno - 1 < len(self.full_code)  else ""
+                code = self.full_code[lineno - 1] if 0 <= lineno - 1 < len(self.full_code) else ""
                 exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
 
@@ -156,8 +156,9 @@ def exec_with_trace(code: str,
     exc = None
     try:
         exec_with_limit(entry_func, inputs)
+    except AssertionError as err:
+        exc = AssertionError(inputs) # Save assert str in Exception
     except Exception as err:
-        traceback.print_exc()
         exc = err 
     return io, exc 
 
@@ -269,10 +270,10 @@ def main(input_str: str):
     print("# TEST 5: Assert str")
     code = '''
 from typing import List
-def main(arr: List[int]):
+def main(arr: str):
     return sum(arr)
     '''
-    _, _, ios, exc = trace_code(code, "assert main(1,2,3,4) == 10")
+    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 10, \"Wrong!\" ")
     print(ios, exc)
 
 

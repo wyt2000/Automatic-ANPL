@@ -10,7 +10,7 @@ class HumanEvalProblemData(ProblemData):
         self.task_id = sample['task_id'].replace('/', '_')
         self.test = []
         if 'test' in sample:
-            self.test = [line.strip() for line in sample['test'].splitlines() if line.strip().startswith('assert')]
+            self.test = [line.strip().replace('candidate', sample['entry_point']) for line in sample['test'].splitlines() if line.strip().startswith('assert')]
         super().__init__(sample)
 
     def __getattr__(self, name):

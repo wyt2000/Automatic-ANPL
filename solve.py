@@ -365,12 +365,13 @@ async def solve_problem(task_name_prefix: str,
     try:
         passed_asserts = eval_python(task_name_prefix, final_submit, data.test)
         if len(passed_asserts) != len(data.test):
-            raise Exception("Failed")
+            raise Exception("Wrong Answer!")
         with open(pathlib.Path(save_dir, f"{task_name_prefix}_accepted.py"), "w") as f:
             f.write(final_submit)
         logger.debug(f"{task_name_prefix}: Successfully solve the problem!")
         return True
     except Exception as err:
+        logger.debug(err)
         logger.debug(f"{task_name_prefix}: System test Failed!")
         logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts)} / {len(data.test)} system tests!")
         try:

@@ -44,16 +44,17 @@ assert
 
 _solution_debug_prompt = """-----Question-----
 {question}
+
 -----Solution-----
 {solution}
------Task-----
-The solution failed to pass the following input-output testcase.
 
 -----Test-----
 {counterexample}
 
-Give the correct high-level solution which can pass the input-output testcase mentioned above and I/O descriptions.
-You should only output fixed high-level solution and I/O descriptions for this problem. You shouldn't output any pseudocode or code.
+-----Task-----
+The solution can't pass the test mentioned above.
+Give the fixed high-level solution which can pass the assert test.
+You should only output fixed high-level solution without any pseudocode or code.
 """
 
 _function_debug_prompt = """-----Question-----

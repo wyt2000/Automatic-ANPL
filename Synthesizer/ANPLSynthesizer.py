@@ -56,6 +56,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
 
     def synthesize(self,
                    task_name: str,
+                   model_name: str,
                    anpl_code: str,
                    save_path_prefix: str,
                    cache_path_prefix: str,
@@ -74,6 +75,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
             try:
                 compiler.compile(
                     task_name       = task_name,
+                    model_name      = model_name,
                     entry           = entry,
                     code            = anpl_code,
                     all_attempts    = all_attempts,

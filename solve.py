@@ -189,6 +189,7 @@ async def solve_problem(task_name_prefix: str,
                 with redirect_loggers(log_path):
                     results = synthesizer.synthesize(
                         task_name               = task_name,
+                        model_name              = model_name,
                         anpl_code               = anpl_code,
                         save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
                         cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),

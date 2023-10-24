@@ -68,13 +68,14 @@ async def solve_problem(task_name_prefix: str,
     restart_times = 0
     solution_debug_times = 0
     program_debug_times = 0
-    final_submit = None # The final program to test
+    final_submit = '' # The final program to test
     solution = None
     program = None
     anpl_code = None
     success = False
     score = 0
     all_attempts = {}
+    all_attempts_global = {}
     best_attempt = ['', 0]
     question = question_prefix + data.prompt
 
@@ -85,11 +86,32 @@ async def solve_problem(task_name_prefix: str,
         nonlocal solution, anpl_code, program, final_submit, score
         restart_times += 1
         logger.debug(f"{task_name_prefix}: restart {restart_times} times")
-        final_submit = best_attempt[0] 
         solution_debug_times, program_debug_times = 0, 0
         solution, anpl_code, program = None, None, None
+        # Update global attempt memory
+        for assert_hash, attempt in all_attempts.items():
+            all_attempts_global[assert_hash] = (
+                all_attempts_global.get(assert_hash, [0])[0] + attempt[0],
+                attempt[1],
+                attempt[2]
+            )
         all_attempts.clear()
         score = 0
+        # final_submit = best_attempt[0] 
+        try:
+            mx = max(all_attempts_global.values())
+            if mx[1] > 0:
+                final_submit = mx[2]
+                return
+            nonzero = [attempt for attempt in all_attempts_global.values() if attempt[1] > 0]
+            if not nonzero:
+                final_submit = mx[2]
+                return
+            return max(nonzero)[2]
+        except Exception as err:
+            logger.exception(err)
+            return
+        
 
     # Generate pretests
     pretests = await client.request_for_pretests(
@@ -176,7 +198,7 @@ async def solve_problem(task_name_prefix: str,
                         all_attempts            = all_attempts,
                         num_completions_list    = [num_completions]
                     )
-                    score, program, _ = results[num_completions]
+                    score, _, program = results[num_completions]
                     program = program_prefix + "\n" + program
             except Exception as err:
                 logger.exception(err)
@@ -220,7 +242,7 @@ async def solve_problem(task_name_prefix: str,
                     delay_in_seconds  = delay_in_seconds
                 )
             except Exception as err:
-                logger.exception("{task_name}: Counterexample not found, restart!")
+                logger.exception(f"{task_name}: Counterexample not found, restart!")
                 restart()
 
         # Check if the program can pass the counterexample
@@ -343,7 +365,7 @@ async def solve_problem(task_name_prefix: str,
         try:
             log_path = pathlib.Path(save_dir, f"{task_name}.log")
             with redirect_loggers(log_path):
-                score, program, _ = eval_sampled_codes(
+                score, _, program = eval_sampled_codes(
                    task_name      = task_name,
                    code_generator = code_generator,
                    assert_str     = assert_str,

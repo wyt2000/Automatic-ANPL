@@ -36,8 +36,7 @@ class GPTClient:
             return cache_value
 
         # Wait and send request
-        await asyncio.sleep(delay_in_seconds)
-        for i in range(self.retry_times):
+        for i in range(5):
             try:
                 response = await openai.ChatCompletion.acreate(
                     messages = messages,
@@ -50,9 +49,8 @@ class GPTClient:
                 self.logger.debug(f"{task_name}: InvalidRequestError!")
                 raise err
             except Exception as err:
-                self.logger.exception(err)
-                await asyncio.sleep(self.retry_interval)
-                self.logger.debug(f"{task_name}: Retry {i + 1} times.")
+                await asyncio.sleep(10 * (2 ** i))
+        raise openai.error.RateLimitError
 
     def get_response_list(self, responses):
         '''

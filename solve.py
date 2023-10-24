@@ -51,7 +51,7 @@ async def solve_problem(task_name_prefix: str,
                         num_completions: int,
                         save_dir: str,
                         cache_dir: str,
-                        delay_in_seconds: float = 10.0,
+                        delay_in_seconds: float = 5.0,
                         max_restart_times: int = 4,
                         max_solution_debug_times: int = 0,
                         max_program_debug_times: int = 2,
@@ -319,7 +319,8 @@ async def solve_problem(task_name_prefix: str,
                         completion_kwargs = {
                             "model"             : model_name,
                             "temperature"       : 0.6, # high temperature to make more difference
-                            "n"                 : num_completions // 2
+                            "n"                 : num_completions // 2,
+                            "max_tokens"        : 500
                         },
                         question    = question,
                         solution    = solution,

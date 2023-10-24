@@ -51,7 +51,7 @@ async def solve_problem(task_name_prefix: str,
                         num_completions: int,
                         save_dir: str,
                         cache_dir: str,
-                        delay_in_seconds: float = 1.0,
+                        delay_in_seconds: float = 10.0,
                         max_restart_times: int = 4,
                         max_solution_debug_times: int = 0,
                         max_program_debug_times: int = 2,
@@ -431,7 +431,8 @@ if __name__ == '__main__':
         async def solve_problem_async():
             await solve_problem(
                 task_name_prefix    = f"{data.task_id}",
-                model_name          = "gpt-3.5-turbo-0301", 
+                #model_name          = "gpt-3.5-turbo-0301", 
+                model_name          = "gpt-4", 
                 client              = client,
                 prompter            = prompter,
                 synthesizer         = synthesizer,

@@ -1,6 +1,6 @@
 from .Prompter import AbstractPrompter
 
-class ANPLPrompter(AbstractPrompter):
+class ANPLPrompterGPT4(AbstractPrompter):
     
     def get_background(self, **kwargs):
         return _background.format(**kwargs)
@@ -32,10 +32,8 @@ _background = """You are an expert of Python programming language. """
 _pretest_prompt = """-----Question-----
 {question}
 -----Task-----
-Give an assert test for this question.
-Your output should be in the following format:
+Give an assert test for this question in the following format.
 
------Test-----
 ```
 assert 
 ```
@@ -97,13 +95,11 @@ Your output should be in the following format:
 ```
 Input
 ```
-(Explanation for input if need)
 
 -----Output-----
 ```
 Output
 ```
-(Explanation for input if need)
 
 """
 
@@ -127,7 +123,7 @@ _translation_prompt = """-----Question-----
 {solution}
 
 -----Task-----
-Translate the solution for the problem into python code wrapped by ```. Firstly, you should define some helper functions with docstring before function {func_name} to decompose it. Then define function {func_name} with docstring which calls the helper functions. Each function should be described by docstring.
+Translate the solution for the problem into python code wrapped by ```. You should define some helper functions before function {func_name} to decompose it. Each function should be described by docstring.
 """
 
 _code_description = """Omit explanations or any additional text."""

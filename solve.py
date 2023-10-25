@@ -8,10 +8,12 @@ from GPTClient import GPTClient
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from Prompter.Prompter import AbstractPrompter
 from Prompter.ANPLPrompter import ANPLPrompter 
+from Prompter.ANPLPrompterGPT4 import ANPLPrompterGPT4
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code, get_assert_str, eval_sampled_codes
 from Tracer import trace_code
 from utils import mkdir_override, mkdir_no_override, redirect_loggers, sample_product
+from humaneval_judger.human_eval.execution import check_correctness
 
 import logging
 import logging.config
@@ -390,9 +392,13 @@ async def solve_problem(task_name_prefix: str,
     passed_asserts = []
     final_submit = program_prefix + final_submit
     try:
-        passed_asserts = eval_python(task_name_prefix, final_submit, data.test)
-        if len(passed_asserts) != len(data.test):
-            raise Exception("Wrong Answer!")
+        judge_status = check_correctness(
+            problem    = data.sample,
+            completion = final_submit,
+            timeout    = 3.0
+        )
+        if not judge_status['passed']:
+            raise Exception(judge_status["result"])
         with open(pathlib.Path(save_dir, f"{task_name_prefix}_accepted.py"), "w") as f:
             f.write(final_submit)
         logger.debug(f"{task_name_prefix}: Successfully solve the problem!")
@@ -400,7 +406,6 @@ async def solve_problem(task_name_prefix: str,
     except Exception as err:
         logger.debug(err)
         logger.debug(f"{task_name_prefix}: System test Failed!")
-        logger.debug(f"{task_name_prefix}: Passed {len(passed_asserts)} / {len(data.test)} system tests!")
         try:
             with open(pathlib.Path(save_dir, f"{task_name_prefix}_failed.py"), "w") as f:
                 f.write(final_submit)
@@ -424,16 +429,16 @@ if __name__ == '__main__':
 
     sampler = HumanEvalProblemSampler()
     client = GPTClient(cache_path=pathlib.Path(cache_prefix, "client_cache.json"))
-    prompter = ANPLPrompter()
+    prompter = ANPLPrompterGPT4()
     synthesizer = ANPLSynthesizer()
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
 
-    sample_list = [22, 108, 26]
+    # sample_list = [108, 26]
 
     max_retry_times = 3
-    # for data in sampler.sample_randomly(args.num_problems):
-    for data in sampler.sample(sample_list):
+    for data in sampler.sample_randomly(args.num_problems):
+    # for data in sampler.sample(sample_list):
         retry_times = 0
         async def solve_problem_async():
             await solve_problem(

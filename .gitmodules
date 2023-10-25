@@ -7,3 +7,9 @@
 [submodule "Synthesizer/ANPL"]
 	path = Synthesizer/ANPL
 	url = git@github.com:wyt2000/ANPL.git
+[submodule "human-eval"]
+	path = human-eval
+	url = git@github.com:wyt2000/human-eval.git
+[submodule "humaneval_judger"]
+	path = humaneval_judger
+	url = git@github.com:wyt2000/human-eval.git

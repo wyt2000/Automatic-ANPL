@@ -13,3 +13,4 @@ key.txt
 test_*
 *apps*
 *humaneval*
+!humaneval_judger

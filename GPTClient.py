@@ -165,19 +165,19 @@ class GPTClient:
             ]
             self.logger.debug(f'{task_name}: Requesting for target code ...')
             for i in range(self.retry_times):
-                responses = await self.delayed_completion(
+                raw_responses = await self.delayed_completion(
                     task_name        = task_name,
                     delay_in_seconds = delay_in_seconds,
                     messages         = messages,
                     **completion_kwargs
                 )
-                response = self.get_response_list(responses)[0]
-                response = self.extract_code(response)
+                raw_response = self.get_response_list(raw_responses)[0]
+                response = self.extract_code(raw_response)
                 try:
                     verify_code(response, func_name)
                 except Exception as err:
                     self.logger.exception(err)
-                    self.logger.debug(response)
+                    self.logger.debug(raw_response)
                     self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
                     continue
                 self.logger.debug(f'{task_name}: Requesting for target code of solution done!')

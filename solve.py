@@ -259,7 +259,7 @@ async def solve_problem(task_name_prefix: str,
 
         # Restart if counterexample generation failed
         if golden_io is None:
-            logger.debug("{task_name}: Counterexample not found, restart!")
+            logger.debug(f"{task_name}: Counterexample not found, restart!")
             restart()
             continue
 
@@ -313,38 +313,40 @@ async def solve_problem(task_name_prefix: str,
         with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
             for i, func_name in enumerate(func_names_sorted):
                 traces = func_traces.func_ios.get(func_name, [])
-                try:
-                    debugged_funcs = await client.request_for_debugged_function(
-                        task_name         = task_name,
-                        completion_kwargs = {
-                            "model"             : model_name,
-                            "temperature"       : 0.6, # high temperature to make more difference
-                            "n"                 : num_completions // 2,
-                            "max_tokens"        : 500
-                        },
-                        question    = question,
-                        solution    = solution,
-                        program     = program,
-                        func_name   = func_name,
-                        holes       = set(func_names_sorted),
-                        func_code   = func_codes[func_name],
-                        func_traces = traces,
-                        prompter    = prompter,
-                        save_dir    = save_dir,
-                        delay_in_seconds  = delay_in_seconds
-                    )
-                except Exception as err:
-                    logger.exception(err)
-                    continue
-                # Filter syntax error funcs
-                for func in debugged_funcs:
-                    if len(func) == 0:
-                        continue
+                num_function_completions = num_completions // 2
+                for i in range(0, num_function_completions, 8):
                     try:
-                        ast.parse(func)
-                        implementations[i].add(func)
-                    except Exception as e:
-                        pass
+                        debugged_funcs = await client.request_for_debugged_function(
+                            task_name         = task_name,
+                            completion_kwargs = {
+                                "model"             : model_name,
+                                "temperature"       : 0.6, # high temperature to make more difference
+                                "n"                 : min(8, num_function_completions - i),
+                                "max_tokens"        : 1024 
+                            },
+                            question    = question,
+                            solution    = solution,
+                            program     = program,
+                            func_name   = func_name,
+                            holes       = set(func_names_sorted),
+                            func_code   = func_codes[func_name],
+                            func_traces = traces,
+                            prompter    = prompter,
+                            save_dir    = save_dir,
+                            delay_in_seconds  = delay_in_seconds
+                        )
+                    except Exception as err:
+                        logger.exception(err)
+                        continue
+                    # Filter syntax error funcs
+                    for func in debugged_funcs:
+                        if len(func) == 0:
+                            continue
+                        try:
+                            ast.parse(func)
+                            implementations[i].add(func)
+                        except Exception as e:
+                            pass
                 pbar.update(1)
         logger.debug(f'{task_name}: Request for debugged function done!')
 
@@ -386,6 +388,7 @@ async def solve_problem(task_name_prefix: str,
     # Eval system test
     logger.debug(f"{task_name_prefix}: Synthesizing done! System testing...")
     passed_asserts = []
+    final_submit = program_prefix + final_submit
     try:
         passed_asserts = eval_python(task_name_prefix, final_submit, data.test)
         if len(passed_asserts) != len(data.test):
@@ -426,14 +429,17 @@ if __name__ == '__main__':
 
     logger.debug(f"There are {args.num_problems} problems to be solved!") 
 
+    sample_list = [22, 108, 26]
+
     max_retry_times = 3
-    for data in sampler.sample_randomly(args.num_problems):
+    # for data in sampler.sample_randomly(args.num_problems):
+    for data in sampler.sample(sample_list):
         retry_times = 0
         async def solve_problem_async():
             await solve_problem(
                 task_name_prefix    = f"{data.task_id}",
-                #model_name          = "gpt-3.5-turbo-0301", 
-                model_name          = "gpt-4", 
+                # model_name          = "gpt-3.5-turbo-0301", 
+                model_name          = "gpt-4-0314", 
                 client              = client,
                 prompter            = prompter,
                 synthesizer         = synthesizer,

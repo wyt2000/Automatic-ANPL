@@ -259,7 +259,7 @@ async def solve_problem(task_name_prefix: str,
 
         # Restart if counterexample generation failed
         if golden_io is None:
-            logger.debug("{task_name}: Counterexample not found, restart!")
+            logger.debug(f"{task_name}: Counterexample not found, restart!")
             restart()
             continue
 
@@ -320,7 +320,7 @@ async def solve_problem(task_name_prefix: str,
                             "model"             : model_name,
                             "temperature"       : 0.6, # high temperature to make more difference
                             "n"                 : num_completions // 2,
-                            "max_tokens"        : 500
+                            # "max_tokens"        : 500
                         },
                         question    = question,
                         solution    = solution,
@@ -432,8 +432,8 @@ if __name__ == '__main__':
         async def solve_problem_async():
             await solve_problem(
                 task_name_prefix    = f"{data.task_id}",
-                #model_name          = "gpt-3.5-turbo-0301", 
-                model_name          = "gpt-4", 
+                model_name          = "gpt-3.5-turbo-0301", 
+                # model_name          = "gpt-4", 
                 client              = client,
                 prompter            = prompter,
                 synthesizer         = synthesizer,

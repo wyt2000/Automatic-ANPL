@@ -6,6 +6,7 @@ import logging
 import logging.config
 import pathlib
 import os
+import sys
 import argparse
 from utils import mkdir_override
 
@@ -36,7 +37,8 @@ if __name__ == '__main__':
                 samples.append(dict(task_id=task_id, completion=program))
                 problems.append(all_problems[task_id])
     write_jsonl(args.output_path, samples)
-    write_jsonl(args.output_path + ".problems", problems)
+    problems_path = args.output_path + ".problems"
+    write_jsonl(problems_path, problems)
 
- 
+    os.system(f"evaluate_functional_correctness {args.output_path} --problem_file={problems_path}")
 

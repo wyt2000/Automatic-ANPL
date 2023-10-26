@@ -59,6 +59,8 @@ class GPTClient:
         return [response["message"]["content"] for response in responses["choices"]]
 
     def extract_code(self, response: str):
+        if not '`' in response:
+            return response
         code = []
         is_target = False
         for line in response.splitlines():

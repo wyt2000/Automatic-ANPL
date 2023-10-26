@@ -113,22 +113,26 @@ async def solve_problem(task_name_prefix: str,
         except Exception as err:
             logger.exception(err)
             return
-        
 
     # Generate pretests
-    pretests = await client.request_for_pretests(
-        task_name         = task_name_prefix,
-        completion_kwargs = {
-            "model"       : model_name,
-            "temperature" : 0.6,
-            "n"           : num_pretests
-        },
-        question          = question,
-        prompter          = prompter,
-        save_dir          = save_dir,
-        delay_in_seconds  = delay_in_seconds
-    )
-    pretests = list(set(pretests))
+    pretests = []
+    try:
+        pretests = await client.request_for_pretests(
+            task_name         = task_name_prefix,
+            completion_kwargs = {
+                "model"       : model_name,
+                "temperature" : 0.6,
+                "n"           : num_pretests
+            },
+            question          = question,
+            prompter          = prompter,
+            save_dir          = save_dir,
+            delay_in_seconds  = delay_in_seconds
+        )
+        pretests = list(set(pretests))
+    except Exception as err:
+        logger.exception(err)
+
     # Try to solve the problem until reach max_restart_times
     while restart_times < max_restart_times:
         

@@ -32,7 +32,7 @@ _background = """You are an expert of Python programming language. """
 _pretest_prompt = """-----Question-----
 {question}
 -----Task-----
-Give an assert test for this question in the following format.
+Give an assert test for this question in the following format. Each assert statement should be on one line.
 
 -----Test-----
 ```

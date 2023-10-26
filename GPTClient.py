@@ -6,6 +6,7 @@ import pathlib
 import json
 import asyncio
 import re
+import ast
 from Prompter.Prompter import AbstractPrompter
 from Synthesizer.ANPLSynthesizer import verify_code
 from utils import Cache, remove_implemented_functions
@@ -81,7 +82,7 @@ class GPTClient:
 
     def extract_io(self, response: str):
         code = self.extract_code(response)
-        return [line.split('#')[0].strip() for line in code.splitlines() if line.strip().startswith('assert')]
+        return set([line.split('#')[0].strip() for line in code.splitlines() if line.strip().startswith('assert')])
 
     async def request_for_pretests(self,
                                    task_name: str,
@@ -109,7 +110,12 @@ class GPTClient:
             responses = self.get_response_list(responses)
             asserts = set()
             for response in responses:
-                asserts.update(self.extract_io(response))
+                for assert_stmt in self.extract_io(response):
+                    try:
+                        ast.parse(assert_stmt)
+                        asserts.add(assert_stmt)
+                    except Exception as err:
+                        pass
             self.logger.debug(f'{task_name}: Requesting for pretests done!')
             return asserts 
 

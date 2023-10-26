@@ -320,39 +320,37 @@ async def solve_problem(task_name_prefix: str,
             for i, func_name in enumerate(func_names_sorted):
                 traces = func_traces.func_ios.get(func_name, [])
                 num_function_completions = num_completions // 2
-                for i in range(0, num_function_completions, 8):
-                    try:
-                        debugged_funcs = await client.request_for_debugged_function(
-                            task_name         = task_name,
-                            completion_kwargs = {
-                                "model"             : model_name,
-                                "temperature"       : 0.6, # high temperature to make more difference
-                                "n"                 : min(8, num_function_completions - i),
-                                "max_tokens"        : 1024 
-                            },
-                            question    = question,
-                            solution    = solution,
-                            program     = program,
-                            func_name   = func_name,
-                            holes       = set(func_names_sorted),
-                            func_code   = func_codes[func_name],
-                            func_traces = traces,
-                            prompter    = prompter,
-                            save_dir    = save_dir,
-                            delay_in_seconds  = delay_in_seconds
-                        )
-                    except Exception as err:
-                        logger.exception(err)
+                try:
+                    debugged_funcs = await client.request_for_debugged_function(
+                        task_name         = task_name,
+                        completion_kwargs = {
+                            "model"             : model_name,
+                            "temperature"       : 0.6, # high temperature to make more difference
+                            "n"                 : num_function_completions
+                        },
+                        question    = question,
+                        solution    = solution,
+                        program     = program,
+                        func_name   = func_name,
+                        holes       = set(func_names_sorted),
+                        func_code   = func_codes[func_name],
+                        func_traces = traces,
+                        prompter    = prompter,
+                        save_dir    = save_dir,
+                        delay_in_seconds  = delay_in_seconds
+                    )
+                except Exception as err:
+                    logger.exception(err)
+                    continue
+                # Filter syntax error funcs
+                for func in debugged_funcs:
+                    if len(func) == 0:
                         continue
-                    # Filter syntax error funcs
-                    for func in debugged_funcs:
-                        if len(func) == 0:
-                            continue
-                        try:
-                            ast.parse(func)
-                            implementations[i].add(func)
-                        except Exception as e:
-                            pass
+                    try:
+                        ast.parse(func)
+                        implementations[i].add(func)
+                    except Exception as e:
+                        pass
                 pbar.update(1)
         logger.debug(f'{task_name}: Request for debugged function done!')
 

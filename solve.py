@@ -230,6 +230,12 @@ async def solve_problem(task_name_prefix: str,
         if score >= best_attempt[1]:
             best_attempt = [program, score]
 
+        # Pretest passed
+        if len(passed_asserts) == len(pretests):
+            logger.debug(f"{task_name}: Pretest passed!")
+            final_submit = program
+            break
+
         # Generate counterexamples from question and program 
         if use_pretests_debug:
             counterexamples = pretests
@@ -447,8 +453,8 @@ if __name__ == '__main__':
         async def solve_problem_async():
             await solve_problem(
                 task_name_prefix    = f"{data.task_id}",
-                model_name          = "gpt-3.5-turbo-0301", 
-                # model_name          = "gpt-4-0314", 
+                # model_name          = "gpt-3.5-turbo-0301", 
+                model_name          = "gpt-4-0314", 
                 client              = client,
                 prompter            = prompter,
                 synthesizer         = synthesizer,

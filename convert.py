@@ -1,4 +1,4 @@
-# Rejudge the results by official humaneval evaluation
+# Update rejudge results
 
 from human_eval.data import write_jsonl, read_problems
 from humaneval_judger.human_eval.execution import check_correctness
@@ -31,6 +31,7 @@ if __name__ == '__main__':
         for program_file in program_files:
             path = pathlib.Path(problem_path, program_file)
             if os.path.exists(path):
+                anpl_path = pathlib.Path(problem_path, program_file)
                 with open(path, 'r') as f:
                     program = program_prefix + f.read()
                 os.remove(path)

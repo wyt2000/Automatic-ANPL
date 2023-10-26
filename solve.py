@@ -12,7 +12,7 @@ from Prompter.ANPLPrompterGPT4 import ANPLPrompterGPT4
 from Synthesizer.Synthesizer import AbstractSynthesizer 
 from Synthesizer.ANPLSynthesizer import ANPLSynthesizer, eval_python, wrap_code, get_assert_str, eval_sampled_codes
 from Tracer import trace_code
-from utils import mkdir_override, mkdir_no_override, redirect_loggers, sample_product
+from utils import mkdir_override, mkdir_no_override, redirect_loggers, sample_product, extract_imports
 from humaneval_judger.human_eval.execution import check_correctness
 
 import logging
@@ -32,7 +32,7 @@ logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
 
 question_prefix = "Complete the function:\n"
-program_prefix = "from typing import *\n"
+program_prefix = "from typing import *\n\n"
 
 # Compose sampled functions as a complete python code, yield as generator
 def generate_code(indices_sets: list[list[str]],
@@ -193,10 +193,12 @@ async def solve_problem(task_name_prefix: str,
             try:
                 log_path = pathlib.Path(save_dir, f"{task_name}.log")
                 with redirect_loggers(log_path):
+                    imports_prefix = extract_imports(anpl_code)
                     results = synthesizer.synthesize(
                         task_name               = task_name,
                         model_name              = model_name,
                         anpl_code               = anpl_code,
+                        code_prefix             = imports_prefix,
                         save_path_prefix        = pathlib.Path(save_dir, f"{task_name}"),
                         cache_path_prefix       = pathlib.Path(cache_dir, f"{task_name}"),
                         entry                   = data.entry_point,
@@ -206,7 +208,6 @@ async def solve_problem(task_name_prefix: str,
                         num_completions_list    = [num_completions]
                     )
                     score, _, program = results[num_completions]
-                    program = program_prefix + "\n" + program
             except Exception as err:
                 logger.exception(err)
                 restart()
@@ -223,7 +224,7 @@ async def solve_problem(task_name_prefix: str,
 
         # Save the program
         with open(pathlib.Path(save_dir, f"{task_name}.py"), "w") as f:
-            f.write(program)
+            f.write(program_prefix + program)
         
         # Update best_attempt
         if score >= best_attempt[1]:
@@ -373,15 +374,16 @@ async def solve_problem(task_name_prefix: str,
         try:
             log_path = pathlib.Path(save_dir, f"{task_name}.log")
             with redirect_loggers(log_path):
+                imports_prefix = extract_imports(program)
                 score, _, program = eval_sampled_codes(
                    task_name      = task_name,
                    code_generator = code_generator,
+                   code_prefix    = imports_prefix,
                    assert_str     = assert_str,
                    all_attempts   = all_attempts,
                    n_to_try       = n_to_try,
                    max_time       = max_time / 2
                 )
-                program = program_prefix + "\n" + program
         except Exception as err:
             logger.exception(err)
             restart()
@@ -391,8 +393,8 @@ async def solve_problem(task_name_prefix: str,
 
     # Eval system test
     logger.debug(f"{task_name_prefix}: Synthesizing done! System testing...")
-    passed_asserts = []
     final_submit = program_prefix + final_submit
+    passed_asserts = []
     try:
         judge_status = check_correctness(
             problem    = data.sample,
@@ -445,8 +447,8 @@ if __name__ == '__main__':
         async def solve_problem_async():
             await solve_problem(
                 task_name_prefix    = f"{data.task_id}",
-                # model_name          = "gpt-3.5-turbo-0301", 
-                model_name          = "gpt-4-0314", 
+                model_name          = "gpt-3.5-turbo-0301", 
+                # model_name          = "gpt-4-0314", 
                 client              = client,
                 prompter            = prompter,
                 synthesizer         = synthesizer,

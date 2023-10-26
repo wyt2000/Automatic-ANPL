@@ -40,12 +40,13 @@ def get_assert_str(asserts: list[str]):
 # Eval codes from generator with the limit of time.
 def eval_sampled_codes(task_name: str,
                        code_generator: Iterator[str],
+                       code_prefix: str,
                        assert_str: str,
                        all_attempts: dict[int, list[int, str, list[str]]],
                        n_to_try: int,
                        max_time: float):
     compiler = ANPLCompiler()
-    compiler.eval_sampled_codes(task_name, code_generator, assert_str, all_attempts, n_to_try, max_time=max_time)
+    compiler.eval_sampled_codes(task_name, code_generator, code_prefix, assert_str, all_attempts, n_to_try, max_time=max_time)
     return max(all_attempts.values())
 
 # Add import and stdin for code
@@ -58,6 +59,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
                    task_name: str,
                    model_name: str,
                    anpl_code: str,
+                   code_prefix: str,
                    save_path_prefix: str,
                    cache_path_prefix: str,
                    question: str,
@@ -78,6 +80,7 @@ class ANPLSynthesizer(AbstractSynthesizer):
                     model_name      = model_name,
                     entry           = entry,
                     code            = anpl_code,
+                    code_prefix     = code_prefix,
                     all_attempts    = all_attempts,
                     cache           = cache,
                     asserts         = asserts,

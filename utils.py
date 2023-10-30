@@ -112,7 +112,7 @@ def sample_product(arrs, n, k):
     ]
 
 # Remove all implemented functions including nested functions
-func_pattern = re.compile("\s*def\s+(.+)\(.*\).*\:")
+func_pattern = re.compile(r"\s*def\s+(.+)\(.*\).*\:")
 def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
     # When meet the line "def {implemented_functions}", omit lines until the line whose indent count <= its
     has_target = False
@@ -138,5 +138,22 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
     return '\n'.join([line for line in code.splitlines() if line.startswith('import ') or line.startswith('from ')])
-    
+code = '''
+def f():
+    def g():
+        pass
+    pass
+def h():
+    pass
+def u():
+    pass
+    def v():
+        pass
+        def w():
+            pass
+
+'''
+   
+result = remove_implemented_functions(code, 'h', {'v', 'g'})
+print(result)
 

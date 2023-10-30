@@ -144,6 +144,7 @@ def exec_with_limit(func: FunctionType,
     with redirect_stdout(io.StringIO()):
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)
         resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
+        recursion_limit = sys.getrecursionlimit()
         sys.setrecursionlimit(100)
         try:
             if isinstance(inputs, list):
@@ -153,6 +154,7 @@ def exec_with_limit(func: FunctionType,
             else:
                 raise TypeError("Inputs should be either list or assert str!")
         finally:
+            sys.setrecursionlimit(recursion_limit)
             resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
 
 # Run code and save traces of func_names, NOT support kwargs 
@@ -290,6 +292,9 @@ def main(arr: List[int]):
     '''
     _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 10, \"Wrong!\" ")
     print(ios, exc)
+    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 15, \"Wrong!\" ")
+    print(ios, exc)
+
 
     print("# TEST 6: Fix args Error")
     code = '''
@@ -300,5 +305,6 @@ def main(arr: List[int]):
     return f(1, 2) + 2
     '''
     _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 0, \"Wrong!\" ")
-    print(ios, exc)
+    print(ios)
+    print(exc)
 

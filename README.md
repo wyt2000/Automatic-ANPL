@@ -16,3 +16,4 @@
     - Separate debug logic, merge sample code in synthesizer and debugger.
     - Refactor evaluation to support all types of IOs.
 - Support pass@k mode (eval by generated tests) and pass@any mode (eval by real tests).
+- Concurrently request for GPT, reach tokens rate limit.

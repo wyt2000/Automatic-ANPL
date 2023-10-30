@@ -14,3 +14,4 @@ test_*
 *apps*
 *humaneval*
 !humaneval_judger
+.pytest_cache

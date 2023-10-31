@@ -22,7 +22,7 @@ class Cache:
         self.data[Cache.get_key(*args)] = responses
 
     def load(self, *args):
-        return self.data.get(self.get_key(*args))
+        return self.data.get(Cache.get_key(*args))
 
     def dump(self):
         with open(self.file_path, 'w') as f:

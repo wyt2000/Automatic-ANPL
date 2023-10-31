@@ -10,6 +10,7 @@ import functools
 import operator
 import random
 import re
+import ast
 from contextlib import contextmanager
 
 def mkdir_override(dir_path):
@@ -69,31 +70,6 @@ def redirect_loggers(log_path: str):
         file_handler.close()
         root_logger.handlers = root_handlers
 
-class Cache:
-    '''
-    Save the responses from GPT.
-    '''
-    def __init__(self, file_path='cache.json', clean=False):
-        self.file_path = file_path
-        if clean or not os.path.exists(file_path):
-            self.data = {}
-            return
-        with open(file_path, 'r') as f:
-            self.data = json.loads(f.read())
-
-    def get_key(self, *args):
-        return str(tuple(args))
-
-    def save(self, responses, *args):
-        self.data[self.get_key(*args)] = responses
-
-    def load(self, *args):
-        return self.data.get(self.get_key(*args))
-
-    def dump(self):
-        with open(self.file_path, 'w') as f:
-            f.write(json.dumps(self.data))
-
 def product_to_tensor_idx(prod, dims, idx):
     ans = []
     for dim in dims:
@@ -138,4 +114,45 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
     return '\n'.join([line for line in code.splitlines() if line.startswith('import ') or line.startswith('from ')])
+
+# Extract vaild Python code or ANPL code
+def extract_code(response: str):
+    if not '`' in response:
+        return response
+    code = []
+    is_target = False
+    for line in response.splitlines():
+        if '`' in line:
+            if is_target:
+                break
+            else:
+                is_target = True
+                continue
+        if is_target:
+            code.append(line)
+    return '\n'.join(code)
+
+# Filter other functions, but allow decompose
+def extract_func(response: str, target: str, holes: set[str]):
+    return remove_implemented_functions(code, target, holes - {target})
+
+class AssertVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.asserts = set()
+
+    def visit_Assert(self, node):
+        self.asserts.add(ast.unparse(node))
+
+# Extract assert statements
+def extract_asserts(response: str):
+    asserts = set()
+    try:
+        root = ast.parse(response)
+        visitor = AssertVisitor()
+        visitor.visit(root)
+        asserts = visitor.asserts
+    except Exception:
+        pass
+    return '\n'.join(asserts)
+
 

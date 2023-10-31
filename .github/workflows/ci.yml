@@ -32,5 +32,5 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Do all unit tests
       run: |
-        pytest --pyargs tests
+        pytest -s --pyargs tests
 

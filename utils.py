@@ -134,7 +134,7 @@ def extract_code(response: str):
 
 # Filter other functions, but allow decompose
 def extract_func(response: str, target: str, holes: set[str]):
-    return remove_implemented_functions(code, target, holes - {target})
+    return remove_implemented_functions(response, target, holes - {target})
 
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):

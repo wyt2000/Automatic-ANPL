@@ -53,13 +53,14 @@ class GPTClient:
                 await asyncio.sleep(10 * (2 ** i))
         raise openai.error.RateLimitError
 
-    def get_response_list(self, responses):
-        '''
-        Convert GPT responses to list[str]
-        '''
+    # Convert GPT responses to list[str]
+    @staticmethod
+    def get_response_list(self, responses: str):
         return [response["message"]["content"] for response in responses["choices"]]
 
-    def extract_code(self, response: str):
+    # Extract vaild Python code or ANPL code
+    @staticmethod
+    def extract_code(response: str):
         if not '`' in response:
             return response
         code = []
@@ -75,13 +76,16 @@ class GPTClient:
                 code.append(line)
         return '\n'.join(code)
 
-    # filter other functions, but allow decompose
-    def extract_func(self, response: str, target: str, holes: set[str]):
-        code = self.extract_code(response)
+    # Filter other functions, but allow decompose
+    @staticmethod
+    def extract_func(response: str, target: str, holes: set[str]):
+        code = GPTClient.extract_code(response)
         return remove_implemented_functions(code, target, holes - {target})
 
-    def extract_io(self, response: str):
-        code = self.extract_code(response)
+    # Extract assert statements
+    @staticmethod 
+    def extract_io(response: str):
+        code = GPTClient.extract_code(response)
         return set([line.split('#')[0].strip() for line in code.splitlines() if line.strip().startswith('assert')])
 
     async def request_for_pretests(self,

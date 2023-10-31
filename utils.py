@@ -138,22 +138,4 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
     return '\n'.join([line for line in code.splitlines() if line.startswith('import ') or line.startswith('from ')])
-code = '''
-def f():
-    def g():
-        pass
-    pass
-def h():
-    pass
-def u():
-    pass
-    def v():
-        pass
-        def w():
-            pass
-
-'''
-   
-result = remove_implemented_functions(code, 'h', {'v', 'g'})
-print(result)
 

@@ -7,13 +7,13 @@ import json
 import asyncio
 import re
 import ast
+from functools import partial
+from typing import Callable, Any
+
 from Prompter import Prompter
-from Synthesizer.ANPLSynthesizer import verify_code
-from utils import extract_code, extract_func, extract_asserts 
+from utils import extract_code, extract_func, extract_asserts, verify_anpl
 from Tracer import IOExample
-from typing import Callable
 from CacheManager import CacheManager
-from functools import reduce
 
 class GPTClient:
 
@@ -48,6 +48,17 @@ class GPTClient:
     def get_response_list(responses: str):
         return [response["message"]["content"] for response in responses["choices"]]
 
+    @staticmethod
+    def save_one(result: str, save_dir: str, filename: str):
+        with open(pathlib.Path(save_dir, filename), 'w') as f:
+            f.write(result)
+
+    @staticmethod
+    def save_all(results: list[str], save_dir: str, filename: str):
+        for i, response in enumerate(results):
+            with open(pathlib.Path(save_dir, filename.format(i=i)), 'w') as f:
+                f.write(response)
+
     # Ask GPT for complelations
     async def request(self,
                       task_name: str,
@@ -57,9 +68,11 @@ class GPTClient:
                       prompt_kwargs: dict = {},
                       response_verifier: Callable[[str], bool] = lambda _ : True,
                       response_handlers: list[Callable[[str], str]] = [],
+                      response_collector: Callable[list[str], Any] = lambda x : x,
+                      response_saver: Callable[Any, None] = lambda _ : None,
                       completion_kwargs: dict = {},
                       num_completions: int = 1,
-                      retry_times: int = 1) -> list[str] | None:
+                      retry_times: int = 1) -> Any:
 
         # Look up cache and load at most `num_completions` responses.
         responses = []
@@ -76,7 +89,7 @@ class GPTClient:
             {"role": "user", "content": prompt_template.format(**prompt_kwargs)}
         ]
 
-        # Request for remaining responses and verify them.
+        # Request for remaining responses, extract the results and verify them.
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
             for i in range(retry_times):
@@ -90,15 +103,17 @@ class GPTClient:
                     **completion_kwargs
                 )
                 new_responses = GPTClient.get_response_list(new_responses)
+                for handler in response_handlers:
+                    new_responses = list(map(handler, new_responses))
                 responses.extend(filter(response_verifier, new_responses))
         self.logger.debug(f'{task_name}: [{task_kind}] request done!')
 
         # Save raw responses in cache.
         self.cacheManager.save(task_kind, responses, *cache_key)
         
-        # Convert responses to valid format or save them in files.
-        for handler in response_handlers:
-            responses = map(handler, responses)
+        # Convert responses to compact format and save them in files.
+        responses = response_collector(responses)
+        response_saver(responses)
         return responses
 
     # Request from chatGPT to get pretests for question.
@@ -109,27 +124,18 @@ class GPTClient:
                                    completion_kwargs: dict,
                                    num_completions: int):
 
-        responses = await self.request(
+        return await self.request(
             task_name               = task_name,
             task_kind               = 'pretest',
             prompt_background       = Prompter.background,
             prompt_template         = Prompter.pretest_prompt,
             prompt_kwargs           = {'question' : question},
             response_handlers       = [extract_code, extract_asserts],
+            response_collector      = lambda res : '\n'.join({stmt for r in res for stmt in r.splitlines()}),
+            response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.test'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions 
         )
-        
-        # Split and remove duplicated assert statements.
-        asserts = set()
-        for response in responses:
-            for assert_stmt in response.splitlines():
-                asserts.add(assert_stmt)
-
-        with open(pathlib.Path(save_dir, f'{task_name}.pretest'), 'w') as f:
-            f.write('\n'.join(asserts))
-
-        return asserts 
 
     # Request from chatGPT to get high-level solution for question.
     async def request_for_solutions(self,
@@ -139,66 +145,43 @@ class GPTClient:
                                     completion_kwargs: dict,
                                     num_completions: int):
 
-        responses = await self.request(
+        return await self.request(
             task_name               = task_name,
             task_kind               = 'solution',
             prompt_background       = Prompter.background,
             prompt_template         = Prompter.solution_prompt,
             prompt_kwargs           = {'question' : question},
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.plan'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions 
         )
 
-        for i, response in enumerate(responses):
-            with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
-                f.write(response)
-        return responses
-
-"""
-    # TODO: Unify request api.
-    # TODO: Refactor program verification.
+    # Request from chatGPT to get code for high-level solution.
     async def request_for_codes(self,
                                 task_name: str,
-                                starter_code: str,
-                                func_name: str,
+                                entry_point: str,
                                 question: str,
                                 solution: str,
-                                suffix_name: str,
-                                prompter: AbstractPrompter,
                                 save_dir: str,
-                                completion_kwargs: dict = {}, 
-                                delay_in_seconds: float = 1.0):
-        '''
-        Request from chatGPT to get code for high-level solution.
-        '''
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            messages = [
-                {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_translation_prompt(starter_code=starter_code, question=question, solution=solution, func_name=func_name)}
-            ]
-            self.logger.debug(f'{task_name}: Requesting for target code ...')
-            for i in range(self.retry_times):
-                raw_responses = await self.delayed_completion(
-                    task_name        = task_name,
-                    delay_in_seconds = delay_in_seconds,
-                    messages         = messages,
-                    **completion_kwargs
-                )
-                raw_response = self.get_response_list(raw_responses)[0]
-                response = self.extract_code(raw_response)
-                try:
-                    verify_code(response, func_name)
-                except Exception as err:
-                    self.logger.exception(err)
-                    self.logger.debug(raw_response)
-                    self.logger.debug(f'{task_name}: Invalid target code! Retry {i + 1} times.')
-                    continue
-                self.logger.debug(f'{task_name}: Requesting for target code of solution done!')
-                with open(pathlib.Path(save_dir, f'{task_name}.{suffix_name}'), 'w') as f:
-                    f.write(response)
-                return response
+                                completion_kwargs: dict,
+                                num_completions: int,
+                                retry_times: int = 5):
 
+        return await self.request(
+            task_name               = task_name,
+            task_kind               = 'translation',
+            prompt_background       = Prompter.background,
+            prompt_template         = Prompter.translation_prompt,
+            prompt_kwargs           = {'question' : question, 'solution' : solution, 'entry_point' : entry_point},
+            response_verifier       = partial(verify_anpl, entry_point=entry_point),
+            response_handlers       = [extract_code],
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions,
+            retry_times             = retry_times
+        )
+
+"""
     async def request_for_counterexamples(self,
                                           task_name: str,
                                           question: str,

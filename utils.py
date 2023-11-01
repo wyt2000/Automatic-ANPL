@@ -155,4 +155,15 @@ def extract_asserts(content: str):
         pass
     return '\n'.join(asserts)
 
+# Check if the code is valid Python code with function `entry_point`.
+def verify_anpl(code: str, entry_point: str) -> bool:
+    func_names = set()
+    try:
+        root = ast.parse(code)
+        for node in root.body:
+            if isinstance(node, ast.FunctionDef):
+                func_names.add(node.name)
+    except Exception:
+        return False
+    return entry_point in func_names
 

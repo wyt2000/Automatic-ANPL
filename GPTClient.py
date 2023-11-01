@@ -41,11 +41,7 @@ class GPTClient:
                 self.logger.debug(f'{task_name}: InvalidRequestError!')
                 raise err
             except openai.error.RateLimitError as err:
-                self.logger.exception(err)
                 await asyncio.sleep(self.retry_interval * (2 ** i))
-            except Exception as err:
-                self.logger.exception(err)
-                return []
         raise openai.error.RateLimitError
 
     # Convert GPT responses to list[str]

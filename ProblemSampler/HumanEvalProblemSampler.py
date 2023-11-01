@@ -1,5 +1,6 @@
 import random
 from .ProblemSampler import ProblemData, ProblemSampler
+from utils import extract_asserts
 
 # for humaneval 
 from human_eval.data import read_problems
@@ -10,7 +11,8 @@ class HumanEvalProblemData(ProblemData):
         self.task_id = sample['task_id'].replace('/', '_')
         self.test = []
         if 'test' in sample:
-            self.test = [line.strip().replace('candidate', sample['entry_point']) for line in sample['test'].splitlines() if line.strip().startswith('assert')]
+            asserts = extract_asserts(sample['test'])
+            self.test = [line.strip().replace('candidate', sample['entry_point']) for line in asserts.splitlines()]
         super().__init__(sample)
 
     def __getattr__(self, name):

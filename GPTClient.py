@@ -23,7 +23,6 @@ class GPTClient:
                  retry_interval=10):
 
         self.logger = logging.getLogger(__name__)
-        self.pattern = re.compile("^def\s+([^\d\W]\w*)\(.*\).*\:")
         self.retry_times = retry_times
         self.retry_interval = retry_interval
         self.cacheManager = cacheManager 
@@ -107,8 +106,8 @@ class GPTClient:
                                    task_name: str,
                                    question: str,
                                    save_dir: str,
-                                   num_completions: int,
-                                   completion_kwargs: dict = {}):
+                                   completion_kwargs: dict,
+                                   num_completions: int):
 
         responses = await self.request(
             task_name               = task_name,
@@ -131,37 +130,31 @@ class GPTClient:
             f.write('\n'.join(asserts))
 
         return asserts 
-"""
+
+    # Request from chatGPT to get high-level solution for question.
     async def request_for_solutions(self,
                                     task_name: str,
                                     question: str,
-                                    prompter: AbstractPrompter,
                                     save_dir: str,
-                                    completion_kwargs: dict = {}, 
-                                    delay_in_seconds: float = 1.0):
-        '''
-        Request from chatGPT to get high-level solution for question.
-        '''
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            messages = [
-                {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_solution_prompt(question=question)}
-            ]
-            self.logger.debug(f'{task_name}: Requesting for high-level solution...')
-            responses = await self.delayed_completion(
-                task_name        = task_name,
-                delay_in_seconds = delay_in_seconds,
-                messages         = messages,
-                **completion_kwargs
-            )
-            responses = self.get_response_list(responses)
-            self.logger.debug(f'{task_name}: Requesting for high-level solution done!')
-            for i, response in enumerate(responses):
-                with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
-                    f.write(response)
-            return responses
+                                    completion_kwargs: dict,
+                                    num_completions: int):
 
+        responses = await self.request(
+            task_name               = task_name,
+            task_kind               = 'solution',
+            prompt_background       = Prompter.background,
+            prompt_template         = Prompter.solution_prompt,
+            prompt_kwargs           = {'question' : question},
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions 
+        )
+
+        for i, response in enumerate(responses):
+            with open(pathlib.Path(save_dir, f'{task_name}_{i}.plan'), 'w') as f:
+                f.write(response)
+        return responses
+
+"""
     # TODO: Unify request api.
     # TODO: Refactor program verification.
     async def request_for_codes(self,

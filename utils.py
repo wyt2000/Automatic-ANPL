@@ -116,12 +116,12 @@ def extract_imports(code: str):
     return '\n'.join([line for line in code.splitlines() if line.startswith('import ') or line.startswith('from ')])
 
 # Extract vaild Python code or ANPL code
-def extract_code(response: str):
-    if not '`' in response:
-        return response
+def extract_code(content: str):
+    if not '`' in content:
+        return content
     code = []
     is_target = False
-    for line in response.splitlines():
+    for line in content.splitlines():
         if '`' in line:
             if is_target:
                 break
@@ -133,8 +133,8 @@ def extract_code(response: str):
     return '\n'.join(code)
 
 # Filter other functions, but allow decompose
-def extract_func(response: str, target: str, holes: set[str]):
-    return remove_implemented_functions(response, target, holes - {target})
+def extract_func(content: str, target: str, holes: set[str]):
+    return remove_implemented_functions(content, target, holes - {target})
 
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -144,10 +144,10 @@ class AssertVisitor(ast.NodeVisitor):
         self.asserts.add(ast.unparse(node))
 
 # Extract assert statements
-def extract_asserts(response: str):
+def extract_asserts(content: str):
     asserts = set()
     try:
-        root = ast.parse(response)
+        root = ast.parse(content)
         visitor = AssertVisitor()
         visitor.visit(root)
         asserts = visitor.asserts

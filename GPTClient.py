@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python
+from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -81,8 +81,6 @@ class GPTClient:
         cache_key = (task_name, prompt_template, prompt_kwargs, completion_kwargs)
         if (cache_value := self.cacheManager.load(task_kind, *cache_key)) is not None:
             self.logger.debug(f'{task_name}: [{task_kind}] cache hit!')
-            if len(cache_value) >= num_completions:
-                cache_value = cache_value[:num_completions]
             responses.extend(cache_value)
 
         # Build up prompts.
@@ -95,7 +93,7 @@ class GPTClient:
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
             for i in range(retry_times):
-                if len(responses) == num_completions:
+                if len(responses) >= num_completions:
                     break
                 self.logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
                 new_responses = await self.delayed_completion(
@@ -108,6 +106,7 @@ class GPTClient:
                 for handler in response_handlers:
                     new_responses = list(map(handler, new_responses))
                 responses.extend(filter(response_verifier, new_responses))
+        responses = responses[:num_completions]
         self.logger.debug(f'{task_name}: [{task_kind}] request done!')
 
         # Save raw responses in cache.
@@ -174,8 +173,8 @@ class GPTClient:
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'entry_point' : entry_point},
             response_verifier       = partial(verify_anpl, entry_point=entry_point),
             response_handlers       = [extract_code],
-            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),
             response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times
@@ -207,18 +206,23 @@ class GPTClient:
                                           task_name: str,
                                           question: str,
                                           program: str,
+                                          entry_point: str,
                                           save_dir: str,
-                                          completion_kwargs: dict = {}, 
-                                          delay_in_seconds: float = 1.0):
+                                          completion_kwargs: dict,
+                                          num_completions: int,
+                                          retry_times: int = 5):
         return await self._request(
             task_name               = task_name,
-            task_kind               = 'function_completion',
-            prompt_template         = Prompter.function_completion_prompt,
-            prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole},
-            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
-            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            task_kind               = 'counterexamples',
+            prompt_template         = Prompter.counterexample_prompt,
+            prompt_kwargs           = {'question' : question, 'program' : program},
+            response_handlers       = [extract_code, extract_asserts],
+            response_verifier       = partial(verify_counterexample, program=program, entry_point=entry_point),
+            response_collector      = lambda res : list(map(partial(collect_counterexample, program=program, entry_point=entry_point), res)),
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.counterexample'),
             completion_kwargs       = completion_kwargs,
-            num_completions         = num_completions
+            num_completions         = num_completions,
+            retry_times             = retry_times
         )
 
 """

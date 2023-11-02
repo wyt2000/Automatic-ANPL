@@ -60,15 +60,15 @@ def test_request_for_solutions():
         asyncio.run(func())
     print("=== test_request_for_solutions end ===")
 
-solution = '''1. Sort the given list of numbers in ascending order.
+
+def test_request_for_codes():
+    solution = '''1. Sort the given list of numbers in ascending order.
 2. Initialize a variable "previous" to the first element of the sorted list.
 3. Loop through the sorted list from the second element to the end.
 4. For each element, check if the difference between it and the "previous" element is less than the given threshold.
 5. If the difference is less than the threshold, return True.
 6. If the loop completes without finding any close elements, return False.
 '''
-
-def test_request_for_codes():
     print("\n=== test_request_for_codes begin ===")
     save_dir = 'anpl_test_GPTClient'
     mkdir_no_override(save_dir)
@@ -97,7 +97,9 @@ def test_request_for_codes():
         asyncio.run(func())
     print("=== test_request_for_codes end ===")
 
-code = '''from typing import List
+
+def test_request_for_function_completions():
+    code = '''from typing import List
 
 def sort_numbers(numbers: List[float]) -> List[float]:
     """Sorts the given list of numbers in ascending order."""
@@ -117,15 +119,14 @@ def has_close_elements(numbers: List[float], threshold: float) -> bool:
     return check_close_elements(sorted_numbers, threshold)
 '''
 
-func_names = {'has_close_elements', 'check_close_elements', 'sort_numbers'}
+    func_names = {'has_close_elements', 'check_close_elements', 'sort_numbers'}
 
-hole = '''def check_close_elements(numbers: List[float], threshold: float) -> bool:
+    hole = '''def check_close_elements(numbers: List[float], threshold: float) -> bool:
     """Checks if any two numbers in the given list are closer to each other than the given threshold."""
 '''
 
-target = 'check_close_elements'
+    target = 'check_close_elements'
 
-def test_request_for_function_completions():
     print("\n=== test_request_for_function_completions begin ===")
     save_dir = 'anpl_test_GPTClient'
     mkdir_no_override(save_dir)
@@ -148,4 +149,41 @@ def test_request_for_function_completions():
             print(codes[0])
         asyncio.run(func())
     print("=== test_request_for_function_completions end ===")
+
+def test_request_for_counterexamples():
+    question = '''
+def unique(l: list):
+    """Return sorted unique elements in a list
+    >>> unique([1, 4, 5, 3, 2]) [1, 2, 3, 4, 5]"""
+'''
+    question = question_prefix + question
+    program = '''
+def unique(l: list):
+    return sorted(l)
+'''
+    print("\n=== test_request_for_counterexamples begin ===")
+    save_dir = 'anpl_test_GPTClient'
+    mkdir_no_override(save_dir)
+    with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
+        client = GPTClient(cacheManager)
+        async def func():
+            counterexamples = await client.request_for_counterexamples(
+                task_name = 'test_request_for_counterexamples',
+                question = question,
+                program  = program,
+                entry_point = 'unique',
+                save_dir  = save_dir,
+                completion_kwargs = {
+                    "model"             : model_name,
+                    "temperature"       : 0.6,
+                },
+                num_completions = 1
+            )
+            if len(counterexamples) == 0:
+                print("Couldn't find any counterexample!")
+            else:
+                print(counterexamples[0])
+        asyncio.run(func())
+    print("=== test_request_for_counterexamples end ===")
+
 

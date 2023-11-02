@@ -188,10 +188,19 @@ def verify_python(string):
     except SyntaxError:
         return False
 
-# Check if the program will raise an exception when tested by asserts
-def verify_counterexample(program: str, entry_point, asserts: str) -> bool:
+# TODO: support APPS
+# Find the assert which makes the program fail
+def collect_counterexample(asserts: str, program: str, entry_point: str) -> str:
     for assert_stmt in asserts.splitlines():
-        _, exc =  
+        try:
+            _, exc = eval_program(program, entry_point, assert_stmt) 
+        except Exception as err:
+            exc = err
+        if exc is not None:
+            return assert_stmt 
+    return None
 
-    
+# Check if the program will raise an exception when tested by asserts
+def verify_counterexample(asserts: str, program: str, entry_point: str) -> bool:
+    return collect_counterexample(asserts, program, entry_point) is not None
 

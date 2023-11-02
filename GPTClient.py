@@ -207,7 +207,6 @@ class GPTClient:
                                           task_name: str,
                                           question: str,
                                           program: str,
-                                          prompter: AbstractPrompter,
                                           save_dir: str,
                                           completion_kwargs: dict = {}, 
                                           delay_in_seconds: float = 1.0):

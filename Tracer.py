@@ -6,7 +6,7 @@ import functools
 import timeout_decorator
 from copy import deepcopy
 from types import FunctionType, ModuleType
-import io
+import io as IO
 from contextlib import redirect_stdout
 import resource
 import code
@@ -137,44 +137,49 @@ class IOCollector:
             return output
         return wrapper
 
-# Run code while catching time and memory limit exception
+# Run code and save traces of func_names (optional), NOT support kwargs 
 @timeout_decorator.timeout(1)
-def exec_with_limit(func: FunctionType,
-                    inputs: list[Any] | str):
-    with redirect_stdout(io.StringIO()):
-        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-        resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
-        recursion_limit = sys.getrecursionlimit()
-        sys.setrecursionlimit(100)
-        try:
+def eval_program(code: str,
+                 entry_name: str,
+                 inputs: list[Any] | str,
+                 with_trace: bool = False,
+                 func_names: list[str] = None,
+                 ) -> list[IOCollector | None, Exception]:
+    io = None
+
+    # Save resource usage limit
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    recursion_limit = sys.getrecursionlimit()
+    try:
+        with redirect_stdout(IO.StringIO()):
+            # Limit resource usage
+            resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
+            sys.setrecursionlimit(100)
+
+            # Load module from code and find entry function
+            module = import_module_from_string(code)
+            if with_trace: io = IOCollector(code, func_names, module)
+            entry_func = getattr(module, entry_name, None)
+            if not (entry_func and isinstance(entry_func, FunctionType)):
+                raise ValueError(f"Couldn't find entry function {entry_name}")
+
+            # Exec entry_func with inputs
+            exc = None
             if isinstance(inputs, list):
-                func(*inputs) # For list[args]
+                entry_func(*inputs) # For list[args]
             elif isinstance(inputs, str):
-                exec(inputs, locals() | {func.__name__: func}) # For assert str
+                exec(inputs, locals() | {entry_func.__name__: entry_func}) # For assert str
             else:
                 raise TypeError("Inputs should be either list or assert str!")
-        finally:
-            sys.setrecursionlimit(recursion_limit)
-            resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
 
-# Run code and save traces of func_names, NOT support kwargs 
-def exec_with_trace(code: str,
-                    func_names: list[str],
-                    inputs: list[Any],
-                    entry_name: str = 'main') -> list[IOCollector, Exception]:
-    # Load module from code and find entry function
-    module = import_module_from_string(code)
-    io = IOCollector(code, func_names, module)
-    entry_func = getattr(module, entry_name, None)
-    if not (entry_func and isinstance(entry_func, FunctionType)):
-        raise ValueError(f"Couldn't find entry function {entry_name}")
-    exc = None
-    try:
-        exec_with_limit(entry_func, inputs)
+    # Collect Exceptions and Recover the resource limits
     except AssertionError as err:
         exc = AssertionError(inputs) # Save assert str in Exception
     except Exception as err:
         exc = err 
+    finally:
+        sys.setrecursionlimit(recursion_limit)
+        resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
     return io, exc 
 
 # Trace all functions in code
@@ -199,7 +204,13 @@ def trace_code(code: str,
             func_codes[func.name] = ast.unparse(func)
 
     try:
-        ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs, entry_name)
+        ios, exc = eval_program(
+            code        = code,
+            entry_name  = entry_name,
+            inputs      = inputs,
+            with_trace  = True,
+            func_names  = list(func_codes.keys())
+        )
         return func_names_sorted, func_codes, ios, exc
     except Exception as exc:
         return func_names_sorted, func_codes, None, exc

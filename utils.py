@@ -11,7 +11,8 @@ import operator
 import random
 import re
 import ast
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
+from Tracer import eval_program
 
 def mkdir_override(dir_path):
     '''
@@ -187,4 +188,10 @@ def verify_python(string):
     except SyntaxError:
         return False
 
+# Check if the program will raise an exception when tested by asserts
+def verify_counterexample(program: str, entry_point, asserts: str) -> bool:
+    for assert_stmt in asserts.splitlines():
+        _, exc =  
+
+    
 

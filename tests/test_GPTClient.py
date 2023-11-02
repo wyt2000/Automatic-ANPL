@@ -251,3 +251,38 @@ def unique(l: list):
     print("=== test_request_for_debugged_function end ===")
 
 
+def test_request_for_debugged_solution():
+    question = '''
+def unique(l: list):
+    """Return sorted unique elements in a list
+    >>> unique([1, 4, 5, 3, 2]) [1, 2, 3, 4, 5]"""
+'''
+    question = question_prefix + question
+    old_solution = "Remove duplicated elements in the list and sort it in non-increasing order."
+    counterexample = "assert unique([1,4,5,3,2]) == [1,2,3,4,5]"
+        
+    print("\n=== test_request_for_debugged_solution begin ===")
+    save_dir = 'anpl_test_GPTClient'
+    mkdir_no_override(save_dir)
+    with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
+        client = GPTClient(cacheManager)
+        async def func():
+            solutions = await client.request_for_debugged_solution(
+                task_name = 'test_request_for_debugged_solution',
+                question = question,
+                old_solution = old_solution,
+                counterexample = counterexample,
+                save_dir  = save_dir,
+                completion_kwargs = {
+                    'model'       : model_name, 
+                    "temperature" : 0.6,
+                    "logit_bias"  : {755:-100},
+                },
+                num_completions = 1
+            )
+            print(solutions[0])
+        asyncio.run(func())
+    print("=== test_request_for_debugged_solution end ===")
+
+
+

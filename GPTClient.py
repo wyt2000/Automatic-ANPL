@@ -251,52 +251,23 @@ class GPTClient:
             num_completions         = num_completions
         )
 
-
-"""
+# Request from chatGPT to get repaired high-level solution for question and counterexample.
     async def request_for_debugged_solution(self,
                                             task_name: str,
                                             question: str,
                                             old_solution: str,
                                             counterexample: str,
-                                            prompter: AbstractPrompter,
                                             save_dir: str,
-                                            completion_kwargs: dict = {}, 
-                                            delay_in_seconds: float = 1.0):
-        '''
-        Request from chatGPT to get repaired high-level solution for question and counterexample.
-        '''
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            messages = [
-                {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_solution_debug_prompt(question=question, solution=old_solution, counterexample=counterexample)}
-            ]
-            self.logger.debug(f'{task_name}: Requesting for debugged high-level solution...')
-            responses = await self.delayed_completion(
-                task_name        = task_name,
-                messages         = messages,
-                **completion_kwargs
-            )
-            response = self.get_response_list(responses)[0]
-            self.logger.debug(f'{task_name}: Requesting for debugged high-level solution done!')
-            with open(pathlib.Path(save_dir, f'{task_name}.plan'), 'w') as f:
-                f.write(response)
-            return response
-"""
+                                            completion_kwargs: dict,
+                                            num_completions: int):
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'solution_debug',
+            prompt_template         = Prompter.solution_debug_prompt,
+            prompt_kwargs           = {'question' : question, 'solution' : old_solution, 'counterexample' : counterexample},
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.fixed_plan'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions
+        )
 
-if __name__ == '__main__':
-    client = GPTClient()
-    code = '''
 
-abc
-```
-def
-sdfsdafsdsa
-fadsfsafs
-sfadfsafa
-```
-xyz
-
-'''
-    code = client.extract_code(code)
-    print(code)

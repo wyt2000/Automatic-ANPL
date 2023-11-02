@@ -97,3 +97,55 @@ def test_request_for_codes():
         asyncio.run(func())
     print("=== test_request_for_codes end ===")
 
+code = '''from typing import List
+
+def sort_numbers(numbers: List[float]) -> List[float]:
+    """Sorts the given list of numbers in ascending order."""
+
+def check_close_elements(numbers: List[float], threshold: float) -> bool:
+    """Checks if any two numbers in the given list are closer to each other than the given threshold."""
+
+def has_close_elements(numbers: List[float], threshold: float) -> bool:
+    """ Check if in given list of numbers, are any two numbers closer to each other than
+    given threshold.
+    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)
+    False
+    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)
+    True
+    """
+    sorted_numbers = sort_numbers(numbers)
+    return check_close_elements(sorted_numbers, threshold)
+'''
+
+func_names = {'has_close_elements', 'check_close_elements', 'sort_numbers'}
+
+hole = '''def check_close_elements(numbers: List[float], threshold: float) -> bool:
+    """Checks if any two numbers in the given list are closer to each other than the given threshold."""
+'''
+
+target = 'check_close_elements'
+
+def test_request_for_function_completions():
+    print("\n=== test_request_for_function_completions begin ===")
+    save_dir = 'anpl_test_GPTClient'
+    mkdir_no_override(save_dir)
+    with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
+        client = GPTClient(cacheManager)
+        async def func():
+            codes = await client.request_for_function_completions(
+                task_name = 'test_request_for_function_completions',
+                prefix = '',
+                code = code,
+                hole = hole,
+                target = target,
+                func_names = func_names,
+                completion_kwargs = {
+                    "model"             : model_name,
+                    "temperature"       : 0.6,
+                },
+                num_completions = 1
+            )
+            print(codes[0])
+        asyncio.run(func())
+    print("=== test_request_for_function_completions end ===")
+

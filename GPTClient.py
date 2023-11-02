@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_func, extract_asserts, verify_anpl
+from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -48,11 +48,13 @@ class GPTClient:
     def get_response_list(responses: str):
         return [response["message"]["content"] for response in responses["choices"]]
 
+    # Save response to file
     @staticmethod
     def save_one(result: str, save_dir: str, filename: str):
         with open(pathlib.Path(save_dir, filename), 'w') as f:
             f.write(result)
 
+    # Save responses to files named as 0 to n - 1
     @staticmethod
     def save_all(results: list[str], save_dir: str, filename: str):
         for i, response in enumerate(results):
@@ -60,12 +62,12 @@ class GPTClient:
                 f.write(response)
 
     # Ask GPT for complelations
-    async def request(self,
+    async def _request(self,
                       task_name: str,
                       task_kind: str, 
-                      prompt_background: str,
                       prompt_template: str, 
                       prompt_kwargs: dict = {},
+                      prompt_background: str = Prompter.background,
                       response_verifier: Callable[[str], bool] = lambda _ : True,
                       response_handlers: list[Callable[[str], str]] = [],
                       response_collector: Callable[list[str], Any] = lambda x : x,
@@ -124,14 +126,13 @@ class GPTClient:
                                    completion_kwargs: dict,
                                    num_completions: int):
 
-        return await self.request(
+        return await self._request(
             task_name               = task_name,
             task_kind               = 'pretest',
-            prompt_background       = Prompter.background,
             prompt_template         = Prompter.pretest_prompt,
             prompt_kwargs           = {'question' : question},
             response_handlers       = [extract_code, extract_asserts],
-            response_collector      = lambda res : '\n'.join({stmt for r in res for stmt in r.splitlines()}),
+            response_collector      = lambda res : '\n'.join(set(stmt for r in res for stmt in r.splitlines())),
             response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.test'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions 
@@ -145,10 +146,9 @@ class GPTClient:
                                     completion_kwargs: dict,
                                     num_completions: int):
 
-        return await self.request(
+        return await self._request(
             task_name               = task_name,
             task_kind               = 'solution',
-            prompt_background       = Prompter.background,
             prompt_template         = Prompter.solution_prompt,
             prompt_kwargs           = {'question' : question},
             response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.plan'),
@@ -167,18 +167,40 @@ class GPTClient:
                                 num_completions: int,
                                 retry_times: int = 5):
 
-        return await self.request(
+        return await self._request(
             task_name               = task_name,
             task_kind               = 'translation',
-            prompt_background       = Prompter.background,
             prompt_template         = Prompter.translation_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'entry_point' : entry_point},
             response_verifier       = partial(verify_anpl, entry_point=entry_point),
             response_handlers       = [extract_code],
             response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),
+            response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times
+        )
+
+    # Request from chatGPT to get function completions from hole.
+    async def request_for_function_completions(self,
+                                               task_name: str,
+                                               prefix: str,
+                                               code: str,
+                                               hole: str,
+                                               target: str,
+                                               func_names: set[str],
+                                               completion_kwargs: dict,
+                                               num_completions: int):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'function_completion',
+            prompt_template         = Prompter.function_completion_prompt,
+            prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole},
+            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions
         )
 
 """

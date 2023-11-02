@@ -1,5 +1,29 @@
 background = """You are an expert of Python programming language. """
 
+function_completion_prompt = """{prefix}
+Here is a python program: 
+-----Program-----
+```
+{code}
+```
+
+Here is an unimplemented function of the program:
+-----Function-----
+```
+{hole}
+```
+
+-----Task-----
+Complete the function. Add docstring to describe the new function you generated if it doesn't have one.
+Your output should be in the following format:
+
+```
+python code
+```
+
+"""
+
+
 pretest_prompt = """-----Question-----
 {question}
 -----Task-----

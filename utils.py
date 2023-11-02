@@ -109,7 +109,7 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
                 omit_indent = indent
                 continue
         code.append(line)
-    return '\n'.join(code) if has_target else ''
+    return '\n'.join(code) if has_target else None
 
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
@@ -133,8 +133,8 @@ def extract_code(content: str):
     return '\n'.join(code)
 
 # Filter other functions, but allow decompose
-def extract_func(content: str, target: str, holes: set[str]):
-    return remove_implemented_functions(content, target, holes - {target})
+def extract_func(content: str, target: str, func_names: set[str]):
+    return remove_implemented_functions(content, target, func_names - {target})
 
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):
@@ -157,13 +157,34 @@ def extract_asserts(content: str):
 
 # Check if the code is valid Python code with function `entry_point`.
 def verify_anpl(code: str, entry_point: str) -> bool:
-    func_names = set()
+    has_entry_point = False
     try:
         root = ast.parse(code)
         for node in root.body:
             if isinstance(node, ast.FunctionDef):
-                func_names.add(node.name)
+                if ast.get_docstring(node) is None:
+                    return False
+                has_entry_point |= (node.name == entry_point)
     except Exception:
         return False
-    return entry_point in func_names
+    return has_entry_point
+
+# Remove implementations of non-entry functions.
+def collect_anpl(code: str, entry_point: str) -> str:
+    root = ast.parse(code)
+    for node in root.body:
+        if isinstance(node, ast.FunctionDef) and node.name != entry_point:
+            docstring = ast.get_docstring(node)
+            node.body = [ast.Expr(ast.Str(docstring))]
+    return ast.unparse(root)
+
+# Verify python syntax, faster than `ast.parse`.
+def verify_python(string):
+    if string is None: return False
+    try:
+        compile(string, '<string>', 'exec')
+        return True
+    except SyntaxError:
+        return False
+
 

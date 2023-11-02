@@ -85,6 +85,9 @@ class IOCollector:
     def __repr__(self):
         return f"IOCollector({self.func_ios})"
 
+    def __getitem__(self, key):
+        return self.func_ios.get(key, [])
+
     # Wrap function to save I/O in func_ios when execuated
     def set_trace(self, func: FunctionType):
 

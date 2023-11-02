@@ -1,4 +1,32 @@
-from utils import remove_implemented_functions, extract_asserts 
+from utils import remove_implemented_functions, extract_asserts, compose_function_with_traces
+from Tracer import trace_code
+
+def test_compose_function_with_traces():
+    code = '''
+def add(x: int, i: int):
+    return x + i
+def add_list(inputs: list[int]):
+    for i in range(len(inputs)):
+        inputs[i] = add(inputs[i], i)
+    return inputs
+def parse_input(input_str: str):
+    input_list = list(map(int, input_str.split()))
+    return input_list
+def main(input_str: str):
+    inputs = parse_input(input_str)
+    return add_list(inputs)
+    '''
+    func_code = '''def add(x: int, i: int):
+    return x + i'''
+    _, _, ios, _ = trace_code(code, "assert main('1 2 3 4 5') == [1, 3, 5, 7, 9]")
+    func = compose_function_with_traces(func_code, ios['add'])
+    ans = '''# Trace: 
+# input: {'x': 1, 'i': 0}, output: 1
+# input: {'x': 2, 'i': 1}, output: 3
+# input: {'x': 3, 'i': 2}, output: 5
+def add(x: int, i: int):
+    return x + i'''
+    assert func == ans
 
 def test_extract_asserts():
     code = '''
@@ -58,5 +86,4 @@ def h():
 def u():
     pass
 '''.strip('\n')
-
 

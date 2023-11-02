@@ -12,7 +12,7 @@ import random
 import re
 import ast
 from contextlib import contextmanager, redirect_stdout
-from Tracer import eval_program
+from Tracer import eval_program, IOExample
 
 def mkdir_override(dir_path):
     '''
@@ -204,3 +204,10 @@ def collect_counterexample(asserts: str, program: str, entry_point: str) -> str:
 def verify_counterexample(asserts: str, program: str, entry_point: str) -> bool:
     return collect_counterexample(asserts, program, entry_point) is not None
 
+# Add trace before function code
+def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -> str:
+    function_with_traces = "# Trace: \n"
+    for trace in func_traces:
+        function_with_traces += f"# {repr(trace)}\n"
+    function_with_traces += func_code
+    return function_with_traces

@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample
+from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -211,6 +211,7 @@ class GPTClient:
                                           completion_kwargs: dict,
                                           num_completions: int,
                                           retry_times: int = 5):
+
         return await self._request(
             task_name               = task_name,
             task_kind               = 'counterexamples',
@@ -224,47 +225,34 @@ class GPTClient:
             num_completions         = num_completions,
             retry_times             = retry_times
         )
-
-"""
+    
+    # Request from chatGPT to get repaired function by solution, program and traces.
     async def request_for_debugged_function(self,
                                             task_name: str,
                                             question: str,
                                             solution: str,
                                             program: str,
-                                            func_name: str,
-                                            holes: set[str],
+                                            target: str,
+                                            func_names: set[str],
                                             func_code: str,
                                             func_traces: list[IOExample],
-                                            prompter: AbstractPrompter,
                                             save_dir: str,
-                                            completion_kwargs: dict = {}, 
-                                            delay_in_seconds: float = 1.0):
-        '''
-        Request from chatGPT to get repaired function by solution, program and traces.
-        '''
-        # Add trace before function code
-        function_with_traces = "# Trace: \n"
-        for trace in func_traces:
-            function_with_traces += f"# {repr(trace)}\n"
-        function_with_traces += func_code
-        
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            messages = [
-                {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_function_debug_prompt(question=question, solution=solution, func_name=func_name, program=program, function_with_traces=function_with_traces)}
-            ]
-            responses = await self.delayed_completion(
-                task_name        = task_name,
-                delay_in_seconds = delay_in_seconds,
-                messages         = messages,
-                **completion_kwargs
-            )
-            responses = self.get_response_list(responses)
-            for i, response in enumerate(responses):
-                responses[i] = self.extract_func(response, func_name, holes)
-            return responses
+                                            completion_kwargs: dict,
+                                            num_completions: int):
 
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'function_debug',
+            prompt_template         = Prompter.function_debug_prompt,
+            prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : program, 'function_with_traces' : compose_function_with_traces(func_code, func_traces), 'func_name' : target},
+            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions
+        )
+
+
+"""
     async def request_for_debugged_solution(self,
                                             task_name: str,
                                             question: str,

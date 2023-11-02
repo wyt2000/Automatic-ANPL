@@ -5,6 +5,7 @@ from CacheManager import CacheManager
 import asyncio
 import logging
 import logging.config
+from Tracer import trace_code
 
 logging.config.fileConfig('logging.conf')
 
@@ -146,7 +147,10 @@ def has_close_elements(numbers: List[float], threshold: float) -> bool:
                 },
                 num_completions = 1
             )
-            print(codes[0])
+            if len(codes) == 0:
+                print("Couldn't find any functions!")
+            else:
+                print(codes[0])
         asyncio.run(func())
     print("=== test_request_for_function_completions end ===")
 
@@ -185,5 +189,65 @@ def unique(l: list):
                 print(counterexamples[0])
         asyncio.run(func())
     print("=== test_request_for_counterexamples end ===")
+
+def test_request_for_debugged_function():
+    question = '''
+def unique(l: list):
+    """Return sorted unique elements in a list
+    >>> unique([1, 4, 5, 3, 2]) [1, 2, 3, 4, 5]"""
+'''
+    question = question_prefix + question
+    solution = "Remove duplicated elements in the list and sort them."
+    program = '''def remove_duplicated_elements(l: list):
+    """
+    Remove duplicated elements of l.
+    """
+    return l
+def unique(l: list):
+    """
+    Return sorted unique elements in a list
+    >>> unique([1, 4, 5, 3, 2]) [1, 2, 3, 4, 5]
+    """
+    return sorted(remove_duplicated_elements(l))
+'''
+    target = 'remove_duplicated_elements'
+    func_names = {'unique', target}
+    func_code = '''def remove_duplicated_elements(l: list):
+    """
+    Remove duplicated elements of l.
+    """
+    return sorted(l)
+    '''
+    _, _, ios, _ = trace_code(program, "assert unique([1, 1, 1, 1]) == [1]")
+    func_traces = ios[target]
+    
+    print("\n=== test_request_for_debugged_function begin ===")
+    save_dir = 'anpl_test_GPTClient'
+    mkdir_no_override(save_dir)
+    with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
+        client = GPTClient(cacheManager)
+        async def func():
+            funcs = await client.request_for_debugged_function(
+                task_name = 'test_request_for_debugged_function',
+                question = question,
+                solution = solution,
+                program  = program,
+                target   = target,
+                func_names = func_names,
+                func_code  = func_code,
+                func_traces = func_traces,
+                save_dir  = save_dir,
+                completion_kwargs = {
+                    "model"             : model_name,
+                    "temperature"       : 0.6,
+                },
+                num_completions = 1
+            )
+            if len(funcs) == 0:
+                print("Couldn't find any debugged functions!")
+            else:
+                print(funcs[0])
+        asyncio.run(func())
+    print("=== test_request_for_debugged_function end ===")
 
 

@@ -16,7 +16,6 @@ Here is an unimplemented function of the program:
 -----Task-----
 Complete the function. Add docstring to describe the new function you generated if it doesn't have one.
 Your output should be in the following format:
-
 ```
 python code
 ```
@@ -27,9 +26,8 @@ python code
 pretest_prompt = """-----Question-----
 {question}
 -----Task-----
-Give an assert test for this question in the following format. Each assert statement should be on one line.
-
------Test-----
+Give an assert test for this question. Each assert statement should be on one line.
+Your output should be in the following format:
 ```
 assert 
 ```
@@ -75,6 +73,7 @@ def {func_name}(...):
     The description of the function.
     '''
 ```
+
 You should only output the function code! Omit explanations or any additional text!
 """
 
@@ -85,19 +84,13 @@ counterexample_prompt = """-----Question-----
 {program}
 
 -----Task-----
-Give an input example of the question and its corresponding correct output, which meet the input-output requirements of the question, but the program will return an incorrect output for this input. 
+Give an assert test for the question to find hidden bugs in the program. Each assert statement should be on one line.
 Your output should be in the following format:
-
------Input-----
 ```
-Input
+assert 
 ```
 
------Output-----
-```
-Output
-```
-
+You should only output the assert test. Omit explanations or any additional text.
 """
 
 solution_prompt = """-----Question-----

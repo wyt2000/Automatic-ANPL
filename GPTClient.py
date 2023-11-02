@@ -203,7 +203,6 @@ class GPTClient:
             num_completions         = num_completions
         )
 
-"""
     async def request_for_counterexamples(self,
                                           task_name: str,
                                           question: str,
@@ -212,27 +211,18 @@ class GPTClient:
                                           save_dir: str,
                                           completion_kwargs: dict = {}, 
                                           delay_in_seconds: float = 1.0):
-        '''
-        Request from chatGPT to get counterexample for question and program.
-        '''
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            messages = [
-                {"role": "system", "content": prompter.get_background()},
-                {"role": "user", "content": prompter.get_counterexample_prompt(question=question, program=program)}
-            ]
-            self.logger.debug(f'{task_name}: Requesting for counterexample...')
-            responses = await self.delayed_completion(
-                task_name        = task_name,
-                delay_in_seconds = delay_in_seconds,
-                messages         = messages,
-                **completion_kwargs
-            )
-            responses = self.get_response_list(responses)
-            responses = [self.extract_io(response) for response in responses]
-            self.logger.debug(f'{task_name}: Requesting for counterexample done!')
-            return responses
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'function_completion',
+            prompt_template         = Prompter.function_completion_prompt,
+            prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole},
+            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions
+        )
 
+"""
     async def request_for_debugged_function(self,
                                             task_name: str,
                                             question: str,

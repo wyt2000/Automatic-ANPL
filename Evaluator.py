@@ -13,7 +13,7 @@ from Tracer import eval_program
 ###################################################################################
 
 # Different policy to Record the best result.
-class AbstractEvaluator(ABC):
+class Evaluator(ABC):
 
     @abstractmethod
     def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
@@ -21,11 +21,11 @@ class AbstractEvaluator(ABC):
 
     @property
     @abstractmethod
-    def best_result(self) -> str:
+    def best_result(self) -> list[str, list[str]]:
         pass
 
 # Trivial policy, just choose the program passed the most test cases.
-class MaxPassEvaluator(AbstractEvaluator):
+class MaxPassEvaluator(Evaluator):
 
     def __init__(self):
         self._best_result = ['', []]
@@ -35,11 +35,11 @@ class MaxPassEvaluator(AbstractEvaluator):
             self._best_result = [program, passed_asserts]
 
     @property
-    def best_result(self) -> str:
+    def best_result(self) -> list[str, list[str]]:
         return self._best_result
 
 # Use CodeT score to choose the best program with reasonable tests.
-class CodetEvaluator(AbstractEvaluator):
+class CodetEvaluator(Evaluator):
 
     def __init__(self):
         self.all_attempts = {}
@@ -49,14 +49,15 @@ class CodetEvaluator(AbstractEvaluator):
         self.all_attempts[passed_asserts_hash] = [
             all_attempts.get(passed_asserts_hash, [0])[0] + len(passed_asserts), # CodeT
             len(passed_asserts),
-            code
+            code,
+            passed_asserts
         ]
 
     @property
     def best_result(self) -> str:
         if not all_attempts:
             return '' 
-        return max(all_attempts.values())[2]
+        return max(all_attempts.values())[2:]
 
 ###################################################################################
 
@@ -126,7 +127,7 @@ def eval_sampled_functions(code_generator: Iterator[str],
                            entry_point: str,
                            imports_prefix: str,
                            asserts: list[str],
-                           evaluator: AbstractEvaluator,
+                           evaluator: Evaluator,
                            max_time: int):
 
     start_time = time.time()

@@ -185,26 +185,29 @@ def eval_program(code: str,
         resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
     return io, exc 
 
-# Trace all functions in code
-def trace_code(code: str,
-               inputs: list[Any] | str,
-               entry_name: str = 'main') -> list[dict[str, str], IOCollector, Exception]:
-    # Parse code to ast.Node
-    try:
-        root = ast.parse(code)
-    except Exception as e:
-        te = traceback.TracebackException.from_exception(e)
-        lineno = te.stack[0].lineno
-        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
-
-    # Get function names and codes
+# Get function names and codes in definition order of the program.
+def get_sorted_funcs(program: str) -> tuple[list[str], dict[str, str]]:
     func_names_sorted = []
     func_codes = {} 
+    root = ast.parse(program)
     for node in root.body:
         if isinstance(node, ast.FunctionDef):
             func: ast.FunctionDef = node
             func_names_sorted.append(func.name)
             func_codes[func.name] = ast.unparse(func)
+    return func_names_sorted, func_codes
+
+# Trace all functions in code
+def trace_code(code: str,
+               inputs: list[Any] | str,
+               entry_name: str = 'main') -> list[dict[str, str], IOCollector, Exception]:
+    # Get function names and codes
+    try:
+        func_names_sorted, func_codes = get_sorted_funcs(code)
+    except Exception as e:
+        te = traceback.TracebackException.from_exception(e)
+        lineno = te.stack[0].lineno
+        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
 
     try:
         ios, exc = eval_program(

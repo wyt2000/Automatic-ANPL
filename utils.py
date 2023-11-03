@@ -71,23 +71,6 @@ def redirect_loggers(log_path: str):
         file_handler.close()
         root_logger.handlers = root_handlers
 
-def product_to_tensor_idx(prod, dims, idx):
-    ans = []
-    for dim in dims:
-        prod //= dim
-        ans.append(idx // prod)
-        idx %= prod
-    return ans
-
-def sample_product(arrs, n, k):
-    indices = random.sample(range(n), k)
-    dims = [len(arr) for arr in arrs]
-    prod = functools.reduce(operator.mul, dims, 1)
-    return [
-        product_to_tensor_idx(prod, dims, idx)
-        for idx in indices
-    ]
-
 # Remove all implemented functions including nested functions
 func_pattern = re.compile(r"\s*def\s+(.+)\(.*\).*\:")
 def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
@@ -211,3 +194,5 @@ def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -
         function_with_traces += f"# {repr(trace)}\n"
     function_with_traces += func_code
     return function_with_traces
+
+

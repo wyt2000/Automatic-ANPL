@@ -61,7 +61,7 @@ class GPTClient:
             with open(pathlib.Path(save_dir, filename.format(i=i)), 'w') as f:
                 f.write(response)
 
-    # Ask GPT for complelations
+    # Abstract request GPT for completions.
     async def _request(self,
                       task_name: str,
                       task_kind: str, 
@@ -202,6 +202,7 @@ class GPTClient:
             num_completions         = num_completions
         )
 
+    # Request from chatGPT to get counterexamples of the program.
     async def request_for_counterexamples(self,
                                           task_name: str,
                                           question: str,
@@ -251,7 +252,7 @@ class GPTClient:
             num_completions         = num_completions
         )
 
-# Request from chatGPT to get repaired high-level solution for question and counterexample.
+    # Request from chatGPT to get repaired high-level solution for question and counterexample.
     async def request_for_debugged_solution(self,
                                             task_name: str,
                                             question: str,

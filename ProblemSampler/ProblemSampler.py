@@ -12,11 +12,26 @@ class ProblemData(ABC):
         '''
         self.sample = sample
 
-    def __getattr__(self, name):
-        if (attr := self.sample.get(name)) is not None:
-            return attr
-        raise AttributeError(f"{self.__class__.__name__} object has no attribute {name}") 
+    @property
+    @abstractmethod
+    def problem_id(self) -> int:
+        pass
 
+    @property
+    @abstractmethod
+    def system_tests(self) -> list[str]:
+        pass
+
+    @property
+    @abstractmethod
+    def question(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def entry_point(self) -> str:
+        pass
+    
 
 class ProblemSampler(ABC):
     '''

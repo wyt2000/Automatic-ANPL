@@ -97,7 +97,7 @@ def compose_functions(indices_lists: list[list[str]],
 # Sample functions to generate completed codes
 def sample_functions(func_candidates: list[set[str]],
                      max_attempts: int,
-                     seed: int) -> Iterator[str], int:
+                     seed: int) -> [int, Iterator[str]]:
 
     # Collect candidates as a 2D-list (func x candidate).
     func_candidates = [list(candidate) for candidate in func_candidates]

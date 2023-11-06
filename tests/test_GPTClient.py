@@ -17,7 +17,7 @@ def test_request_for_pretests():
     save_dir = 'anpl_test_GPTClient'
     mkdir_no_override(save_dir)
     sampler = HumanEvalProblemSampler()
-    question = list(sampler.sample([0]))[0].prompt
+    question = list(sampler.sample([0]))[0].question
     question = question_prefix + question
     with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
         client = GPTClient(cacheManager)
@@ -32,6 +32,7 @@ def test_request_for_pretests():
                 },
                 num_completions = 100,
             )
+            print(len(pretests.splitlines()))
             print(pretests)
         asyncio.run(func())
     print("=== test_request_for_pretests end ===")
@@ -41,7 +42,7 @@ def test_request_for_solutions():
     save_dir = 'anpl_test_GPTClient'
     mkdir_no_override(save_dir)
     sampler = HumanEvalProblemSampler()
-    question = list(sampler.sample([0]))[0].prompt
+    question = list(sampler.sample([0]))[0].question
     question = question_prefix + question
     with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
         client = GPTClient(cacheManager)
@@ -62,7 +63,7 @@ def test_request_for_solutions():
     print("=== test_request_for_solutions end ===")
 
 
-def test_request_for_codes():
+def test_request_for_anpl_codes():
     solution = '''1. Sort the given list of numbers in ascending order.
 2. Initialize a variable "previous" to the first element of the sorted list.
 3. Loop through the sorted list from the second element to the end.
@@ -70,19 +71,19 @@ def test_request_for_codes():
 5. If the difference is less than the threshold, return True.
 6. If the loop completes without finding any close elements, return False.
 '''
-    print("\n=== test_request_for_codes begin ===")
+    print("\n=== test_request_for_anpl_codes begin ===")
     save_dir = 'anpl_test_GPTClient'
     mkdir_no_override(save_dir)
     sampler = HumanEvalProblemSampler()
     data = list(sampler.sample([0]))[0]
-    question = data.prompt
+    question = data.question
     question = question_prefix + question
     entry_point = data.entry_point
     with CacheManager('anpl_test_GPTClient_cache', clean=True) as cacheManager:
         client = GPTClient(cacheManager)
         async def func():
-            codes = await client.request_for_codes(
-                task_name = 'test_request_for_codes',
+            codes = await client.request_for_anpl_codes(
+                task_name = 'test_request_for_anpl_codes',
                 entry_point = entry_point,
                 question  = question,
                 solution  = solution,
@@ -96,7 +97,7 @@ def test_request_for_codes():
             )
             print(codes[0])
         asyncio.run(func())
-    print("=== test_request_for_codes end ===")
+    print("=== test_request_for_anpl_codes end ===")
 
 
 def test_request_for_function_completions():

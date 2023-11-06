@@ -123,7 +123,8 @@ class GPTClient:
                                    question: str,
                                    save_dir: str,
                                    completion_kwargs: dict,
-                                   num_completions: int):
+                                   num_completions: int,
+                                   retry_times: int = 5):
 
         return await self._request(
             task_name               = task_name,
@@ -131,10 +132,12 @@ class GPTClient:
             prompt_template         = Prompter.pretest_prompt,
             prompt_kwargs           = {'question' : question},
             response_handlers       = [extract_code, extract_asserts],
+            response_verifier       = lambda assert_str : len(assert_str) > 0,
             response_collector      = lambda res : '\n'.join(set(stmt for r in res for stmt in r.splitlines())),
             response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.test'),
             completion_kwargs       = completion_kwargs,
-            num_completions         = num_completions 
+            num_completions         = num_completions,
+            retry_times             = retry_times
         )
 
     # Request from chatGPT to get high-level solution for question.
@@ -156,23 +159,23 @@ class GPTClient:
         )
 
     # Request from chatGPT to get code for high-level solution.
-    async def request_for_codes(self,
-                                task_name: str,
-                                entry_point: str,
-                                question: str,
-                                solution: str,
-                                save_dir: str,
-                                completion_kwargs: dict,
-                                num_completions: int,
-                                retry_times: int = 5):
+    async def request_for_anpl_codes(self,
+                                     task_name: str,
+                                     entry_point: str,
+                                     question: str,
+                                     solution: str,
+                                     save_dir: str,
+                                     completion_kwargs: dict,
+                                     num_completions: int,
+                                     retry_times: int = 5):
 
         return await self._request(
             task_name               = task_name,
             task_kind               = 'translation',
             prompt_template         = Prompter.translation_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'entry_point' : entry_point},
-            response_verifier       = partial(verify_anpl, entry_point=entry_point),
             response_handlers       = [extract_code],
+            response_verifier       = partial(verify_anpl, entry_point=entry_point),
             response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
             response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),
             completion_kwargs       = completion_kwargs,

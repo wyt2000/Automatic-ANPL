@@ -8,6 +8,7 @@ from typing import Any, Type
 from GPTClient import GPTClient
 from Evaluator import eval_sampled_functions, Evaluator
 from ProblemSampler.ProblemSampler import ProblemSampler, ProblemData
+from Tracer import get_sorted_funcs 
 
 #####################################################################################
 
@@ -68,7 +69,7 @@ class ProgramAgentAction(Action):
         self.config = config
 
     def __repr__(self):
-        return f'ProgramAgentAction({self.action}, {self.config})'
+        return f'ProgramAgentAction({self.action_type}, {self.config})'
 
 @dataclass
 class ProgramAgentObservation(Observation):
@@ -122,6 +123,7 @@ class SelfDebugStrategy(Strategy):
         self.state = self.ProgramState(self.state.restart_times + 1, 0, 0)
         return self.generation_actions
     
+    @property
     def initial_actions(self):
         return [
             ProgramAgentAction('GEN_PRETEST', {'num_completions': self.num_pretests}),
@@ -174,8 +176,8 @@ class Task:
     solutions: list[str]  | None = None
     anpl_codes: list[str] | None = None
     programs: list[str]   | None = None
-    error: Exception = None
-    running: bool = True 
+    error: Exception             = None
+    running: bool                = True 
 
 class ProgramAgent(Agent):
 
@@ -214,38 +216,77 @@ class ProgramAgent(Agent):
         for action in actions:
             action_type = action.action_type.name
             if (func := getattr(self, f'execute_{action_type}')) is not None:
-                await func(task, **action.config)
+                try:
+                    await func(task, **action.config)
+                except Exception as err:
+                    task.error = err
             else:
-                raise ValueError(f"Undefined action type {action_type}!")
+                raise ValueError(f'Undefined action type {action_type}!')
 
-    async def execute_GEN_PRETEST(self, task, **config):
+    async def execute_GEN_PRETEST(self, task: Task, num_completions: int):
+        task.pretests = await self.client.request_for_pretests(
+            task_name           = task.task_name,
+            question            = task.problem_data.question,
+            save_dir            = task.save_dir,
+            completion_kwargs   = {
+                'model'         : self.model_name,
+                'temperature'   : 0.6,
+            },
+            num_completions     = num_completions 
+        )
+    
+    async def execute_GEN_SOLUTION(self, task: Task):
+        solutions = await self.client.request_for_solutions(
+            task_name           = task.task_name,
+            question            = task.problem_data.question,
+            save_dir            = task.save_dir,
+            completion_kwargs   = {
+                'model'         : self.model_name,
+                'temperature'   : 0.6,
+                'logit_bias'    : {755:-100}
+            },
+            num_completions     = 1
+        )
+        if not solutions: raise ValueError(f'{task.task_name}: Couldn\'t generate solutions!')
+        task.solutions.extend(solutions)
+    
+    async def execute_GEN_ANPL(self, task: Task, **config):
+        anpl_codes = await self.client.request_for_anpl_codes(
+            task_name           = task.task_name,
+            save_dir            = task.save_dir,
+            entry_point         = task.problem_data.entry_point,
+            question            = task.problem_data.question,
+            solution            = task.solutions[-1],
+            completion_kwargs   = {
+                "model"             : self.model_name,
+                "temperature"       : 0.2,
+                "presence_penalty"  : 0.1,
+            },
+            num_completions     = 1
+        )
+        if not anpl_codes: raise ValueError(f'{task.task_name}: Couldn\'t generate anpl codes!')
+        task.anpl_codes.extend(anpl_codes)
+
+    async def execute_GEN_FUNCTION(self, task: Task, **config):
+        func_names, func_codes = get_sorted_funcs(task.anpl_codes[-1])
+        
+    
+    async def execute_GEN_COUNTEREXAMPLE(self, task: Task, **config):
         pass
     
-    async def execute_GEN_SOLUTION(self, task, **config):
-        pass
-    
-    async def execute_GEN_ANPL(self, task, **config):
+    async def execute_DEBUG_FUNCTION(self, task: Task, **config):
         pass
 
-    async def execute_GEN_FUNCTION(self, task, **config):
+    async def execute_DEBUG_SOLUTION(self, task: Task, **config):
         pass
     
-    async def execute_GEN_COUNTEREXAMPLE(self, task, **config):
+    async def execute_EVAL_PRETEST(self, task: Task, **config):
         pass
     
-    async def execute_DEBUG_FUNCTION(self, task, **config):
+    async def execute_EVAL_SYSYEM_TEST(self, task: Task, **config):
         pass
 
-    async def execute_DEBUG_SOLUTION(self, task, **config):
-        pass
-    
-    async def execute_EVAL_PRETEST(self, task, **config):
-        pass
-    
-    async def execute_EVAL_SYSYEM_TEST(self, task, **config):
-        pass
-
-    async def execute_FINISH(self, task, **config):
+    async def execute_FINISH(self, task: Task, **config):
         pass
 
 

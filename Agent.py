@@ -96,7 +96,7 @@ class SelfDebugStrategy(Strategy):
                  num_generated_funcs: int = 16,
                  num_debugged_funcs: int = 8,
                  num_pretests: int = 100,
-                 eval_max_attempts: int = 10,
+                 eval_max_attempts: int = 100000,
                  eval_max_time: float = 240,
                  use_pretests_debug: bool = False):
 
@@ -234,7 +234,7 @@ class ProgramAgent(Agent):
                 raise ValueError(f'Undefined action type {action_type}!')
 
     async def execute_GEN_PRETEST(self, task: Task, num_completions: int):
-        task.pretests = await self.client.request_for_pretests(
+        pretests = await self.client.request_for_pretests(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             save_dir            = task.save_dir,
@@ -244,6 +244,7 @@ class ProgramAgent(Agent):
             },
             num_completions     = num_completions 
         )
+        task.pretests = pretests.splitlines()
     
     async def execute_GEN_SOLUTION(self, task: Task):
         solutions = await self.client.request_for_solutions(
@@ -336,6 +337,8 @@ class ProgramAgent(Agent):
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
         self.logger.debug(f"{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!")
+        with open('result.py', 'w') as f:
+            f.write(best_result[0])
     
     async def execute_EVAL_SYSYEM_TEST(self, task: Task, **config):
         pass

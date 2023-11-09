@@ -7,6 +7,7 @@ import ast
 from typing import Any, Iterator
 from abc import ABC, abstractmethod 
 import tqdm
+import time
 
 from Tracer import eval_program
 
@@ -106,7 +107,7 @@ def sample_functions(func_candidates: list[set[str]],
     # Randomly sample functions and compose.
     n_to_try = min(max_attempts, num_candidates)
     random.seed(seed)
-    indices_lists = sample_product(func_candidate, num_candidates, n_to_try)
+    indices_lists = sample_product(func_candidates, num_candidates, n_to_try)
     code_generator = compose_functions(indices_lists, func_candidates)
     return n_to_try, code_generator
 

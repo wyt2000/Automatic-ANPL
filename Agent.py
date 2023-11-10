@@ -337,8 +337,6 @@ class ProgramAgent(Agent):
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
         self.logger.debug(f"{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!")
-        with open('result.py', 'w') as f:
-            f.write(best_result[0])
     
     async def execute_EVAL_SYSYEM_TEST(self, task: Task, **config):
         pass

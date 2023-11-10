@@ -74,13 +74,17 @@ class GPTClient:
                       response_saver: Callable[Any, None] = lambda _ : None,
                       completion_kwargs: dict = {},
                       num_completions: int = 1,
-                      retry_times: int = 1) -> Any:
+                      retry_times: int = 1,
+                      verbose: bool = True) -> Any:
+
+        # Whether output logs or not
+        logger = self.logger if verbose else logging.getLogger('dummy')
 
         # Look up cache and load at most `num_completions` responses.
         responses = []
         cache_key = (task_name, prompt_template, prompt_kwargs, completion_kwargs)
         if (cache_value := self.cacheManager.load(task_kind, *cache_key)) is not None:
-            self.logger.debug(f'{task_name}: [{task_kind}] cache hit!')
+            logger.debug(f'{task_name}: [{task_kind}] cache hit!')
             responses.extend(cache_value)
 
         # Build up prompts.
@@ -95,7 +99,7 @@ class GPTClient:
             for i in range(retry_times):
                 if len(responses) >= num_completions:
                     break
-                self.logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
+                logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
                 new_responses = await self.delayed_completion(
                     task_name        = task_name,
                     messages         = messages,
@@ -107,7 +111,7 @@ class GPTClient:
                     new_responses = list(map(handler, new_responses))
                 responses.extend(filter(response_verifier, new_responses))
         responses = responses[:num_completions]
-        self.logger.debug(f'{task_name}: [{task_kind}] request done!')
+        logger.debug(f'{task_name}: [{task_kind}] request done!')
 
         # Save raw responses in cache.
         self.cacheManager.save(task_kind, responses, *cache_key)
@@ -202,7 +206,8 @@ class GPTClient:
             response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
             response_collector      = lambda res : list(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
-            num_completions         = num_completions
+            num_completions         = num_completions,
+            verbose                 = False
         )
 
     # Request from chatGPT to get counterexamples of the program.
@@ -252,7 +257,8 @@ class GPTClient:
             response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
             response_collector      = lambda res : list(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
-            num_completions         = num_completions
+            num_completions         = num_completions,
+            verbose                 = False
         )
 
     # Request from chatGPT to get repaired high-level solution for question and counterexample.

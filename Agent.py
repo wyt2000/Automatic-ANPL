@@ -10,7 +10,7 @@ import traceback
 import tqdm
 
 from GPTClient import GPTClient
-from Evaluator import Evaluator, sample_functions, eval_sampled_functions
+from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code
 from ProblemSampler.ProblemSampler import ProblemSampler, ProblemData
 from Tracer import get_sorted_funcs 
 from utils import extract_imports
@@ -64,7 +64,7 @@ class ProgramAgentActionType(Enum):
 
     # Evaluate Stage
     EVAL_PRETEST        = auto()
-    EVAL_SYSYEM_TEST    = auto()
+    EVAL_SYSTEM_TEST    = auto()
     FINISH              = auto()
 
 class ProgramAgentAction(Action):
@@ -121,7 +121,7 @@ class SelfDebugStrategy(Strategy):
             ProgramAgentAction('EVAL_PRETEST', {'max_time': eval_max_time, 'max_attempts': eval_max_attempts})
         ]
         self.finish_actions           = [
-            ProgramAgentAction('EVAL_SYSYEM_TEST', {'max_time': eval_max_time}),
+            ProgramAgentAction('EVAL_SYSTEM_TEST'),
             ProgramAgentAction('FINISH')
         ]
 
@@ -323,7 +323,7 @@ class ProgramAgent(Agent):
     
     async def execute_EVAL_PRETEST(self, task: Task, max_time: int, max_attempts: int):
         func_candidates = task.func_candidates[-1]
-        imports_prefix   = task.imports_prefixes[-1]
+        imports_prefix  = task.imports_prefixes[-1]
         n_to_try, code_generator = sample_functions(func_candidates, max_attempts, self.seed)
         self.logger.debug(f'{task.task_name}: Evaluating {n_to_try} programs...')
         best_result = eval_sampled_functions(
@@ -337,12 +337,28 @@ class ProgramAgent(Agent):
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
         self.logger.debug(f"{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!")
+        task.programs.append(best_result[0])
+        GPTClient.save_one(best_result[0], task.save_dir, f"{task.task_name}.py")
     
-    async def execute_EVAL_SYSYEM_TEST(self, task: Task, **config):
-        pass
+    async def execute_EVAL_SYSTEM_TEST(self, task: Task):
+        program      = task.evaluator.best_result[0]
+        system_tests = task.problem_data.system_tests
+        self.logger.debug(f'{task.task_name}: System Testing...')
+        passed_asserts = eval_full_code(
+            code        = program,
+            entry_point = task.problem_data.entry_point,
+            asserts     = system_tests
+        )
+        success = (len(passed_asserts) == len(system_tests))
+        if success:
+            self.logger.debug(f"{task.task_name}: System Test passed! Successfully solve the problem!")
+        else:
+            self.logger.debug(f"{task.task_name}: System Test Failed! ")
+            self.logger.debug(f"{task.task_name}: Best attempt passed {len(passed_asserts)} / {len(system_tests)} system tests!")
+        GPTClient.save_one(program, task.save_dir, f"{task.task_name}_{success}.py")
 
     async def execute_FINISH(self, task: Task, **config):
-        pass
+        task.running = False
 
 
     

@@ -83,7 +83,7 @@ class GPTClient:
         # Look up cache and load at most `num_completions` responses.
         responses = []
         prompt = prompt_template.format(**prompt_kwargs)
-        cache_key = (task_name, prompt, completion_kwargs)
+        cache_key = (task_name, prompt, sorted(completion_kwargs.items()))
         if (cache_value := self.cacheManager.load(task_kind, *cache_key)) is not None:
             logger.debug(f'{task_name}: [{task_kind}] cache hit!')
             responses.extend(cache_value)

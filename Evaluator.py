@@ -101,7 +101,7 @@ def sample_functions(func_candidates: list[set[str]],
                      seed: int) -> [int, Iterator[str]]:
 
     # Collect candidates as a 2D-list (func x candidate).
-    func_candidates = [list(candidate) for candidate in func_candidates]
+    func_candidates = [sorted(candidate) for candidate in func_candidates]
     num_candidates = functools.reduce(operator.mul, [len(s) for s in func_candidates], 1)
 
     # Randomly sample functions and compose.
@@ -116,7 +116,8 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
     passed_asserts = []
     for assert_stmt in asserts:
         try:
-            eval_program(code, entry_point, assert_stmt)
+            _, exc = eval_program(code, entry_point, assert_stmt)
+            if exc: continue
         except Exception:
             continue
         passed_asserts.append(assert_stmt)

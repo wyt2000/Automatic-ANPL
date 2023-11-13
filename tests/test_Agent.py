@@ -16,7 +16,7 @@ save_dir = 'anpl_test_Agent'
 def test_ProgramAgent():
     mkdir_override(save_dir)
     sampler = HumanEvalProblemSampler()
-    data = list(sampler.sample([0]))[0]
+    data = list(sampler.sample([163]))[0]
 
     with CacheManager('anpl_test_Agent_cache', clean=False) as cacheManager:
         client = GPTClient(cacheManager)

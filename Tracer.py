@@ -148,7 +148,7 @@ def eval_program(code: str,
                  with_trace: bool = False,
                  func_names: list[str] = None,
                  ) -> list[IOCollector | None, Exception]:
-    io = None
+    io, exc = None, None
 
     # Save resource usage limit
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
@@ -167,7 +167,6 @@ def eval_program(code: str,
                 raise ValueError(f"Couldn't find entry function {entry_name}")
 
             # Exec entry_func with inputs
-            exc = None
             if isinstance(inputs, list):
                 entry_func(*inputs) # For list[args]
             elif isinstance(inputs, str):

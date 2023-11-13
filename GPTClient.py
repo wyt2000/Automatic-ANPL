@@ -82,7 +82,8 @@ class GPTClient:
 
         # Look up cache and load at most `num_completions` responses.
         responses = []
-        cache_key = (task_name, prompt_template, prompt_kwargs, completion_kwargs)
+        prompt = prompt_template.format(**prompt_kwargs)
+        cache_key = (task_name, prompt, completion_kwargs)
         if (cache_value := self.cacheManager.load(task_kind, *cache_key)) is not None:
             logger.debug(f'{task_name}: [{task_kind}] cache hit!')
             responses.extend(cache_value)
@@ -90,7 +91,7 @@ class GPTClient:
         # Build up prompts.
         messages = [
             {"role": "system", "content": prompt_background},
-            {"role": "user", "content": prompt_template.format(**prompt_kwargs)}
+            {"role": "user", "content": prompt}
         ]
 
         # Request for remaining responses, extract the results and verify them.
@@ -204,7 +205,7 @@ class GPTClient:
             prompt_template         = Prompter.function_completion_prompt,
             prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole},
             response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
-            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             verbose                 = False

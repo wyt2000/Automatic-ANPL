@@ -173,8 +173,8 @@ def verify_python(string):
 
 # TODO: support APPS
 # Find the assert which makes the program fail
-def collect_counterexample(asserts: str, program: str, entry_point: str) -> str:
-    for assert_stmt in asserts.splitlines():
+def collect_counterexample(asserts: list[str], program: str, entry_point: str) -> str:
+    for assert_stmt in asserts:
         try:
             _, exc = eval_program(program, entry_point, assert_stmt) 
         except Exception as err:
@@ -185,7 +185,7 @@ def collect_counterexample(asserts: str, program: str, entry_point: str) -> str:
 
 # Check if the program will raise an exception when tested by asserts
 def verify_counterexample(asserts: str, program: str, entry_point: str) -> bool:
-    return collect_counterexample(asserts, program, entry_point) is not None
+    return collect_counterexample(asserts.splitlines(), program, entry_point) is not None
 
 # Add trace before function code
 def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -> str:

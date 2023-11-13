@@ -93,7 +93,6 @@ class GPTClient:
             {"role": "system", "content": prompt_background},
             {"role": "user", "content": prompt}
         ]
-
         # Request for remaining responses, extract the results and verify them.
         async with aiohttp.ClientSession(trust_env=True) as session:
             openai.aiosession.set(session)
@@ -116,7 +115,6 @@ class GPTClient:
 
         # Save raw responses in cache.
         self.cacheManager.save(task_kind, responses, *cache_key)
-        
         # Convert responses to compact format and save them in files.
         responses = response_collector(responses)
         response_saver(responses)
@@ -203,7 +201,7 @@ class GPTClient:
             task_name               = task_name,
             task_kind               = 'function_completion',
             prompt_template         = Prompter.function_completion_prompt,
-            prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole},
+            prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole, 'func_name' : target},
             response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,

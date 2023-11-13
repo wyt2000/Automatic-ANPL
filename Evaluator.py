@@ -8,6 +8,7 @@ from typing import Any, Iterator
 from abc import ABC, abstractmethod 
 import tqdm
 import time
+from copy import deepcopy
 
 from Tracer import eval_program
 
@@ -20,6 +21,10 @@ class Evaluator(ABC):
     def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
         pass
 
+    @abstractmethod
+    def restart(self):
+        pass
+
     @property
     @abstractmethod
     def best_result(self) -> list[str, list[str]]:
@@ -29,11 +34,17 @@ class Evaluator(ABC):
 class MaxPassEvaluator(Evaluator):
 
     def __init__(self):
+        self.final_submit = ['', []]
         self._best_result = ['', []]
 
     def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
         if len(passed_asserts) >= len(self._best_result[1]):
             self._best_result = [program, passed_asserts]
+
+    def restart(self):
+        if len(self._best_result[1]) >= len(self.final_submit[1]):
+            self.final_submit = deepcopy(self._best_result)
+        self._best_result = ['', []]
 
     @property
     def best_result(self) -> list[str, list[str]]:

@@ -256,7 +256,7 @@ class ProgramAgent(Agent):
     async def execute_EVAL_PRETEST(self, task: ProgramTask, max_time: int, max_attempts: int):
         n_to_try, code_generator = sample_functions(task.func_candidates, max_attempts, task.seed)
         self.logger.debug(f'{task.task_name}: Evaluating {n_to_try} programs...')
-        best_result = eval_sampled_functions(
+        best_result = await eval_sampled_functions(
             code_generator = code_generator,
             n_to_try       = n_to_try,
             entry_point    = task.problem_data.entry_point,

@@ -8,8 +8,10 @@ from typing import Any, Iterator
 from abc import ABC, abstractmethod 
 import time
 from copy import deepcopy
+import asyncio
 
 from Tracer import eval_program
+from math import fabs
 
 ###################################################################################
 
@@ -155,24 +157,26 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
     return passed_asserts
 
 # Evaluate all programs in code_generator and update the results in evaluator
-def eval_sampled_functions(code_generator: Iterator[str],
+async def eval_sampled_functions(code_generator: Iterator[str],
                            n_to_try: int,
                            entry_point: str,
                            imports_prefix: str,
                            asserts: list[str],
                            evaluator: Evaluator,
-                           max_time: int):
+                           max_time: float):
 
     start_time = time.time()
     for code in code_generator:
-        if time.time() - start_time > max_time:
-            break
         try:
             code = '\n'.join([imports_prefix, code])
             passed_asserts = eval_full_code(code, entry_point, asserts)
             evaluator.update(code, asserts, passed_asserts)
         finally:
             pass
+        diff = time.time() - start_time
+        if diff > max_time:
+            break
+        await asyncio.sleep(0)
     return evaluator.best_result
 
 

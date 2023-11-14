@@ -36,8 +36,8 @@ if __name__ == '__main__':
     mkdir_no_override(cache_dir)
     sampler = HumanEvalProblemSampler()
     model_name = "gpt-3.5-turbo-0301"
-    #sample_list = sampler.sample_randomly(args.num_problems)
-    sample_list = list(sampler.sample_randomly(args.num_problems))[1:]
+    sample_list = sampler.sample_randomly(args.num_problems)
+    # sample_list = list(sampler.sample_randomly(args.num_problems))[2:]
 
     for data in sample_list:
         save_path = pathlib.Path(save_dir, data.problem_id)

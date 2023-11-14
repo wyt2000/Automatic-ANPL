@@ -200,10 +200,8 @@ class ProgramAgent(Agent):
         task.counterexample = counterexamples[0]
     
     async def execute_DEBUG_FUNCTION(self, task: ProgramTask, num_completions):
-        _, _, func_traces, _ = trace_code(task.program, task.counterexample)
+        _, _, func_traces, _ = trace_code(task.program, task.counterexample, task.problem_data.entry_point)
         if func_traces is None:
-            print(task.program)
-            print(task.counterexample)
             raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
         func_names_sorted, func_codes = get_sorted_funcs(task.program)
         func_candidates = [{func_codes[name]} for name in func_names_sorted]

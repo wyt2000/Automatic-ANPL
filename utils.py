@@ -116,6 +116,10 @@ def extract_code(content: str):
             code.append(line)
     return '\n'.join(code)
 
+# Extract anpl code and add imports from question 
+def extract_anpl(content: str, question: str):
+    return '\n'.join([extract_imports(question), content])
+
 # Filter other functions, but allow decompose
 def extract_func(content: str, target: str, func_names: set[str]):
     return remove_implemented_functions(content, target, func_names - {target})
@@ -141,6 +145,9 @@ def extract_asserts(content: str):
 
 # Check if the code is valid Python code with function `entry_point`.
 def verify_anpl(code: str, entry_point: str) -> bool:
+    _, exc = eval_program(code, entry_point)
+    if exc:
+        return False
     has_entry_point = False
     try:
         root = ast.parse(code)
@@ -176,7 +183,11 @@ def verify_python(string):
 def collect_counterexample(asserts: list[str], program: str, entry_point: str) -> str:
     for assert_stmt in asserts:
         try:
-            _, exc = eval_program(program, entry_point, assert_stmt) 
+            _, exc = eval_program(
+                code       = program,
+                entry_name = entry_point,
+                inputs     = assert_stmt
+            ) 
         except Exception as err:
             exc = err
         if exc is not None:

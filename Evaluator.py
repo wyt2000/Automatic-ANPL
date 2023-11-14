@@ -30,11 +30,17 @@ class Evaluator(ABC):
     def best_result(self) -> list[str, list[str]]:
         pass
 
+    @property
+    @abstractmethod
+    def final_submit(self) -> list[str, list[str]]:
+        pass
+ 
+
 # Trivial policy, just choose the program passed the most test cases.
 class MaxPassEvaluator(Evaluator):
 
     def __init__(self):
-        self.final_submit = ['', []]
+        self._final_submit = ['', []]
         self._best_result = ['', []]
 
     def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
@@ -42,13 +48,17 @@ class MaxPassEvaluator(Evaluator):
             self._best_result = [program, passed_asserts]
 
     def restart(self):
-        if len(self._best_result[1]) >= len(self.final_submit[1]):
-            self.final_submit = deepcopy(self._best_result)
+        if len(self._best_result[1]) >= len(self._final_submit[1]):
+            self._final_submit = deepcopy(self._best_result)
         self._best_result = ['', []]
 
     @property
     def best_result(self) -> list[str, list[str]]:
         return self._best_result
+
+    @property
+    def final_submit(self) -> list[str, list[str]]:
+        return self._final_submit
 
 # Use CodeT score to choose the best program with reasonable tests.
 class CodetEvaluator(Evaluator):
@@ -127,7 +137,11 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
     passed_asserts = []
     for assert_stmt in asserts:
         try:
-            _, exc = eval_program(code, entry_point, assert_stmt)
+            _, exc = eval_program(
+                code       = code,
+                entry_name = entry_point,
+                inputs     = assert_stmt 
+            ) 
             if exc: continue
         except Exception:
             continue
@@ -149,7 +163,8 @@ def eval_sampled_functions(code_generator: Iterator[str],
             if time.time() - start_time > max_time:
                 break
             try:
-                passed_asserts = eval_full_code(imports_prefix + '\n' + code, entry_point, asserts)
+                code = '\n'.join([imports_prefix, code])
+                passed_asserts = eval_full_code(code, entry_point, asserts)
                 evaluator.update(code, asserts, passed_asserts)
             finally:
                 pbar.update(1)

@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -177,7 +177,7 @@ class GPTClient:
             task_kind               = 'translation',
             prompt_template         = Prompter.translation_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'entry_point' : entry_point},
-            response_handlers       = [extract_code],
+            response_handlers       = [extract_code, partial(extract_anpl, question=question)],
             response_verifier       = partial(verify_anpl, entry_point=entry_point),
             response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
             response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl'),

@@ -202,6 +202,8 @@ class ProgramAgent(Agent):
     async def execute_DEBUG_FUNCTION(self, task: ProgramTask, num_completions):
         _, _, func_traces, _ = trace_code(task.program, task.counterexample)
         if func_traces is None:
+            print(task.program)
+            print(task.counterexample)
             raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
         func_names_sorted, func_codes = get_sorted_funcs(task.program)
         func_candidates = [{func_codes[name]} for name in func_names_sorted]
@@ -272,7 +274,7 @@ class ProgramAgent(Agent):
         GPTClient.save_one(task.program, task.save_dir, f"{task.task_name}_program.py")
     
     async def execute_EVAL_SYSTEM_TEST(self, task: ProgramTask):
-        program      = task.evaluator.best_result[0]
+        program      = task.evaluator.final_submit[0]
         system_tests = task.problem_data.system_tests
         self.logger.debug(f'{task.task_name}: System Testing...')
         passed_asserts = eval_full_code(

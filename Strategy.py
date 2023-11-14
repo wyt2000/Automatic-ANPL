@@ -66,6 +66,7 @@ class SelfDebugStrategy(Strategy):
 
         # Do final test and stop the process
         self.finish_actions           = [
+            ProgramAgentAction('RESTART'),
             ProgramAgentAction('EVAL_SYSTEM_TEST'),
             ProgramAgentAction('FINISH')
         ]

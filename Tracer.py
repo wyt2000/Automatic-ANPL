@@ -144,7 +144,7 @@ class IOCollector:
 @timeout_decorator.timeout(1)
 def eval_program(code: str,
                  entry_name: str,
-                 inputs: list[Any] | str,
+                 inputs: list[Any] | str = None,
                  with_trace: bool = False,
                  func_names: list[str] = None,
                  ) -> list[IOCollector | None, Exception]:
@@ -167,7 +167,9 @@ def eval_program(code: str,
                 raise ValueError(f"Couldn't find entry function {entry_name}")
 
             # Exec entry_func with inputs
-            if isinstance(inputs, list):
+            if inputs is None:
+                exec(code) # for anpl syntax check
+            elif isinstance(inputs, list):
                 entry_func(*inputs) # For list[args]
             elif isinstance(inputs, str):
                 exec(inputs, locals() | {entry_func.__name__: entry_func}) # For assert str

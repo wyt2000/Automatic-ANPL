@@ -12,6 +12,9 @@ import random
 import re
 import ast
 from contextlib import contextmanager, redirect_stdout
+import asyncio
+from typing import Callable, Coroutine
+
 from Tracer import eval_program, IOExample
 
 def mkdir_override(dir_path):
@@ -206,4 +209,8 @@ def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -
     function_with_traces += func_code
     return function_with_traces
 
+# Use with semaphone to limit active coroutine numbers
+async def await_with_semaphone(async_func: Callable[[...], Coroutine], semaphone: asyncio.Semaphore, *args):
+    async with semaphone:
+        return await async_func(*args)
 

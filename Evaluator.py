@@ -6,7 +6,6 @@ import random
 import ast
 from typing import Any, Iterator
 from abc import ABC, abstractmethod 
-import tqdm
 import time
 from copy import deepcopy
 
@@ -165,16 +164,15 @@ def eval_sampled_functions(code_generator: Iterator[str],
                            max_time: int):
 
     start_time = time.time()
-    with tqdm.tqdm(total=n_to_try) as pbar:
-        for code in code_generator:
-            if time.time() - start_time > max_time:
-                break
-            try:
-                code = '\n'.join([imports_prefix, code])
-                passed_asserts = eval_full_code(code, entry_point, asserts)
-                evaluator.update(code, asserts, passed_asserts)
-            finally:
-                pbar.update(1)
+    for code in code_generator:
+        if time.time() - start_time > max_time:
+            break
+        try:
+            code = '\n'.join([imports_prefix, code])
+            passed_asserts = eval_full_code(code, entry_point, asserts)
+            evaluator.update(code, asserts, passed_asserts)
+        finally:
+            pass
     return evaluator.best_result
 
 

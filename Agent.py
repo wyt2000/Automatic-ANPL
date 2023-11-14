@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Type
 import logging
 import logging.config
 import traceback
-import tqdm
 
 from Action import Action, ProgramAgentAction
 from Observation import Observation, ProgramAgentObservation
@@ -32,9 +30,12 @@ class Agent(ABC):
 class ProgramTask(Task):
     task_name_prefix: str
     save_dir: str
-    problem_data: ProblemData 
+    problem_data: ProblemData
+    client: GPTClient
+    model_name: str
     evaluator: Evaluator 
     strategy: Strategy
+    seed: int
     restart_times: int              = 0
     task_name: str                  = None
     pretests: list[str]             = None
@@ -50,26 +51,28 @@ class ProgramTask(Task):
 # Program generation agent. 
 class ProgramAgent(Agent):
 
-    def __init__(self,
-                 client: GPTClient,
-                 model_name: str,
-                 evaluator_type: Type[Evaluator],
-                 strategy_type: Type[Strategy],
-                 seed = 42):
-        self.client = client
-        self.model_name = model_name
-        self.evaluator_type = evaluator_type
-        self.strategy_type = strategy_type 
-        self.seed = seed
+    def __init__(self):
         self.logger = logging.getLogger('ProgramAgent')
 
     # Create and submit task in parallel
-    async def dispatch(self, task_name: str, problem_data: ProblemData, save_dir: str, evaluator_config: dict = {}, strategy_config: dict = {}):
+    async def dispatch(self,
+                       task_name: str,
+                       problem_data: ProblemData,
+                       save_dir: str,
+                       client: GPTClient,
+                       model_name: str,
+                       evaluator: Evaluator,
+                       strategy: Strategy,
+                       seed: int = 42):
+
         task = ProgramTask(task_name_prefix = task_name,
                            save_dir         = save_dir,
                            problem_data     = problem_data,
-                           evaluator        = self.evaluator_type(**evaluator_config),
-                           strategy         = self.strategy_type(**strategy_config),
+                           client           = client,
+                           model_name       = model_name,
+                           evaluator        = evaluator,
+                           strategy         = strategy, 
+                           seed             = seed,
                            task_name        = task_name)
         await self.main_loop(task)
 
@@ -103,12 +106,12 @@ class ProgramAgent(Agent):
                 raise ValueError(f'Undefined action type {action_type}!')
 
     async def execute_GEN_PRETEST(self, task: ProgramTask, num_completions: int):
-        pretests = await self.client.request_for_pretests(
+        pretests = await task.client.request_for_pretests(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             save_dir            = task.save_dir,
             completion_kwargs   = {
-                'model'         : self.model_name,
+                'model'         : task.model_name,
                 'temperature'   : 0.6,
             },
             num_completions     = num_completions 
@@ -116,12 +119,12 @@ class ProgramAgent(Agent):
         task.pretests = pretests.splitlines()
     
     async def execute_GEN_SOLUTION(self, task: ProgramTask):
-        solutions = await self.client.request_for_solutions(
+        solutions = await task.client.request_for_solutions(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             save_dir            = task.save_dir,
             completion_kwargs   = {
-                'model'         : self.model_name,
+                'model'         : task.model_name,
                 'temperature'   : 0.6,
                 'logit_bias'    : {755:-100}
             },
@@ -131,14 +134,14 @@ class ProgramAgent(Agent):
         task.solution = solutions[0]
     
     async def execute_GEN_ANPL(self, task: ProgramTask):
-        anpl_codes = await self.client.request_for_anpl_codes(
+        anpl_codes = await task.client.request_for_anpl_codes(
             task_name           = task.task_name,
             save_dir            = task.save_dir,
             entry_point         = task.problem_data.entry_point,
             question            = task.problem_data.question,
             solution            = task.solution,
             completion_kwargs   = {
-                "model"             : self.model_name,
+                "model"             : task.model_name,
                 "temperature"       : 0.2,
                 "presence_penalty"  : 0.1,
             },
@@ -151,30 +154,28 @@ class ProgramAgent(Agent):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
         func_candidates = [set() for name in func_names_sorted]
         self.logger.debug(f'{task.task_name}: Synthesizing {len(func_names_sorted)} functions... ')
-        with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
-            for i, func_name in enumerate(func_names_sorted):
-                generated_funcs = []
-                try:
-                    generated_funcs = await self.client.request_for_function_completions( 
-                        task_name         = f'{task.task_name}_{func_name}',
-                        prefix            = '',
-                        code              = task.anpl_code,
-                        hole              = func_codes[func_name],
-                        target            = func_name,
-                        func_names        = set(func_names_sorted),
-                        completion_kwargs = {
-                            "model"       : self.model_name,
-                            "temperature" : 0.6, 
-                        },
-                        num_completions   = num_completions
-                    )
-                except Exception as err:
-                    self.logger.exception(err)
-                for func in generated_funcs:
-                    if len(func) == 0:
-                        continue
-                    func_candidates[i].add(func) 
-                pbar.update(1)   
+        for i, func_name in enumerate(func_names_sorted):
+            generated_funcs = []
+            try:
+                generated_funcs = await task.client.request_for_function_completions( 
+                    task_name         = f'{task.task_name}_{func_name}',
+                    prefix            = '',
+                    code              = task.anpl_code,
+                    hole              = func_codes[func_name],
+                    target            = func_name,
+                    func_names        = set(func_names_sorted),
+                    completion_kwargs = {
+                        "model"       : task.model_name,
+                        "temperature" : 0.6, 
+                    },
+                    num_completions   = num_completions
+                )
+            except Exception as err:
+                self.logger.exception(err)
+            for func in generated_funcs:
+                if len(func) == 0:
+                    continue
+                func_candidates[i].add(func) 
         self.logger.debug(f'{task.task_name}: Synthesizing done! ')
         task.func_candidates = func_candidates
         task.imports_prefix  = extract_imports(task.anpl_code)
@@ -184,14 +185,14 @@ class ProgramAgent(Agent):
             task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
             GPTClient.save_one(task.counterexample, task.save_dir, f"{task.task_name}.0.counterexample")
             return
-        counterexamples = await self.client.request_for_counterexamples(
+        counterexamples = await task.client.request_for_counterexamples(
             task_name         = task.task_name,
             question          = task.problem_data.question,
             program           = task.program,
             entry_point       = task.problem_data.entry_point,
             save_dir          = task.save_dir,
             completion_kwargs = {
-                "model"       : self.model_name,
+                "model"       : task.model_name,
                 "temperature" : 0.6
             },
             num_completions   = 1
@@ -206,46 +207,44 @@ class ProgramAgent(Agent):
         func_names_sorted, func_codes = get_sorted_funcs(task.program)
         func_candidates = [{func_codes[name]} for name in func_names_sorted]
         self.logger.debug(f'{task.task_name}: Debugging {len(func_names_sorted)} functions... ')
-        with tqdm.tqdm(total=len(func_names_sorted)) as pbar:
-            for i, func_name in enumerate(func_names_sorted):
-                generated_funcs = []
-                try:
-                    generated_funcs = await self.client.request_for_debugged_function( 
-                        task_name         = f'{task.task_name}_{func_name}',
-                        question          = task.problem_data.question,
-                        solution          = task.solution,
-                        program           = task.program,
-                        target            = func_name,
-                        func_names        = set(func_names_sorted),
-                        func_code         = func_codes[func_name],
-                        func_traces       = func_traces[func_name],
-                        save_dir          = task.save_dir,
-                        completion_kwargs = {
-                            "model"       : self.model_name,
-                            "temperature" : 0.6, 
-                        },
-                        num_completions   = num_completions
-                    )
-                except Exception as err:
-                    self.logger.exception(err)
-                for func in generated_funcs:
-                    if len(func) == 0:
-                        continue
-                    func_candidates[i].add(func) 
-                pbar.update(1)   
+        for i, func_name in enumerate(func_names_sorted):
+            generated_funcs = []
+            try:
+                generated_funcs = await task.client.request_for_debugged_function( 
+                    task_name         = f'{task.task_name}_{func_name}',
+                    question          = task.problem_data.question,
+                    solution          = task.solution,
+                    program           = task.program,
+                    target            = func_name,
+                    func_names        = set(func_names_sorted),
+                    func_code         = func_codes[func_name],
+                    func_traces       = func_traces[func_name],
+                    save_dir          = task.save_dir,
+                    completion_kwargs = {
+                        "model"       : task.model_name,
+                        "temperature" : 0.6, 
+                    },
+                    num_completions   = num_completions
+                )
+            except Exception as err:
+                self.logger.exception(err)
+            for func in generated_funcs:
+                if len(func) == 0:
+                    continue
+                func_candidates[i].add(func) 
         self.logger.debug(f'{task.task_name}: Debugging done! ')
         task.func_candidates = func_candidates
         task.imports_prefix  = extract_imports(task.program)
 
     async def execute_DEBUG_SOLUTION(self, task: ProgramTask, **config):
-        solutions = await self.client.request_for_debugged_solution(
+        solutions = await task.client.request_for_debugged_solution(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             old_solution        = task.solution,
             counterexample      = task.counterexample,
             save_dir            = task.save_dir,
             completion_kwargs   = {
-                'model'         : self.model_name,
+                'model'         : task.model_name,
                 'temperature'   : 0.6,
                 'logit_bias'    : {755:-100}
             },
@@ -255,7 +254,7 @@ class ProgramAgent(Agent):
         task.solution = solutions[0]
     
     async def execute_EVAL_PRETEST(self, task: ProgramTask, max_time: int, max_attempts: int):
-        n_to_try, code_generator = sample_functions(task.func_candidates, max_attempts, self.seed)
+        n_to_try, code_generator = sample_functions(task.func_candidates, max_attempts, task.seed)
         self.logger.debug(f'{task.task_name}: Evaluating {n_to_try} programs...')
         best_result = eval_sampled_functions(
             code_generator = code_generator,

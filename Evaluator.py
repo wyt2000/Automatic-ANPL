@@ -69,17 +69,24 @@ class CodetEvaluator(Evaluator):
     def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
         passed_asserts_hash = hash(tuple(passed_asserts))
         self.all_attempts[passed_asserts_hash] = [
-            all_attempts.get(passed_asserts_hash, [0])[0] + len(passed_asserts), # CodeT
+            self.all_attempts.get(passed_asserts_hash, [0])[0] + len(passed_asserts), # CodeT
             len(passed_asserts),
-            code,
+            program,
             passed_asserts
         ]
 
+    def restart(self):
+        pass
+
     @property
-    def best_result(self) -> str:
-        if not all_attempts:
+    def best_result(self) -> list[str, list[str]]:
+        if not self.all_attempts:
             return '' 
-        return max(all_attempts.values())[2:]
+        return max(self.all_attempts.values())[2:]
+
+    @property
+    def final_submit(self) -> list[str, list[str]]:
+        return self.best_result
 
 ###################################################################################
 

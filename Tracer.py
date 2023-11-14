@@ -201,7 +201,7 @@ def get_sorted_funcs(program: str) -> tuple[list[str], dict[str, str]]:
 # Trace all functions in code
 def trace_code(code: str,
                inputs: list[Any] | str,
-               entry_name: str) -> list[list[str], dict[str, str], IOCollector, Exception]:
+               entry_name: str = 'main') -> list[list[str], dict[str, str], IOCollector, Exception]:
     # Get function names and codes
     try:
         func_names_sorted, func_codes = get_sorted_funcs(code)

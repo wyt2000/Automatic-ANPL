@@ -18,7 +18,7 @@ from Strategy import SelfDebugStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler
 from GPTClient import GPTClient
 from CacheManager import CacheManager
-from Evaluator import MaxPassEvaluator 
+from Evaluator import MaxPassEvaluator, CodetEvaluator
 from utils import mkdir_override, mkdir_no_override
 
 logging.config.fileConfig('logging.conf')
@@ -59,6 +59,3 @@ if __name__ == '__main__':
                 )
             )
  
-
-
-

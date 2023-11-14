@@ -136,7 +136,7 @@ class GPTClient:
             prompt_kwargs           = {'question' : question},
             response_handlers       = [extract_code, extract_asserts],
             response_verifier       = lambda assert_str : len(assert_str) > 0,
-            response_collector      = lambda res : '\n'.join(set(stmt for r in res for stmt in r.splitlines())),
+            response_collector      = lambda res : '\n'.join(sorted(set(stmt for r in res for stmt in r.splitlines()))),
             response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.test'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
@@ -206,7 +206,7 @@ class GPTClient:
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            verbose                 = False
+            # verbose                 = False
         )
 
     # Request from chatGPT to get counterexamples of the program.
@@ -254,10 +254,10 @@ class GPTClient:
             prompt_template         = Prompter.function_debug_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : program, 'function_with_traces' : compose_function_with_traces(func_code, func_traces), 'func_name' : target},
             response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
-            response_collector      = lambda res : list(set(filter(verify_python, res))),
+            response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            verbose                 = False
+            #verbose                 = False
         )
 
     # Request from chatGPT to get repaired high-level solution for question and counterexample.

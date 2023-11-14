@@ -28,7 +28,7 @@ logger = logging.getLogger('main')
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-p", "--num_problems", help="Number of problems", type=int, default=1)
-    argparser.add_argument("-j", "--num_workers", help="Number of working coroutines", type=str, default=1)
+    argparser.add_argument("-j", "--num_workers", help="Number of working coroutines", type=int, default=1)
     argparser.add_argument("-s", "--save_dir", help="Path to save the results and logs", type=str, required=True)
     args = argparser.parse_args()
     save_dir = args.save_dir

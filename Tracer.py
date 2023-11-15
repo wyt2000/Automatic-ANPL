@@ -6,7 +6,7 @@ import functools
 import timeout_decorator
 from copy import deepcopy
 from types import FunctionType, ModuleType
-import io
+import io as IO
 from contextlib import redirect_stdout
 import resource
 import code
@@ -85,6 +85,9 @@ class IOCollector:
     def __repr__(self):
         return f"IOCollector({self.func_ios})"
 
+    def __getitem__(self, key):
+        return self.func_ios.get(key, [])
+
     # Wrap function to save I/O in func_ios when execuated
     def set_trace(self, func: FunctionType):
 
@@ -137,168 +140,86 @@ class IOCollector:
             return output
         return wrapper
 
-# Run code while catching time and memory limit exception
+# Run code and save traces of func_names (optional), NOT support kwargs 
 @timeout_decorator.timeout(1)
-def exec_with_limit(func: FunctionType,
-                    inputs: list[Any] | str):
-    with redirect_stdout(io.StringIO()):
-        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-        resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
-        sys.setrecursionlimit(100)
-        try:
-            if isinstance(inputs, list):
-                func(*inputs) # For list[args]
+def eval_program(code: str,
+                 entry_name: str,
+                 inputs: list[Any] | str = None,
+                 with_trace: bool = False,
+                 func_names: list[str] = None,
+                 ) -> list[IOCollector | None, Exception]:
+    io, exc = None, None
+
+    # Save resource usage limit
+    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+    recursion_limit = sys.getrecursionlimit()
+    try:
+        with redirect_stdout(IO.StringIO()):
+            # Limit resource usage
+            resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
+            sys.setrecursionlimit(100)
+
+            # Load module from code and find entry function
+            module = import_module_from_string(code)
+            if with_trace: io = IOCollector(code, func_names, module)
+            entry_func = getattr(module, entry_name, None)
+            if not (entry_func and isinstance(entry_func, FunctionType)):
+                raise ValueError(f"Couldn't find entry function {entry_name}")
+
+            # Exec entry_func with inputs
+            if inputs is None:
+                exec(code) # for anpl syntax check
+            elif isinstance(inputs, list):
+                entry_func(*inputs) # For list[args]
             elif isinstance(inputs, str):
-                exec(inputs, locals() | {func.__name__: func}) # For assert str
+                exec(inputs, locals() | {entry_func.__name__: entry_func}) # For assert str
             else:
                 raise TypeError("Inputs should be either list or assert str!")
-        finally:
-            resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
 
-# Run code and save traces of func_names, NOT support kwargs 
-def exec_with_trace(code: str,
-                    func_names: list[str],
-                    inputs: list[Any],
-                    entry_name: str = 'main') -> list[IOCollector, Exception]:
-    # Load module from code and find entry function
-    module = import_module_from_string(code)
-    io = IOCollector(code, func_names, module)
-    entry_func = getattr(module, entry_name, None)
-    if not (entry_func and isinstance(entry_func, FunctionType)):
-        raise ValueError(f"Couldn't find entry function {entry_name}")
-    exc = None
-    try:
-        exec_with_limit(entry_func, inputs)
+    # Collect Exceptions and Recover the resource limits
     except AssertionError as err:
         exc = AssertionError(inputs) # Save assert str in Exception
     except Exception as err:
         exc = err 
+    finally:
+        sys.setrecursionlimit(recursion_limit)
+        resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
     return io, exc 
 
-# Trace all functions in code
-def trace_code(code: str,
-               inputs: list[Any] | str,
-               entry_name: str = 'main') -> list[dict[str, str], IOCollector, Exception]:
-    # Parse code to ast.Node
-    try:
-        root = ast.parse(code)
-    except Exception as e:
-        te = traceback.TracebackException.from_exception(e)
-        lineno = te.stack[0].lineno
-        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
-
-    # Get function names and codes
+# Get function names and codes in definition order of the program.
+def get_sorted_funcs(program: str) -> tuple[list[str], dict[str, str]]:
     func_names_sorted = []
     func_codes = {} 
+    root = ast.parse(program)
     for node in root.body:
         if isinstance(node, ast.FunctionDef):
             func: ast.FunctionDef = node
             func_names_sorted.append(func.name)
             func_codes[func.name] = ast.unparse(func)
+    return func_names_sorted, func_codes
+
+# Trace all functions in code
+def trace_code(code: str,
+               inputs: list[Any] | str,
+               entry_name: str = 'main') -> list[list[str], dict[str, str], IOCollector, Exception]:
+    # Get function names and codes
+    try:
+        func_names_sorted, func_codes = get_sorted_funcs(code)
+    except Exception as e:
+        te = traceback.TracebackException.from_exception(e)
+        lineno = te.stack[0].lineno
+        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
 
     try:
-        ios, exc = exec_with_trace(code, list(func_codes.keys()), inputs, entry_name)
+        ios, exc = eval_program(
+            code        = code,
+            entry_name  = entry_name,
+            inputs      = inputs,
+            with_trace  = True,
+            func_names  = list(func_codes.keys())
+        )
         return func_names_sorted, func_codes, ios, exc
     except Exception as exc:
         return func_names_sorted, func_codes, None, exc
 
-if __name__ == '__main__':
-    print("# TEST 0: Compile Error")
-    code = '''
-def main(input_str: str):
-    +- 
-    inputs = parse_input(input_str)
-    return add_list(inputs)
-    '''
-    _, _, ios, exc = trace_code(code, ["1 2 3 4 5"])
-    print(ios, exc)
-    print("# TEST 1: function I/O trace")
-    code = '''
-def add(x: int, i: int):
-    return x + i
-def add_list(inputs: list[int]):
-    for i in range(len(inputs)):
-        inputs[i] = add(inputs[i], i)
-    return inputs
-def parse_input(input_str: str):
-    input_list = list(map(int, input_str.split()))
-    return input_list
-def main(input_str: str):
-    inputs = parse_input(input_str)
-    return add_list(inputs)
-    '''
-    func_names_sorted, func_codes, ios, exc = trace_code(code, ["1 2 3 4 5"])
-    print(func_names_sorted)
-    print(func_codes)
-    print(ios, exc)
-    
-    print("# TEST 2: Runtime Error")
-    code = '''
-def g(inputs: str):
-    return inputs[100]
-def f(inputs: str):
-    return g(inputs) 
-def parse_input(input_str: str):
-    return input_str
-def main(input_str: str):
-    inputs = parse_input(input_str)
-    return f(inputs)
-    '''
-    _, _, ios, exc = trace_code(code, ["123"])
-    print(ios, exc)
-
-    print("# TEST 3: Time limit exceeded")
-    code = '''
-from time import sleep
-def g(inputs: str):
-    sleep(5)
-    return -1
-def f(inputs: str):
-    return g(inputs) 
-def parse_input(input_str: str):
-    return input_str
-def main(input_str: str):
-    inputs = parse_input(input_str)
-    return f(inputs)
-    '''
-    _, _, ios, exc = trace_code(code, ["123"])
-    print(ios, exc)
-
-    print("# TEST 4: Memory limit exceeded")
-    code = '''
-def g(inputs: str):
-    a = [0] * 1000000000
-    return -1
-def f(inputs: str):
-    return g(inputs) 
-def parse_input(input_str: str):
-    return input_str
-def main(input_str: str):
-    inputs = parse_input(input_str)
-    return f(inputs)
-    '''
-    _, _, ios, exc = trace_code(code, ["123"])
-    print(ios, exc)
-
-    print("# TEST 5: Assert str")
-    code = '''
-from typing import List
-def f(arr: List[int]):
-    return sum(arr)
-def main(arr: List[int]):
-    return f(arr) 
-    '''
-    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 10, \"Wrong!\" ")
-    print(ios, exc)
-
-    print("# TEST 6: Fix args Error")
-    code = '''
-from typing import List
-def f(x: int):
-    return sum(arr)
-def main(arr: List[int]):
-    return f(1, 2) + 2
-    '''
-    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 0, \"Wrong!\" ")
-    print(ios, exc)
 

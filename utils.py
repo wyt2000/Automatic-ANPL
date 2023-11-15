@@ -10,7 +10,12 @@ import functools
 import operator
 import random
 import re
-from contextlib import contextmanager
+import ast
+from contextlib import contextmanager, redirect_stdout
+import asyncio
+from typing import Callable, Coroutine
+
+from Tracer import eval_program, IOExample
 
 def mkdir_override(dir_path):
     '''
@@ -69,50 +74,8 @@ def redirect_loggers(log_path: str):
         file_handler.close()
         root_logger.handlers = root_handlers
 
-class Cache:
-    '''
-    Save the responses from GPT.
-    '''
-    def __init__(self, file_path='cache.json', clean=False):
-        self.file_path = file_path
-        if clean or not os.path.exists(file_path):
-            self.data = {}
-            return
-        with open(file_path, 'r') as f:
-            self.data = json.loads(f.read())
-
-    def get_key(self, *args):
-        return str(tuple(args))
-
-    def save(self, responses, *args):
-        self.data[self.get_key(*args)] = responses
-
-    def load(self, *args):
-        return self.data.get(self.get_key(*args))
-
-    def dump(self):
-        with open(self.file_path, 'w') as f:
-            f.write(json.dumps(self.data))
-
-def product_to_tensor_idx(prod, dims, idx):
-    ans = []
-    for dim in dims:
-        prod //= dim
-        ans.append(idx // prod)
-        idx %= prod
-    return ans
-
-def sample_product(arrs, n, k):
-    indices = random.sample(range(n), k)
-    dims = [len(arr) for arr in arrs]
-    prod = functools.reduce(operator.mul, dims, 1)
-    return [
-        product_to_tensor_idx(prod, dims, idx)
-        for idx in indices
-    ]
-
 # Remove all implemented functions including nested functions
-func_pattern = re.compile("\s*def\s+(.+)\(.*\).*\:")
+func_pattern = re.compile(r"\s*def\s+(.+)\(.*\).*\:")
 def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
     # When meet the line "def {implemented_functions}", omit lines until the line whose indent count <= its
     has_target = False
@@ -133,10 +96,121 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
                 omit_indent = indent
                 continue
         code.append(line)
-    return '\n'.join(code) if has_target else ''
+    return '\n'.join(code) if has_target else None
 
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
     return '\n'.join([line for line in code.splitlines() if line.startswith('import ') or line.startswith('from ')])
-    
+
+# Extract vaild Python code or ANPL code
+def extract_code(content: str):
+    if not '`' in content:
+        return content
+    code = []
+    is_target = False
+    for line in content.splitlines():
+        if '`' in line:
+            if is_target:
+                break
+            else:
+                is_target = True
+                continue
+        if is_target:
+            code.append(line)
+    return '\n'.join(code)
+
+# Extract anpl code and add imports from question 
+def extract_anpl(content: str, question: str):
+    return '\n'.join([extract_imports(question), content])
+
+# Filter other functions, but allow decompose
+def extract_func(content: str, target: str, func_names: set[str]):
+    return remove_implemented_functions(content, target, func_names - {target})
+
+class AssertVisitor(ast.NodeVisitor):
+    def __init__(self):
+        self.asserts = set()
+
+    def visit_Assert(self, node):
+        self.asserts.add(ast.unparse(node))
+
+# Extract assert statements
+def extract_asserts(content: str):
+    asserts = set()
+    try:
+        root = ast.parse(content)
+        visitor = AssertVisitor()
+        visitor.visit(root)
+        asserts = visitor.asserts
+    except Exception:
+        pass
+    return '\n'.join(asserts)
+
+# Check if the code is valid Python code with function `entry_point`.
+def verify_anpl(code: str, entry_point: str) -> bool:
+    _, exc = eval_program(code, entry_point)
+    if exc:
+        return False
+    has_entry_point = False
+    try:
+        root = ast.parse(code)
+        for node in root.body:
+            if isinstance(node, ast.FunctionDef):
+                if ast.get_docstring(node) is None:
+                    return False
+                has_entry_point |= (node.name == entry_point)
+    except Exception:
+        return False
+    return has_entry_point
+
+# Remove implementations of non-entry functions.
+def collect_anpl(code: str, entry_point: str) -> str:
+    root = ast.parse(code)
+    for node in root.body:
+        if isinstance(node, ast.FunctionDef) and node.name != entry_point:
+            docstring = ast.get_docstring(node)
+            node.body = [ast.Expr(ast.Str(docstring))]
+    return ast.unparse(root)
+
+# Verify python syntax, faster than `ast.parse`.
+def verify_python(string):
+    if string is None: return False
+    try:
+        compile(string, '<string>', 'exec')
+        return True
+    except SyntaxError:
+        return False
+
+# TODO: support APPS
+# Find the assert which makes the program fail
+def collect_counterexample(asserts: list[str], program: str, entry_point: str) -> str:
+    for assert_stmt in asserts:
+        try:
+            _, exc = eval_program(
+                code       = program,
+                entry_name = entry_point,
+                inputs     = assert_stmt
+            ) 
+        except Exception as err:
+            exc = err
+        if exc is not None:
+            return assert_stmt 
+    return None
+
+# Check if the program will raise an exception when tested by asserts
+def verify_counterexample(asserts: str, program: str, entry_point: str) -> bool:
+    return collect_counterexample(asserts.splitlines(), program, entry_point) is not None
+
+# Add trace before function code
+def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -> str:
+    function_with_traces = "# Trace: \n"
+    for trace in func_traces:
+        function_with_traces += f"# {repr(trace)}\n"
+    function_with_traces += func_code
+    return function_with_traces
+
+# Use with semaphone to limit active coroutine numbers
+async def await_with_semaphone(async_func: Callable[[...], Coroutine], semaphone: asyncio.Semaphore, *args):
+    async with semaphone:
+        return await async_func(*args)
 

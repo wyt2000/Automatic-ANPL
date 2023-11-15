@@ -10,7 +10,8 @@
 !logging.conf
 __pycache__
 key.txt
-test_*
 *apps*
 *humaneval*
 !humaneval_judger
+.pytest_cache
+anpl_test*

@@ -1,5 +1,6 @@
 import random
 from .ProblemSampler import ProblemData, ProblemSampler
+from utils import extract_asserts
 
 # for humaneval 
 from human_eval.data import read_problems
@@ -7,21 +8,31 @@ from human_eval.data import read_problems
 class HumanEvalProblemData(ProblemData):
 
     def __init__(self, sample):
-        self.task_id = sample['task_id'].replace('/', '_')
-        self.test = []
+        self._problem_id = sample['task_id'].replace('/', '_')
+        self._tests = []
         if 'test' in sample:
-            self.test = [line.strip().replace('candidate', sample['entry_point']) for line in sample['test'].splitlines() if line.strip().startswith('assert')]
+            asserts = extract_asserts(sample['test'])
+            self._tests = [line.strip().replace('candidate', sample['entry_point']) for line in asserts.splitlines()]
         super().__init__(sample)
 
-    def __getattr__(self, name):
-        if name == 'task_id':
-            return self.task_id
-        if name == 'test':
-            return self.test
-        return super().__getattr__(name)
-    
+    @property
+    def problem_id(self):
+        return self._problem_id
+
+    @property
+    def system_tests(self):
+        return self._tests
+
+    @property
+    def question(self):
+        return self.sample['prompt']
+
+    @property
+    def entry_point(self):
+        return self.sample['entry_point']
+
     def __repr__(self):
-        return f'{self.__class__.__name__}(task_id={self.task_id}, entry_point={self.entry_point})'
+        return f'{self.__class__.__name__}(problem_id={self.problem_id}, entry_point={self.entry_point})'
 
 class HumanEvalProblemSampler(ProblemSampler):
 
@@ -41,12 +52,4 @@ class HumanEvalProblemSampler(ProblemSampler):
     def sample_randomly(self, num_problems, seed=42):
         random.seed(seed)
         yield from self.sample(random.sample(self.valid_ids, num_problems))
-
-if __name__ == '__main__':
-    sampler = HumanEvalProblemSampler()
-    dataset = sampler.sample_randomly(10)
-    for data in dataset:
-        print(data)
-        for t in data.test:
-            print(t)
 

@@ -4,6 +4,9 @@ faulthandler.enable()
 import os
 os.environ['OPENBLAS_NUM_THREADS'] = '1' 
 
+import sys
+sys.setrecursionlimit(10000)
+
 from GPTClient import GPTClient
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from Prompter.Prompter import AbstractPrompter

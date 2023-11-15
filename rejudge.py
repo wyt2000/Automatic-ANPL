@@ -27,15 +27,17 @@ if __name__ == '__main__':
     samples = []
     for problem_path in problem_dirs:
         task_id = int(str(problem_path).split('_')[-1])
-        program_files = [f"HumanEval_{task_id}_accepted.py", f"HumanEval_{task_id}_failed.py"]
-        for program_file in program_files:
-            path = pathlib.Path(problem_path, program_file)
-            if os.path.exists(path):
-                with open(path, 'r') as f:
-                    program = program_prefix + f.read()
-                task_id = f"HumanEval/{task_id}"
-                samples.append(dict(task_id=task_id, completion=program))
-                problems.append(all_problems[task_id])
+        cnt = 0
+        for program_file in pathlib.Path(problem_path).glob("*"):
+            if "final_submit" not in str(program_file): continue
+            cnt += 1
+            with open(program_file, 'r') as f:
+                program = program_prefix + f.read()
+            task_id = f"HumanEval/{task_id}"
+            samples.append(dict(task_id=task_id, completion=program))
+            problems.append(all_problems[task_id])
+        if not cnt:
+            print(task_id)
     write_jsonl(args.output_path, samples)
     problems_path = args.output_path + ".problems"
     write_jsonl(problems_path, problems)

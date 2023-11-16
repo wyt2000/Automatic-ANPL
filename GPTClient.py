@@ -87,6 +87,8 @@ class GPTClient:
         if (cache_value := self.cacheManager.load(task_kind, *cache_key)) is not None:
             logger.debug(f'{task_name}: [{task_kind}] cache hit!')
             responses.extend(cache_value)
+        else:
+            print("cache miss!")
 
         # Build up prompts.
         messages = [
@@ -206,7 +208,6 @@ class GPTClient:
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            # verbose                 = False
         )
 
     # Request from chatGPT to get counterexamples of the program.
@@ -257,7 +258,6 @@ class GPTClient:
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            #verbose                 = False
         )
 
     # Request from chatGPT to get repaired high-level solution for question and counterexample.

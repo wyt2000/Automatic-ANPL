@@ -215,16 +215,16 @@ async def await_with_semaphone(async_func: Callable[[...], Coroutine], semaphone
     async with semaphone:
         return await async_func(*args)
 
-# ContextManager to record real time of the execution of a coroutine
+# ContextManager to record real time(ns) of the execution of a coroutine
 class AsyncTimer:
 
-    def __init__(self, start_time: float):
+    def __init__(self, start_time: int):
         self.start_time = start_time
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args):
-        self.time = time.time() - self.start_time
+        self.time = time.time_ns() - self.start_time
 
 

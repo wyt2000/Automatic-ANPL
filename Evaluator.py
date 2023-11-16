@@ -156,7 +156,7 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
         passed_asserts.append(assert_stmt)
     return passed_asserts
 
-time_slice = 5 
+time_slice = 10 ** 9 
 # Evaluate all programs in code_generator and update the results in evaluator
 async def eval_sampled_functions(code_generator: Iterator[str],
                            n_to_try: int,
@@ -165,22 +165,23 @@ async def eval_sampled_functions(code_generator: Iterator[str],
                            asserts: list[str],
                            evaluator: Evaluator,
                            max_time: float):
-
+    
+    max_time = int(max_time) * (10 ** 9)
     total_time = 0
     last_await_time = 0
     for code in code_generator:
         try:
-            with AsyncTimer(time.time()) as timer:
+            with AsyncTimer(time.time_ns()) as timer:
                 code = '\n'.join([imports_prefix, code])
                 passed_asserts = eval_full_code(code, entry_point, asserts)
                 evaluator.update(code, asserts, passed_asserts)
             total_time += timer.time
-            if total_time > max_time:
+            if total_time >= max_time:
                 break
-            if total_time - last_await_time - time_slice >= 1e-6: 
+            if total_time - last_await_time >= time_slice: 
                 last_await_time = total_time
                 await asyncio.sleep(0)
-        finally:
+        except Exception as err:
             pass
     return evaluator.best_result
 

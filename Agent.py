@@ -13,6 +13,7 @@ from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_
 from ProblemSampler.ProblemSampler import ProblemSampler, ProblemData
 from Tracer import get_sorted_funcs, trace_code
 from utils import extract_imports, collect_counterexample
+from Config import CONFIG 
 
 # External state of task, specfied by Agent. 
 class Task(ABC):
@@ -63,7 +64,7 @@ class ProgramAgent(Agent):
                        model_name: str,
                        evaluator: Evaluator,
                        strategy: Strategy,
-                       seed: int = 42):
+                       seed: int = CONFIG.seed):
 
         task = ProgramTask(task_name_prefix = task_name,
                            save_dir         = save_dir,
@@ -112,7 +113,7 @@ class ProgramAgent(Agent):
             save_dir            = task.save_dir,
             completion_kwargs   = {
                 'model'         : task.model_name,
-                'temperature'   : 0.6,
+                **CONFIG.gen_pretest
             },
             num_completions     = num_completions 
         )
@@ -125,8 +126,7 @@ class ProgramAgent(Agent):
             save_dir            = task.save_dir,
             completion_kwargs   = {
                 'model'         : task.model_name,
-                'temperature'   : 0.6,
-                'logit_bias'    : {755:-100}
+                **CONFIG.gen_solution
             },
             num_completions     = 1
         )
@@ -141,9 +141,8 @@ class ProgramAgent(Agent):
             question            = task.problem_data.question,
             solution            = task.solution,
             completion_kwargs   = {
-                "model"             : task.model_name,
-                "temperature"       : 0.2,
-                "presence_penalty"  : 0.1,
+                "model"         : task.model_name,
+                **CONFIG.gen_anpl
             },
             num_completions     = 1
         )
@@ -166,7 +165,7 @@ class ProgramAgent(Agent):
                     func_names        = set(func_names_sorted),
                     completion_kwargs = {
                         "model"       : task.model_name,
-                        "temperature" : 0.6, 
+                        **CONFIG.gen_function
                     },
                     num_completions   = num_completions
                 )
@@ -193,7 +192,7 @@ class ProgramAgent(Agent):
             save_dir          = task.save_dir,
             completion_kwargs = {
                 "model"       : task.model_name,
-                "temperature" : 0.6
+                **CONFIG.gen_counterexample
             },
             num_completions   = 1
         )
@@ -222,7 +221,7 @@ class ProgramAgent(Agent):
                     save_dir          = task.save_dir,
                     completion_kwargs = {
                         "model"       : task.model_name,
-                        "temperature" : 0.6, 
+                        **CONFIG.debug_function
                     },
                     num_completions   = num_completions
                 )
@@ -245,8 +244,7 @@ class ProgramAgent(Agent):
             save_dir            = task.save_dir,
             completion_kwargs   = {
                 'model'         : task.model_name,
-                'temperature'   : 0.6,
-                'logit_bias'    : {755:-100}
+                **CONFIG.debug_solution
             },
             num_completions     = 1
         )

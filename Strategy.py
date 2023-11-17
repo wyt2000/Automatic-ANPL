@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from Observation import Observation, ProgramAgentObservation
 from Action import Action, ProgramAgentAction
+from Config import CONFIG
 
 # Internal State of the agent, specified by Strategy.
 class State(ABC):
@@ -33,15 +34,15 @@ class SelfDebugStrategy(Strategy):
         program_debug_times  : int = 0
 
     def __init__(self,
-                 max_restart_times: int = 3,
-                 max_solution_debug_times: int = 0,
-                 max_program_debug_times: int = 2,
-                 num_generated_funcs: int = 16,
-                 num_debugged_funcs: int = 8,
-                 num_pretests: int = 100,
-                 eval_max_attempts: int = 100000,
-                 eval_max_time: float = 240,
-                 use_pretests_debug: bool = True):
+                 max_restart_times        : int     = CONFIG.max_restart_times,
+                 max_solution_debug_times : int     = CONFIG.max_solution_debug_times,
+                 max_program_debug_times  : int     = CONFIG.max_program_debug_times,
+                 num_generated_funcs      : int     = CONFIG.num_generated_funcs,
+                 num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
+                 num_pretests             : int     = CONFIG.num_pretests,
+                 eval_max_attempts        : int     = CONFIG.eval_max_attempts,
+                 eval_max_time            : float   = CONFIG.eval_max_time,
+                 use_pretests_debug       : bool    = CONFIG.use_pretests_debug):
 
         self.max_restart_times        = max_restart_times
         self.max_solution_debug_times = max_solution_debug_times

@@ -206,7 +206,6 @@ class GPTClient:
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            # verbose                 = False
         )
 
     # Request from chatGPT to get counterexamples of the program.
@@ -257,7 +256,6 @@ class GPTClient:
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
-            #verbose                 = False
         )
 
     # Request from chatGPT to get repaired high-level solution for question and counterexample.

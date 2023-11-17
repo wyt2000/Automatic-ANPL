@@ -11,8 +11,7 @@ class HumanEvalProblemData(ProblemData):
         self._problem_id = sample['task_id'].replace('/', '_')
         self._tests = []
         if 'test' in sample:
-            asserts = extract_asserts(sample['test'])
-            self._tests = [line.strip().replace('candidate', sample['entry_point']) for line in asserts.splitlines()]
+            self._tests = ['\n'.join([sample['test'], f"check({sample['entry_point']})"])]
         super().__init__(sample)
 
     @property

@@ -14,6 +14,7 @@ import ast
 from contextlib import contextmanager, redirect_stdout
 import asyncio
 from typing import Callable, Coroutine
+import time
 
 from Tracer import eval_program, IOExample
 
@@ -213,4 +214,17 @@ def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -
 async def await_with_semaphone(async_func: Callable[[...], Coroutine], semaphone: asyncio.Semaphore, *args):
     async with semaphone:
         return await async_func(*args)
+
+# ContextManager to record real time(ns) of the execution of a coroutine
+class AsyncTimer:
+
+    def __init__(self, start_time: int):
+        self.start_time = start_time
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.time = time.time_ns() - self.start_time
+
 

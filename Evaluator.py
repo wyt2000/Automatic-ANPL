@@ -11,7 +11,7 @@ from copy import deepcopy
 import asyncio
 
 from Tracer import eval_program
-from math import fabs
+from utils import AsyncTimer
 
 ###################################################################################
 
@@ -164,19 +164,21 @@ async def eval_sampled_functions(code_generator: Iterator[str],
                            asserts: list[str],
                            evaluator: Evaluator,
                            max_time: float):
-
-    start_time = time.time()
+    
+    max_time = int(max_time) * (10 ** 9)
+    total_time = 0
     for code in code_generator:
         try:
-            code = '\n'.join([imports_prefix, code])
-            passed_asserts = eval_full_code(code, entry_point, asserts)
-            evaluator.update(code, asserts, passed_asserts)
-        finally:
+            with AsyncTimer(time.time_ns()) as timer:
+                code = '\n'.join([imports_prefix, code])
+                passed_asserts = eval_full_code(code, entry_point, asserts)
+                evaluator.update(code, asserts, passed_asserts)
+            total_time += timer.time
+            if total_time >= max_time:
+                break
+            await asyncio.sleep(0)
+        except Exception as err:
             pass
-        diff = time.time() - start_time
-        if diff > max_time:
-            break
-        await asyncio.sleep(0)
     return evaluator.best_result
 
 

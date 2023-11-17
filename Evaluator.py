@@ -168,7 +168,6 @@ async def eval_sampled_functions(code_generator: Iterator[str],
     
     max_time = int(max_time) * (10 ** 9)
     total_time = 0
-    last_await_time = 0
     for code in code_generator:
         try:
             with AsyncTimer(time.time_ns()) as timer:
@@ -178,9 +177,7 @@ async def eval_sampled_functions(code_generator: Iterator[str],
             total_time += timer.time
             if total_time >= max_time:
                 break
-            if total_time - last_await_time >= time_slice: 
-                last_await_time = total_time
-                await asyncio.sleep(0)
+            await asyncio.sleep(0)
         except Exception as err:
             pass
     return evaluator.best_result

@@ -156,7 +156,6 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
         passed_asserts.append(assert_stmt)
     return passed_asserts
 
-time_slice = 10 ** 9 
 # Evaluate all programs in code_generator and update the results in evaluator
 async def eval_sampled_functions(code_generator: Iterator[str],
                            n_to_try: int,

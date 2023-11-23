@@ -1,29 +1,32 @@
 class CONFIG:
 
     # Agent
-    gen_pretest  = {
+    gen_pretest             = {
         'temperature'       : 0.6,
     }
-    gen_solution = {
+    gen_solution            = {
         'temperature'       : 0.6,
         'logit_bias'        : {755:-100},
     }
-    gen_anpl     = {
+    gen_anpl                = {
         'temperature'       : 0.2,
         'presence_penalty'  : 0.1,
     }
-    gen_function = {
+    gen_anpl_with_asserts   = {
         'temperature'       : 0.6,
     }
-    gen_counterexample = {
+    gen_function            = {
         'temperature'       : 0.6,
     }
-    debug_function = {
+    gen_counterexample      = {
+        'temperature'       : 0.6,
+    }
+    debug_function          = {
         'temperature'       : 0.6, 
     } 
-    debug_solution = {
-        'temperature'   : 0.6,
-        'logit_bias'    : {755:-100}
+    debug_solution          = {
+        'temperature'       : 0.6,
+        'logit_bias'        : {755:-100}
     } 
 
     # Strategy

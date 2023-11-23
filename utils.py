@@ -134,7 +134,7 @@ def remove_toplevel_asserts(content: str):
         root = ast.parse(content)
         root.body = [node for node in root.body if not isinstance(node, ast.Assert)]
         content = ast.unparse(root)
-    except Exception
+    except Exception:
         pass
     return content
 
@@ -182,6 +182,16 @@ def collect_anpl(code: str, entry_point: str) -> str:
             docstring = ast.get_docstring(node)
             node.body = [ast.Expr(ast.Str(docstring))]
     return ast.unparse(root)
+
+# Merge entry function with asserts to anpl code.
+def collect_anpl_with_asserts(entry_func: str, anpl_code: str, entry_point: str) -> str:
+    try:
+        root = ast.parse(anpl_code)
+        root.body = [node for node in root.body if not (isinstance(node, ast.FunctionDef) and node.name == entry_point)]
+        anpl_code = '\n'.join([ast.unparse(root), entry_func])
+    except Exception:
+        pass
+    return anpl_code 
 
 # Verify python syntax, faster than `ast.parse`.
 def verify_python(string):

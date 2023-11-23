@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_toplevel_asserts
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_toplevel_asserts, collect_anpl_with_asserts
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -302,7 +302,8 @@ class GPTClient:
                 remove_toplevel_asserts
             ],
             response_verifier       = verify_python,
-            response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
+            response_collector      = lambda res : list(map(partial(collect_anpl_with_asserts, anpl_code=anpl_code, entry_point=entry_point), res)),
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl_with_asserts'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times

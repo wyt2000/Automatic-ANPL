@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_toplevel_asserts, collect_anpl_with_asserts
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -202,7 +202,11 @@ class GPTClient:
             task_kind               = 'function_completion',
             prompt_template         = Prompter.function_completion_prompt,
             prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole, 'func_name' : target},
-            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=target, func_names=func_names),
+                partial(remove_asserts, func_name=target)
+            ],
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
@@ -252,7 +256,11 @@ class GPTClient:
             task_kind               = 'function_debug',
             prompt_template         = Prompter.function_debug_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : program, 'function_with_traces' : compose_function_with_traces(func_code, func_traces), 'func_name' : target},
-            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=target, func_names=func_names),
+                partial(remove_asserts, func_name=target)
+            ],
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
@@ -299,7 +307,7 @@ class GPTClient:
             response_handlers       = [
                 extract_code,
                 partial(extract_func, target=entry_point, func_names=func_names),
-                remove_toplevel_asserts
+                partial(remove_asserts, func_name=entry_point)
             ],
             response_verifier       = verify_python,
             response_collector      = lambda res : list(map(partial(collect_anpl_with_asserts, anpl_code=anpl_code, entry_point=entry_point), res)),

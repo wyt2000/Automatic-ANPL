@@ -165,6 +165,8 @@ class ProgramAgent(Agent):
             },
             num_completions     = 1
         )
+        if anpl_with_assertions:
+            task.anpl_code = anpl_with_assertions[0]
 
     async def execute_GEN_FUNCTION(self, task: ProgramTask, num_completions: int):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)

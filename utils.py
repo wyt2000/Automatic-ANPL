@@ -15,6 +15,7 @@ from contextlib import contextmanager, redirect_stdout
 import asyncio
 from typing import Callable, Coroutine
 import time
+import traceback
 
 from Tracer import eval_program, IOExample
 
@@ -128,16 +129,40 @@ def extract_anpl(content: str, question: str):
 def extract_func(content: str, target: str, func_names: set[str]):
     return remove_implemented_functions(content, target, func_names - {target})
 
-# Remove the asserts outside of all functions
-def remove_toplevel_asserts(content: str):
+#############################################################################
+# Remove the asserts outside of all functions and the recursive call in asserts 
+class AssertNameVisitor(ast.NodeVisitor):
+    def __init__(self, target: str):
+        self.target = target
+        self.has_target = False
+    def visit_Name(self, node: ast.Name):
+        self.generic_visit(node)
+        if node.id == self.target:
+            self.has_target = True
+
+class AssertRemover(ast.NodeTransformer):
+    def __init__(self, target: str):
+        self.target = target
+    def visit_Assert(self, node):
+        visitor = AssertNameVisitor(self.target)
+        visitor.visit(node)
+        if visitor.has_target:
+            return None
+        return node
+
+def remove_asserts(content: str, func_name: str):
     try:
         root = ast.parse(content)
         root.body = [node for node in root.body if not isinstance(node, ast.Assert)]
+        AssertRemover(func_name).visit(root)
         content = ast.unparse(root)
     except Exception:
+        traceback.print_exc()
         pass
     return content
 
+#############################################################################
+# Extract assert statements
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):
         self.asserts = set()
@@ -145,7 +170,6 @@ class AssertVisitor(ast.NodeVisitor):
     def visit_Assert(self, node):
         self.asserts.add(ast.unparse(node))
 
-# Extract assert statements
 def extract_asserts(content: str):
     asserts = set()
     try:
@@ -156,6 +180,8 @@ def extract_asserts(content: str):
     except Exception:
         pass
     return '\n'.join(asserts)
+
+#############################################################################
 
 # Check if the code is valid Python code with function `entry_point`.
 def verify_anpl(code: str, entry_point: str) -> bool:

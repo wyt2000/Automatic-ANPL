@@ -141,13 +141,17 @@ class ProgramAgent(Agent):
             question            = task.problem_data.question,
             solution            = task.solution,
             completion_kwargs   = {
-                "model"         : task.model_name,
+                'model'         : task.model_name,
                 **CONFIG.gen_anpl
             },
             num_completions     = 1
         )
         if not anpl_codes: raise ValueError(f'{task.task_name}: Couldn\'t generate anpl codes!')
         task.anpl_code = anpl_codes[0]
+        func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
+        anpl_with_assertions = await task.client.request_for_assertions(
+            task_name           = task.task_name,
+        )
 
     async def execute_GEN_FUNCTION(self, task: ProgramTask, num_completions: int):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)

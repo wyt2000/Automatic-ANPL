@@ -14,13 +14,14 @@ Here is an unimplemented function of the program:
 ```
 
 -----Task-----
-Complete the function. Add docstring to describe the new function you generated if it doesn't have one.
+1. Complete the function.
+2. Add docstring to describe the new function you generated if it doesn't have one.
+3. Insert assert statements between lines of the function to verify it.
 Your output should be in the following format:
 ```
 def {func_name}(...):
-    '''
-    The description of the function.
-    '''
+    "The description of the function."
+    (The implementation codes and the asserts between them)
 ```
 
 """
@@ -72,9 +73,7 @@ If there are some mistakes or exceptions in the function, return the fixed funct
 Your output should be in the following format:
 ```
 def {func_name}(...):
-    '''
-    The description of the function.
-    '''
+    "The description of the function."
 ```
 
 You should only output the function code! Omit explanations or any additional text!
@@ -125,5 +124,31 @@ python code
 
 You should define some helper functions before function {entry_point} to decompose it. Each function should be described by docstring.
 You should only output the python code! Omit explanations or any additional text!
+"""
+
+assertion_prompt = """-----Question-----
+{question}
+
+-----Solution-----
+{solution}
+
+Here is an program implementation of the solution.
+-----Program-----
+{program}
+
+Here is a function of the program.
+-----Function-----
+{function}
+
+-----Task-----
+Insert assert statements between lines of the function to verify it.
+Your output should be in the following format:
+```
+def {func_name}(...):
+    "The description of the function."
+    (The implementation codes and the asserts between them)
+```
+
+You should only output the function code! Omit explanations or any additional text!
 """
 

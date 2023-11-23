@@ -128,6 +128,16 @@ def extract_anpl(content: str, question: str):
 def extract_func(content: str, target: str, func_names: set[str]):
     return remove_implemented_functions(content, target, func_names - {target})
 
+# Remove the asserts outside of all functions
+def remove_toplevel_asserts(content: str):
+    try:
+        root = ast.parse(content)
+        root.body = [node for node in root.body if not isinstance(node, ast.Assert)]
+        content = ast.unparse(root)
+    except Exception
+        pass
+    return content
+
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):
         self.asserts = set()

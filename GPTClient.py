@@ -11,7 +11,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_toplevel_asserts
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -277,4 +277,34 @@ class GPTClient:
             num_completions         = num_completions
         )
 
+    # Request from chatGPT to add assertions for the function.
+    async def request_for_assertions(self,
+                                     task_name: str,
+                                     question: str,
+                                     solution: str,
+                                     anpl_code: str,
+                                     entry_point: str,
+                                     func_code: str,
+                                     func_names: set[str],
+                                     save_dir: str,
+                                     completion_kwargs: dict,
+                                     num_completions: int,
+                                     retry_times: int = 5):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'assertion',
+            prompt_template         = Prompter.assertion_prompt,
+            prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : anpl_code, 'function' : func_code, 'func_name' : entry_point},
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=entry_point, func_names=func_names),
+                remove_toplevel_asserts
+            ],
+            response_verifier       = verify_python,
+            response_collector      = lambda res : list(map(partial(collect_anpl, entry_point=entry_point), res)),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions,
+            retry_times             = retry_times
+        )
 

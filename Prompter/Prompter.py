@@ -21,7 +21,6 @@ Your output should be in the following format:
 ```
 def {func_name}(...):
     "The description of the function."
-    (The implementation codes and the asserts between them)
 ```
 
 """

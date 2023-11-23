@@ -76,29 +76,31 @@ def redirect_loggers(log_path: str):
         file_handler.close()
         root_logger.handlers = root_handlers
 
+#############################################################################
 # Remove all implemented functions including nested functions
-func_pattern = re.compile(r"\s*def\s+(.+)\(.*\).*\:")
+class FuncDefTransformer(ast.NodeTransformer):
+    def __init__(self, removed_funcs: set[str]):
+        self.removed_funcs = removed_funcs 
+
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        if node.name in self.removed_funcs:
+            return None
+        return node
+
 def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
-    # When meet the line "def {implemented_functions}", omit lines until the line whose indent count <= its
-    has_target = False
-    is_omit = False
-    omit_indent = -1
-    code = []
-    for line in raw_code.splitlines():
-        indent = len(line) - len(line.lstrip())
-        if is_omit: # in scope of implemented functions
-            if indent > omit_indent: continue
-            is_omit = False
-        if m := func_pattern.match(line): # meet func def
-            func_name = m.group(1)
-            if indent == 0 and func_name == target:
-                has_target = True
-            if func_name in implemented_functions: 
-                is_omit = True
-                omit_indent = indent
-                continue
-        code.append(line)
-    return '\n'.join(code) if has_target else None
+    code = None   
+    try:
+        root = ast.parse(raw_code)
+        if not any(node.name == target for node in root.body if isinstance(node, ast.FunctionDef)):
+            return None
+        visitor = FuncDefTransformer(implemented_functions)
+        visitor.visit(root)
+        code = ast.unparse(root)
+    except Exception:
+        pass
+    return code
+#############################################################################
 
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
@@ -157,9 +159,9 @@ def remove_asserts(content: str, func_name: str):
         AssertRemover(func_name).visit(root)
         content = ast.unparse(root)
     except Exception:
-        traceback.print_exc()
         pass
     return content
+#############################################################################
 
 #############################################################################
 # Extract assert statements
@@ -180,7 +182,6 @@ def extract_asserts(content: str):
     except Exception:
         pass
     return '\n'.join(asserts)
-
 #############################################################################
 
 # Check if the code is valid Python code with function `entry_point`.

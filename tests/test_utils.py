@@ -1,5 +1,6 @@
 from utils import remove_implemented_functions, extract_asserts, compose_function_with_traces
 from Tracer import trace_code
+import ast
 
 def test_compose_function_with_traces():
     code = '''
@@ -68,22 +69,22 @@ def u():
 
 '''
     result = remove_implemented_functions(code, 'u', {'g', 'h', 'w'})
-    assert result.strip('\n') == '''
+    assert result.strip('\n') == ast.unparse(ast.parse('''
 def f():
     pass
 def u():
     pass
     def v():
         pass
-'''.strip('\n')
+''')).strip('\n')
 
     result = remove_implemented_functions(code, 'h', {'v', 'g'})
-    assert result.strip('\n') == '''
+    assert result.strip('\n') == ast.unparse(ast.parse('''
 def f():
     pass
 def h():
     pass
 def u():
     pass
-'''.strip('\n')
+''')).strip('\n')
 

@@ -178,7 +178,7 @@ def eval_program(code: str,
 
     # Collect Exceptions and Recover the resource limits
     except AssertionError as err:
-        exc = AssertionError(inputs) # Save assert str in Exception
+        exc = err if err.args else AssertionError(inputs)
     except Exception as err:
         exc = err 
     finally:

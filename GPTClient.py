@@ -1,7 +1,6 @@
 import openai
 import logging 
 import logging.config
-import aiohttp
 import pathlib
 import json
 import asyncio
@@ -94,22 +93,20 @@ class GPTClient:
             {"role": "user", "content": prompt}
         ]
         # Request for remaining responses, extract the results and verify them.
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            for i in range(retry_times):
-                if len(responses) >= num_completions:
-                    break
-                logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
-                new_responses = await self.delayed_completion(
-                    task_name        = task_name,
-                    messages         = messages,
-                    n                = num_completions - len(responses),
-                    **completion_kwargs
-                )
-                new_responses = GPTClient.get_response_list(new_responses)
-                for handler in response_handlers:
-                    new_responses = list(map(handler, new_responses))
-                responses.extend(filter(response_verifier, new_responses))
+        for i in range(retry_times):
+            if len(responses) >= num_completions:
+                break
+            logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
+            new_responses = await self.delayed_completion(
+                task_name        = task_name,
+                messages         = messages,
+                n                = num_completions - len(responses),
+                **completion_kwargs
+            )
+            new_responses = GPTClient.get_response_list(new_responses)
+            for handler in response_handlers:
+                new_responses = list(map(handler, new_responses))
+            responses.extend(filter(response_verifier, new_responses))
         responses = responses[:num_completions]
         logger.debug(f'{task_name}: [{task_kind}] request done!')
 

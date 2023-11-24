@@ -95,7 +95,7 @@ def main(arr: List[int]):
     _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 10, \"Wrong!\" ")
     assert repr(ios) == "IOCollector({'f': [input: {'arr': [1, 2, 3, 4]}, output: 10], 'main': [input: {'arr': [1, 2, 3, 4]}, output: 10]})"
     assert exc is None
-    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 15, \"Wrong!\" ")
+    _, _, ios, exc = trace_code(code, "assert main([1,2,3,4]) == 15")
     assert repr(ios) == "IOCollector({'f': [input: {'arr': [1, 2, 3, 4]}, output: 10], 'main': [input: {'arr': [1, 2, 3, 4]}, output: 10]})"
     assert "assert main([1,2,3,4]) == 15" in repr(exc.args[0])
 

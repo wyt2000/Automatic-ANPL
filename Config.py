@@ -15,6 +15,9 @@ class CONFIG:
     gen_anpl_with_asserts   = {
         'temperature'       : 0.6,
     }
+    gen_verification        = {
+        'temperature'       : 0.6,
+    }
     gen_function            = {
         'temperature'       : 0.6,
     }

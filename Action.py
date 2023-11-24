@@ -12,6 +12,7 @@ class ProgramAgentActionType(Enum):
     GEN_PRETEST         = auto()
     GEN_SOLUTION        = auto() 
     GEN_ANPL            = auto()
+    GEN_VERIFICATION    = auto()
     GEN_FUNCTION        = auto()
 
     # Debug Stage

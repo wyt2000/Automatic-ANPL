@@ -151,3 +151,22 @@ def {func_name}(...):
 You should only output the function code! Omit explanations or any additional text!
 """
 
+verification_prompt = """-----Function-----
+{function}
+
+-----Task-----
+Use python package `hypothesis` to do the property testing for the function mentioned above.
+Your output should be in the following format:
+```
+# import from necessary modules
+from hypothesis import given
+from hypothesis.strategies import ... 
+
+@given(...) # constraint for inputs
+def test_{func_name}(...):
+    outputs = {func_name}(...)
+    (Verify the properties of the outputs)
+```
+
+You should only output the python code! Omit explanations or any additional text!
+"""

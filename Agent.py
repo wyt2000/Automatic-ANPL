@@ -42,6 +42,7 @@ class ProgramTask(Task):
     pretests: list[str]             = None
     solution: str                   = None 
     anpl_code: str                  = None 
+    func_verifiers: list[str]       = None
     func_candidates: list[set[str]] = None
     imports_prefix: str             = None
     program: str                    = None
@@ -167,6 +168,28 @@ class ProgramAgent(Agent):
         )
         if anpl_with_assertions:
             task.anpl_code = anpl_with_assertions[0]
+
+    async def execute_GEN_VERIFICATION(self, task: ProgramTask):
+        func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
+        func_verifiers = ['' for name in func_names_sorted]
+        for i, func_name in enumerate(func_names_sorted):
+            try:
+                verifier = await task.client.request_for_verification( 
+                    task_name         = f'{task.task_name}_{func_name}',
+                    save_dir          = task.save_dir,
+                    func_name         = func_name,
+                    func_code         = func_codes[func_name],
+                    completion_kwargs = {
+                        "model"       : task.model_name,
+                        **CONFIG.gen_verification
+                    },
+                    num_completions   = 1 
+                )
+            except Exception as err:
+                self.logger.exception(err)
+            func_verifiers[i] = verifier 
+        task.func_verifiers = func_verifiers 
+
 
     async def execute_GEN_FUNCTION(self, task: ProgramTask, num_completions: int):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)

@@ -29,7 +29,7 @@ if __name__ == '__main__':
         for program_file in pathlib.Path(problem_path).glob("*"):
             if "final_submit" not in str(program_file): continue
             with open(program_file, 'r') as f:
-                program = program_prefix + f.read()
+                program = f.read()
             task_id = f"HumanEval/{task_id}"
             samples.append(dict(task_id=task_id, completion=program))
             problems.append(all_problems[task_id])

@@ -32,7 +32,7 @@ if __name__ == '__main__':
             if os.path.exists(path):
                 anpl_path = pathlib.Path(problem_path, program_file)
                 with open(path, 'r') as f:
-                    program = program_prefix + f.read()
+                    program = f.read()
                 os.remove(path)
                 try:
                     status = check_correctness(all_problems[f"HumanEval/{task_id}"], program, 3.0)

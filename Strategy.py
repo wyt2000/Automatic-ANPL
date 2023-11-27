@@ -3,8 +3,8 @@ import logging
 import logging.config
 from dataclasses import dataclass
 
+import Action
 from Observation import Observation, ProgramAgentObservation
-from Action import Action, ProgramAgentAction
 from Config import CONFIG
 
 # Internal State of the agent, specified by Strategy.
@@ -16,11 +16,11 @@ class Strategy(ABC):
 
     @property
     @abstractmethod
-    def initial_actions(self) -> list[Action]:
+    def initial_actions(self) -> list[Action.Action]:
         pass
     
     @abstractmethod
-    async def step(self, obs: Observation) -> Action:
+    async def step(self, obs: Observation) -> Action.Action:
         pass
 
 # Generation and self-debug in fixed times.
@@ -61,28 +61,28 @@ class SelfDebugStrategy(Strategy):
 
         # Generation from scratch and eval
         self.generation_actions       = []
-        self.generation_actions.append(ProgramAgentAction('GEN_SOLUTION'))
-        self.generation_actions.append(ProgramAgentAction('GEN_ANPL'))
-        if use_asserts: self.generation_actions.append(ProgramAgentAction('GEN_ANPL_ASSERTS'))
+        self.generation_actions.append(Action.GenerateSolution())
+        self.generation_actions.append(Action.GenerateANPL())
+        if use_asserts: self.generation_actions.append(Action.GenerateANPLWithAsserts())
         self.generation_actions.append(
-            ProgramAgentAction('GEN_FUNCTION', {'num_completions': num_generated_funcs, 'use_asserts': use_asserts})
+            Action.GenerateFunction(num_completions=num_generated_funcs, use_asserts=use_asserts)
         )
         self.generation_actions.append(
-            ProgramAgentAction('EVAL_PRETEST', {'max_time': eval_max_time, 'max_attempts': eval_max_attempts})
+            Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts)
         )
 
         # Do final test and stop the process
         self.finish_actions           = [
-            ProgramAgentAction('RESTART'),
-            ProgramAgentAction('EVAL_SYSTEM_TEST'),
-            ProgramAgentAction('FINISH')
+            Action.Restart(),
+            Action.EvalSystemTest(),
+            Action.Finish()
         ]
 
     # Give up current result and start a new generation process
     def restart(self):
         self.state = self.ProgramState(self.state.restart_times + 1, 0, 0)
         return [
-            ProgramAgentAction('RESTART'),
+            Action.Restart(),
             *self.generation_actions
         ]
     
@@ -90,13 +90,13 @@ class SelfDebugStrategy(Strategy):
     @property
     def initial_actions(self):
         return [
-            ProgramAgentAction('GEN_PRETEST', {'num_completions': self.num_pretests}),
-            ProgramAgentAction('RESTART'),
+            Action.GeneratePretest(num_completions=self.num_pretests),
+            Action.Restart()
             *self.generation_actions
         ]
     
     # Refresh state and give new action list according to current observation 
-    async def step(self, obs: ProgramAgentObservation) -> list[ProgramAgentAction]:
+    async def step(self, obs: ProgramAgentObservation) -> list[Action.ProgramAgentAction]:
         state = self.state
 
         # Early stop
@@ -111,9 +111,9 @@ class SelfDebugStrategy(Strategy):
         if state.program_debug_times < self.max_program_debug_times:
             state.program_debug_times += 1
             return [
-                ProgramAgentAction('GEN_COUNTEREXAMPLE', {'use_pretests_debug': self.use_pretests_debug}),
-                ProgramAgentAction('DEBUG_FUNCTION', {'num_completions': self.num_debugged_funcs}),
-                ProgramAgentAction('EVAL_PRETEST', {'max_time': self.eval_max_time, 'max_attempts': self.eval_max_attempts})
+                Action.GenerateCounterexample(use_pretests_debug=self.use_pretests_debug),
+                Action.DebugFunction(num_completions=self.num_debugged_funcs),
+                Action.EvalPretest(max_time=self.eval_max_time, max_attempts=self.eval_max_attempts)
             ]
 
         # Debug in solution-level
@@ -121,8 +121,8 @@ class SelfDebugStrategy(Strategy):
             state.program_debug_times = 0
             state.solution_debug_times += 1
             return [
-                ProgramAgentAction('GEN_COUNTEREXAMPLE', {'use_pretests_debug': self.use_pretests_debug}),
-                ProgramAgentAction('DEBUG_SOLUTION'),
+                Action.GenerateCounterexample(use_pretests_debug=self.use_pretests_debug),
+                Action.DebugSolution(),
                 *self.generation_actions[1:]
             ]
 

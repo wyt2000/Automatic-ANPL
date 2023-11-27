@@ -38,7 +38,7 @@ class GPTClient:
             except openai.error.InvalidRequestError as err:
                 self.logger.debug(f'{task_name}: InvalidRequestError!')
                 raise err
-            except openai.error.RateLimitError as err:
+            except (openai.error.RateLimitError, openai.error.APIConnectionError) as err:
                 await asyncio.sleep(self.retry_interval * (2 ** i))
         raise openai.error.RateLimitError
 

@@ -42,6 +42,7 @@ class CONFIG:
     eval_max_attempts: int          = 100000
     eval_max_time: float            = 240
     use_pretests_debug: bool        = True
+    use_asserts: bool               = True
 
     # Misc    
     seed = 42

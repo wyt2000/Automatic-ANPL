@@ -42,7 +42,9 @@ class SelfDebugStrategy(Strategy):
                  num_pretests             : int     = CONFIG.num_pretests,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
-                 use_pretests_debug       : bool    = CONFIG.use_pretests_debug):
+                 use_pretests_debug       : bool    = CONFIG.use_pretests_debug,
+                 use_asserts              : bool    = CONFIG.use_asserts
+                 ):
 
         self.max_restart_times        = max_restart_times
         self.max_solution_debug_times = max_solution_debug_times
@@ -58,13 +60,16 @@ class SelfDebugStrategy(Strategy):
         self.logger                   = logging.getLogger('SelfDebugStrategy')
 
         # Generation from scratch and eval
-        self.generation_actions       = [
-            ProgramAgentAction('GEN_SOLUTION'),
-            ProgramAgentAction('GEN_ANPL'),
-            # ProgramAgentAction('GEN_VERIFICATION'),
-            ProgramAgentAction('GEN_FUNCTION', {'num_completions': num_generated_funcs}),
+        self.generation_actions       = []
+        self.generation_actions.append(ProgramAgentAction('GEN_SOLUTION'))
+        self.generation_actions.append(ProgramAgentAction('GEN_ANPL'))
+        if use_asserts: self.generation_actions.append(ProgramAgentAction('GEN_ANPL_ASSERTS'))
+        self.generation_actions.append(
+            ProgramAgentAction('GEN_FUNCTION', {'num_completions': num_generated_funcs, 'use_asserts': use_asserts})
+        )
+        self.generation_actions.append(
             ProgramAgentAction('EVAL_PRETEST', {'max_time': eval_max_time, 'max_attempts': eval_max_attempts})
-        ]
+        )
 
         # Do final test and stop the process
         self.finish_actions           = [

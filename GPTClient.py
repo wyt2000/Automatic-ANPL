@@ -191,13 +191,15 @@ class GPTClient:
                                                hole: str,
                                                target: str,
                                                func_names: set[str],
+                                               use_asserts: bool,
                                                completion_kwargs: dict,
                                                num_completions: int):
 
         return await self._request(
             task_name               = task_name,
             task_kind               = 'function_completion',
-            prompt_template         = Prompter.function_completion_prompt,
+            prompt_template         = Prompter.function_completion_prompt_with_asserts if use_asserts
+                                      else Prompter.function_completion_prompt,
             prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole, 'func_name' : target},
             response_handlers       = [
                 extract_code,

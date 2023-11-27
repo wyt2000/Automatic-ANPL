@@ -12,7 +12,7 @@ from GPTClient import GPTClient
 from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code
 from ProblemSampler.ProblemSampler import ProblemSampler, ProblemData
 from Tracer import get_sorted_funcs, trace_code
-from utils import extract_imports, collect_counterexample
+from utils import extract_imports, collect_counterexample, prepare_for_submit
 from Config import CONFIG 
 
 # External state of task, specfied by Agent. 
@@ -149,6 +149,8 @@ class ProgramAgent(Agent):
         )
         if not anpl_codes: raise ValueError(f'{task.task_name}: Couldn\'t generate anpl codes!')
         task.anpl_code = anpl_codes[0]
+
+    async def execute_GEN_ANPL_ASSERTS(self, task: ProgramTask):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
         entry_point = task.problem_data.entry_point
         anpl_with_assertions = await task.client.request_for_assertions(
@@ -190,8 +192,7 @@ class ProgramAgent(Agent):
             func_verifiers[i] = verifier 
         task.func_verifiers = func_verifiers 
 
-
-    async def execute_GEN_FUNCTION(self, task: ProgramTask, num_completions: int):
+    async def execute_GEN_FUNCTION(self, task: ProgramTask, num_completions: int, use_asserts: bool):
         func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
         func_candidates = [set() for name in func_names_sorted]
         self.logger.debug(f'{task.task_name}: Synthesizing {len(func_names_sorted)} functions... ')
@@ -205,6 +206,7 @@ class ProgramAgent(Agent):
                     hole              = func_codes[func_name],
                     target            = func_name,
                     func_names        = set(func_names_sorted),
+                    use_asserts       = use_asserts,
                     completion_kwargs = {
                         "model"       : task.model_name,
                         **CONFIG.gen_function
@@ -312,6 +314,7 @@ class ProgramAgent(Agent):
     
     async def execute_EVAL_SYSTEM_TEST(self, task: ProgramTask):
         program      = task.evaluator.final_submit[0]
+        program      = prepare_for_submit(program)
         system_tests = task.problem_data.system_tests
         self.logger.debug(f'{task.task_name}: System Testing...')
         passed_asserts = eval_full_code(

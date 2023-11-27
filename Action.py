@@ -12,6 +12,7 @@ class ProgramAgentActionType(Enum):
     GEN_PRETEST         = auto()
     GEN_SOLUTION        = auto() 
     GEN_ANPL            = auto()
+    GEN_ANPL_ASSERTS    = auto()
     GEN_VERIFICATION    = auto()
     GEN_FUNCTION        = auto()
 

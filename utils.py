@@ -274,4 +274,21 @@ class AsyncTimer:
     def __exit__(self, *args):
         self.time = time.time_ns() - self.start_time
 
+#############################################################################
+# Transform the code before submit
 
+# Convert all assert statements to `pass`.
+class AssertToPassVisitor(ast.NodeTransformer):
+    def visit_Assert(self, node):
+        return ast.Pass()
+
+def prepare_for_submit(code: str):
+    try:
+        root = ast.parse(code)
+        AssertToPassVisitor().visit(root)
+        code = ast.unparse(root)
+        code = '\n'.join(['from typing import *\n', code])
+    except Exception:
+        pass
+    return code
+#############################################################################

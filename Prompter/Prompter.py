@@ -179,17 +179,17 @@ verification_prompt = """-----Function-----
 {function}
 
 -----Task-----
-Use python package `hypothesis` to do the property testing for the function mentioned above.
+Write a test generator function to generate one random test input for the function mentioned above.
 Your output should be in the following format:
 ```
-# import from necessary modules
-from hypothesis import given
-from hypothesis.strategies import ... 
+def test_{func_name}(seed: int) -> list:
+    import random
+    random.seed(seed)
+    (Randomly generate one test input for the function {func_name})
+    return inputs
 
-@given(...) # constraint for inputs
-def test_{func_name}(...):
-    outputs = {func_name}(...)
-    (Verify the properties of the outputs)
+inputs = test_{func_name}(42)
+{func_name}(*inputs)
 ```
 
 You should only output the python code! Omit explanations or any additional text!

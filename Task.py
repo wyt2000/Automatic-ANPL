@@ -24,7 +24,7 @@ class ProgramTask(Task):
     pretests: list[str]             = None
     solution: str                   = None 
     anpl_code: str                  = None 
-    func_verifiers: list[str]       = None
+    verifier: str                   = None
     func_candidates: list[set[str]] = None
     imports_prefix: str             = None
     program: str                    = None

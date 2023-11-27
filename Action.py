@@ -97,25 +97,22 @@ class GenerateANPLWithAsserts(ProgramAgentAction):
 
 class GenerateVerifier(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        func_names_sorted, func_codes = get_sorted_funcs(task.anpl_code)
-        func_verifiers = ['' for name in func_names_sorted]
-        for i, func_name in enumerate(func_names_sorted):
-            try:
-                verifier = await task.client.request_for_verification( 
-                    task_name         = f'{task.task_name}_{func_name}',
-                    save_dir          = task.save_dir,
-                    func_name         = func_name,
-                    func_code         = func_codes[func_name],
-                    completion_kwargs = {
-                        'model'       : task.model_name,
-                        **CONFIG.gen_verification
-                    },
-                    num_completions   = 1 
-                )
-            except Exception as err:
-                self.logger.exception(err)
-            func_verifiers[i] = verifier 
-        task.func_verifiers = func_verifiers 
+        try:
+            verifier = await task.client.request_for_verifier( 
+                task_name         = task.task_name,
+                save_dir          = task.save_dir,
+                func_name         = task.problem_data.entry_point,
+                func_code         = task.problem_data.question,
+                completion_kwargs = {
+                    'model'       : task.model_name,
+                    **CONFIG.gen_verifier
+                },
+                num_completions   = 1 
+            )
+        except Exception as err:
+            self.logger.exception(err)
+        assert verifier, f'{task.task_name}: Couldn\'t generate verifier!'
+        task.verifier = verifier[0] 
 
 class GenerateFunction(ProgramAgentAction):
     async def execute(self, task: ProgramTask):

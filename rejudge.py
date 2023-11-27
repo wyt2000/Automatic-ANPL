@@ -12,7 +12,6 @@ from utils import mkdir_override
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('main')
-program_prefix = "from typing import *\n"
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()

@@ -61,7 +61,7 @@ class SelfDebugStrategy(Strategy):
         self.generation_actions       = [
             ProgramAgentAction('GEN_SOLUTION'),
             ProgramAgentAction('GEN_ANPL'),
-            ProgramAgentAction('GEN_VERIFICATION'),
+            # ProgramAgentAction('GEN_VERIFICATION'),
             ProgramAgentAction('GEN_FUNCTION', {'num_completions': num_generated_funcs}),
             ProgramAgentAction('EVAL_PRETEST', {'max_time': eval_max_time, 'max_attempts': eval_max_attempts})
         ]

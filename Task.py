@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from ProblemSampler.ProblemSampler import ProblemData
 from GPTClient import GPTClient
 from Evaluator import Evaluator
-from Strategy import Strategy
 
 # External state of task, specfied by Agent. 
 class Task(ABC):
@@ -19,7 +18,6 @@ class ProgramTask(Task):
     client: GPTClient
     model_name: str
     evaluator: Evaluator 
-    strategy: Strategy
     seed: int
     restart_times: int              = 0
     task_name: str                  = None

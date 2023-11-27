@@ -91,7 +91,7 @@ class SelfDebugStrategy(Strategy):
     def initial_actions(self):
         return [
             Action.GeneratePretest(num_completions=self.num_pretests),
-            Action.Restart()
+            Action.Restart(),
             *self.generation_actions
         ]
     

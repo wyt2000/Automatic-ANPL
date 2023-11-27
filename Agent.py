@@ -45,17 +45,16 @@ class ProgramAgent(Agent):
                            client           = client,
                            model_name       = model_name,
                            evaluator        = evaluator,
-                           strategy         = strategy, 
                            seed             = seed,
                            task_name        = task_name)
-        await self.main_loop(task)
+        await self.main_loop(task, strategy)
 
     # Observe and execute actions until the task is done
-    async def main_loop(self, task: ProgramTask):
-        await self.execute(task, task.strategy.initial_actions)
+    async def main_loop(self, task: ProgramTask, strategy: Strategy):
+        await self.execute(task, strategy.initial_actions)
         while task.running:
             obs = await self.observe(task)
-            actions = await task.strategy.step(obs)
+            actions = await strategy.step(obs)
             await self.execute(task, actions)
 
     async def observe(self, task: ProgramTask):
@@ -68,7 +67,7 @@ class ProgramAgent(Agent):
 
     async def execute(self, task: ProgramTask, actions: list[ProgramAgentAction]):
         for action in actions:
-            assert action in ProgramAgentAction.__subclasses__()
+            assert isinstance(action, ProgramAgentAction)
             try:
                 await action.execute(task)
             except Exception as err:

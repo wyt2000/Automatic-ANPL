@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 from enum import Enum, auto
+import logging
 
 from Task import Task, ProgramTask
 from GPTClient import GPTClient
@@ -21,7 +22,7 @@ class Action(ABC):
 class ProgramAgentAction(Action):
 
     def __init__(self, **config):
-        self.logger = logging.getLogger('ProgramAgentAction')
+        self.logger = logging.getLogger(f'{self.__class__.__name__}')
         self.config = config
 
     def __repr__(self):
@@ -194,7 +195,7 @@ class DebugFunction(ProgramAgentAction):
                         "model"       : task.model_name,
                         **CONFIG.debug_function
                     },
-                    num_completions   = num_completions
+                    num_completions   = self.config['num_completions']
                 )
             except Exception as err:
                 self.logger.exception(err)
@@ -225,7 +226,7 @@ class DebugSolution(ProgramAgentAction):
 
 class EvalPretest(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
-        n_to_try, code_generator = sample_functions(task.func_candidates, max_attempts, task.seed)
+        n_to_try, code_generator = sample_functions(task.func_candidates, self.config['max_attempts'], task.seed)
         self.logger.debug(f'{task.task_name}: Evaluating {n_to_try} programs...')
         best_result = await eval_sampled_functions(
             code_generator = code_generator,
@@ -234,7 +235,7 @@ class EvalPretest(ProgramAgentAction):
             imports_prefix = task.imports_prefix,
             asserts        = task.pretests,
             evaluator      = task.evaluator,
-            max_time       = max_time
+            max_time       = self.config['max_time']
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
         self.logger.debug(f"{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!")

@@ -1,7 +1,6 @@
 import openai
 import logging 
 import logging.config
-import aiohttp
 import pathlib
 import json
 import asyncio
@@ -11,7 +10,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -39,7 +38,7 @@ class GPTClient:
             except openai.error.InvalidRequestError as err:
                 self.logger.debug(f'{task_name}: InvalidRequestError!')
                 raise err
-            except openai.error.RateLimitError as err:
+            except (openai.error.RateLimitError, openai.error.APIConnectionError) as err:
                 await asyncio.sleep(self.retry_interval * (2 ** i))
         raise openai.error.RateLimitError
 
@@ -94,22 +93,20 @@ class GPTClient:
             {"role": "user", "content": prompt}
         ]
         # Request for remaining responses, extract the results and verify them.
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            openai.aiosession.set(session)
-            for i in range(retry_times):
-                if len(responses) >= num_completions:
-                    break
-                logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
-                new_responses = await self.delayed_completion(
-                    task_name        = task_name,
-                    messages         = messages,
-                    n                = num_completions - len(responses),
-                    **completion_kwargs
-                )
-                new_responses = GPTClient.get_response_list(new_responses)
-                for handler in response_handlers:
-                    new_responses = list(map(handler, new_responses))
-                responses.extend(filter(response_verifier, new_responses))
+        for i in range(retry_times):
+            if len(responses) >= num_completions:
+                break
+            logger.debug(f'{task_name}: [{task_kind}] requesting for {num_completions-len(responses)} responses...')
+            new_responses = await self.delayed_completion(
+                task_name        = task_name,
+                messages         = messages,
+                n                = num_completions - len(responses),
+                **completion_kwargs
+            )
+            new_responses = GPTClient.get_response_list(new_responses)
+            for handler in response_handlers:
+                new_responses = list(map(handler, new_responses))
+            responses.extend(filter(response_verifier, new_responses))
         responses = responses[:num_completions]
         logger.debug(f'{task_name}: [{task_kind}] request done!')
 
@@ -194,15 +191,21 @@ class GPTClient:
                                                hole: str,
                                                target: str,
                                                func_names: set[str],
+                                               use_asserts: bool,
                                                completion_kwargs: dict,
                                                num_completions: int):
 
         return await self._request(
             task_name               = task_name,
             task_kind               = 'function_completion',
-            prompt_template         = Prompter.function_completion_prompt,
+            prompt_template         = Prompter.function_completion_prompt_with_asserts if use_asserts
+                                      else Prompter.function_completion_prompt,
             prompt_kwargs           = {'prefix' : prefix, 'code' : code, 'hole' : hole, 'func_name' : target},
-            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=target, func_names=func_names),
+                partial(remove_asserts, func_name=target)
+            ],
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
@@ -252,7 +255,11 @@ class GPTClient:
             task_kind               = 'function_debug',
             prompt_template         = Prompter.function_debug_prompt,
             prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : program, 'function_with_traces' : compose_function_with_traces(func_code, func_traces), 'func_name' : target},
-            response_handlers       = [extract_code, partial(extract_func, target=target, func_names=func_names)],
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=target, func_names=func_names),
+                partial(remove_asserts, func_name=target)
+            ],
             response_collector      = lambda res : sorted(set(filter(verify_python, res))),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
@@ -277,4 +284,60 @@ class GPTClient:
             num_completions         = num_completions
         )
 
+    # Request from chatGPT to add assertions for the function.
+    async def request_for_assertions(self,
+                                     task_name: str,
+                                     question: str,
+                                     solution: str,
+                                     anpl_code: str,
+                                     entry_point: str,
+                                     func_code: str,
+                                     func_names: set[str],
+                                     save_dir: str,
+                                     completion_kwargs: dict,
+                                     num_completions: int,
+                                     retry_times: int = 5):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'assertion',
+            prompt_template         = Prompter.assertion_prompt,
+            prompt_kwargs           = {'question' : question, 'solution' : solution, 'program' : anpl_code, 'function' : func_code, 'func_name' : entry_point},
+            response_handlers       = [
+                extract_code,
+                partial(extract_func, target=entry_point, func_names=func_names),
+                partial(remove_asserts, func_name=entry_point)
+            ],
+            response_verifier       = verify_python,
+            response_collector      = lambda res : list(map(partial(collect_anpl_with_asserts, anpl_code=anpl_code, entry_point=entry_point), res)),
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.anpl_with_asserts'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions,
+            retry_times             = retry_times
+        )
+
+    # Request from chatGPT to verify the function.
+    async def request_for_verification(self,
+                                       task_name: str,
+                                       func_name: str,
+                                       func_code: str,
+                                       save_dir: str,
+                                       completion_kwargs: dict,
+                                       num_completions: int,
+                                       retry_times: int = 5):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'verification',
+            prompt_template         = Prompter.verification_prompt,
+            prompt_kwargs           = {'func_name': func_name, 'function': func_code},
+            response_handlers       = [
+                extract_code
+            ],
+            response_verifier       = verify_python,
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.verification'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions,
+            retry_times             = retry_times
+        )
 

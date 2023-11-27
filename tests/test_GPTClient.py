@@ -142,6 +142,7 @@ def has_close_elements(numbers: List[float], threshold: float) -> bool:
                 hole = hole,
                 target = target,
                 func_names = func_names,
+                use_asserts = True,
                 completion_kwargs = {
                     "model"             : model_name,
                     "temperature"       : 0.6,

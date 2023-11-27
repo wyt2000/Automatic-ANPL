@@ -15,6 +15,7 @@ from contextlib import contextmanager, redirect_stdout
 import asyncio
 from typing import Callable, Coroutine
 import time
+import traceback
 
 from Tracer import eval_program, IOExample
 
@@ -75,29 +76,31 @@ def redirect_loggers(log_path: str):
         file_handler.close()
         root_logger.handlers = root_handlers
 
+#############################################################################
 # Remove all implemented functions including nested functions
-func_pattern = re.compile(r"\s*def\s+(.+)\(.*\).*\:")
+class FuncDefTransformer(ast.NodeTransformer):
+    def __init__(self, removed_funcs: set[str]):
+        self.removed_funcs = removed_funcs 
+
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+        if node.name in self.removed_funcs:
+            return None
+        return node
+
 def remove_implemented_functions(raw_code: str, target: str, implemented_functions: set[str]):
-    # When meet the line "def {implemented_functions}", omit lines until the line whose indent count <= its
-    has_target = False
-    is_omit = False
-    omit_indent = -1
-    code = []
-    for line in raw_code.splitlines():
-        indent = len(line) - len(line.lstrip())
-        if is_omit: # in scope of implemented functions
-            if indent > omit_indent: continue
-            is_omit = False
-        if m := func_pattern.match(line): # meet func def
-            func_name = m.group(1)
-            if indent == 0 and func_name == target:
-                has_target = True
-            if func_name in implemented_functions: 
-                is_omit = True
-                omit_indent = indent
-                continue
-        code.append(line)
-    return '\n'.join(code) if has_target else None
+    code = None   
+    try:
+        root = ast.parse(raw_code)
+        if not any(node.name == target for node in root.body if isinstance(node, ast.FunctionDef)):
+            return None
+        visitor = FuncDefTransformer(implemented_functions)
+        visitor.visit(root)
+        code = ast.unparse(root)
+    except Exception:
+        pass
+    return code
+#############################################################################
 
 # Extract import lines of ANPL or Python codes
 def extract_imports(code: str):
@@ -128,6 +131,40 @@ def extract_anpl(content: str, question: str):
 def extract_func(content: str, target: str, func_names: set[str]):
     return remove_implemented_functions(content, target, func_names - {target})
 
+#############################################################################
+# Remove the asserts outside of all functions and the recursive call in asserts 
+class AssertNameVisitor(ast.NodeVisitor):
+    def __init__(self, target: str):
+        self.target = target
+        self.has_target = False
+    def visit_Name(self, node: ast.Name):
+        self.generic_visit(node)
+        if node.id == self.target:
+            self.has_target = True
+
+class AssertRemover(ast.NodeTransformer):
+    def __init__(self, target: str):
+        self.target = target
+    def visit_Assert(self, node):
+        visitor = AssertNameVisitor(self.target)
+        visitor.visit(node)
+        if visitor.has_target:
+            return None
+        return node
+
+def remove_asserts(content: str, func_name: str):
+    try:
+        root = ast.parse(content)
+        root.body = [node for node in root.body if not isinstance(node, ast.Assert)]
+        AssertRemover(func_name).visit(root)
+        content = ast.unparse(root)
+    except Exception:
+        pass
+    return content
+#############################################################################
+
+#############################################################################
+# Extract assert statements
 class AssertVisitor(ast.NodeVisitor):
     def __init__(self):
         self.asserts = set()
@@ -135,7 +172,6 @@ class AssertVisitor(ast.NodeVisitor):
     def visit_Assert(self, node):
         self.asserts.add(ast.unparse(node))
 
-# Extract assert statements
 def extract_asserts(content: str):
     asserts = set()
     try:
@@ -146,6 +182,7 @@ def extract_asserts(content: str):
     except Exception:
         pass
     return '\n'.join(asserts)
+#############################################################################
 
 # Check if the code is valid Python code with function `entry_point`.
 def verify_anpl(code: str, entry_point: str) -> bool:
@@ -172,6 +209,16 @@ def collect_anpl(code: str, entry_point: str) -> str:
             docstring = ast.get_docstring(node)
             node.body = [ast.Expr(ast.Str(docstring))]
     return ast.unparse(root)
+
+# Merge entry function with asserts to anpl code.
+def collect_anpl_with_asserts(entry_func: str, anpl_code: str, entry_point: str) -> str:
+    try:
+        root = ast.parse(anpl_code)
+        root.body = [node for node in root.body if not (isinstance(node, ast.FunctionDef) and node.name == entry_point)]
+        anpl_code = '\n'.join([ast.unparse(root), entry_func])
+    except Exception:
+        pass
+    return anpl_code 
 
 # Verify python syntax, faster than `ast.parse`.
 def verify_python(string):
@@ -227,4 +274,21 @@ class AsyncTimer:
     def __exit__(self, *args):
         self.time = time.time_ns() - self.start_time
 
+#############################################################################
+# Transform the code before submit
 
+# Convert all assert statements to `pass`.
+class AssertToPassVisitor(ast.NodeTransformer):
+    def visit_Assert(self, node):
+        return ast.Pass()
+
+def prepare_for_submit(code: str):
+    try:
+        root = ast.parse(code)
+        AssertToPassVisitor().visit(root)
+        code = ast.unparse(root)
+        code = '\n'.join(['from typing import *\n', code])
+    except Exception:
+        pass
+    return code
+#############################################################################

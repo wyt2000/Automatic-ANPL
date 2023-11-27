@@ -14,13 +14,37 @@ Here is an unimplemented function of the program:
 ```
 
 -----Task-----
-Complete the function. Add docstring to describe the new function you generated if it doesn't have one.
+1. Complete the function.
+2. Add docstring to describe the new function you generated if it doesn't have one.
 Your output should be in the following format:
 ```
 def {func_name}(...):
-    '''
-    The description of the function.
-    '''
+    "The description of the function."
+```
+
+"""
+
+function_completion_prompt_with_asserts = """{prefix}
+Here is a python program: 
+-----Program-----
+```
+{code}
+```
+
+Here is an unimplemented function of the program:
+-----Function-----
+```
+{hole}
+```
+
+-----Task-----
+1. Complete the function.
+2. Add docstring to describe the new function you generated if it doesn't have one.
+3. Insert assert statements between lines of the function to do the property testing.
+Your output should be in the following format:
+```
+def {func_name}(...):
+    "The description of the function."
 ```
 
 """
@@ -72,9 +96,7 @@ If there are some mistakes or exceptions in the function, return the fixed funct
 Your output should be in the following format:
 ```
 def {func_name}(...):
-    '''
-    The description of the function.
-    '''
+    "The description of the function."
 ```
 
 You should only output the function code! Omit explanations or any additional text!
@@ -127,3 +149,48 @@ You should define some helper functions before function {entry_point} to decompo
 You should only output the python code! Omit explanations or any additional text!
 """
 
+assertion_prompt = """-----Question-----
+{question}
+
+-----Solution-----
+{solution}
+
+Here is an program implementation of the solution.
+-----Program-----
+{program}
+
+Here is a function of the program.
+-----Function-----
+{function}
+
+-----Task-----
+Insert assert statements between lines of the function to do the property testing.
+Your output should be in the following format:
+```
+def {func_name}(...):
+    "The description of the function."
+    (The implementation codes and the asserts between them)
+```
+
+You should only output the function code! Omit explanations or any additional text!
+"""
+
+verification_prompt = """-----Function-----
+{function}
+
+-----Task-----
+Use python package `hypothesis` to do the property testing for the function mentioned above.
+Your output should be in the following format:
+```
+# import from necessary modules
+from hypothesis import given
+from hypothesis.strategies import ... 
+
+@given(...) # constraint for inputs
+def test_{func_name}(...):
+    outputs = {func_name}(...)
+    (Verify the properties of the outputs)
+```
+
+You should only output the python code! Omit explanations or any additional text!
+"""

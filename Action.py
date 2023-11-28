@@ -42,6 +42,25 @@ class GeneratePretest(ProgramAgentAction):
         )
         task.pretests = pretests.splitlines()
 
+class GenerateVerifier(ProgramAgentAction):
+    async def execute(self, task: ProgramTask):
+        try:
+            verifier = await task.client.request_for_verifier( 
+                task_name         = task.task_name,
+                save_dir          = task.save_dir,
+                func_name         = task.problem_data.entry_point,
+                func_code         = task.problem_data.question,
+                completion_kwargs = {
+                    'model'       : task.model_name,
+                    **CONFIG.gen_verifier
+                },
+                num_completions   = 1 
+            )
+        except Exception as err:
+            self.logger.exception(err)
+        assert verifier, f'{task.task_name}: Couldn\'t generate verifier!'
+        task.verifier = verifier[0] 
+
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
         solutions = await task.client.request_for_solutions(
@@ -94,25 +113,6 @@ class GenerateANPLWithAsserts(ProgramAgentAction):
             num_completions     = 1
         )
         if anpl_with_assertions: task.anpl_code = anpl_with_assertions[0]
-
-class GenerateVerifier(ProgramAgentAction):
-    async def execute(self, task: ProgramTask):
-        try:
-            verifier = await task.client.request_for_verifier( 
-                task_name         = task.task_name,
-                save_dir          = task.save_dir,
-                func_name         = task.problem_data.entry_point,
-                func_code         = task.problem_data.question,
-                completion_kwargs = {
-                    'model'       : task.model_name,
-                    **CONFIG.gen_verifier
-                },
-                num_completions   = 1 
-            )
-        except Exception as err:
-            self.logger.exception(err)
-        assert verifier, f'{task.task_name}: Couldn\'t generate verifier!'
-        task.verifier = verifier[0] 
 
 class GenerateFunction(ProgramAgentAction):
     async def execute(self, task: ProgramTask):

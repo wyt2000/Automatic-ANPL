@@ -187,9 +187,6 @@ def test_{func_name}(seed: int) -> list:
     random.seed(seed)
     (Randomly generate one test input for the function {func_name})
     return inputs
-
-inputs = test_{func_name}(42)
-{func_name}(*inputs)
 ```
 
 You should only output the python code! Omit explanations or any additional text!

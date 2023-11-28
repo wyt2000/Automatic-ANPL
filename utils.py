@@ -277,10 +277,13 @@ class AsyncTimer:
 #############################################################################
 # Transform the code before submit
 
-# Convert all assert statements to `pass`.
+# Convert all assert and raise statements to `pass`.
 class AssertToPassVisitor(ast.NodeTransformer):
     def visit_Assert(self, node):
         return ast.Pass()
+    def visit_Raise(self, node):
+        return ast.Pass()
+
 
 def prepare_for_submit(code: str):
     try:

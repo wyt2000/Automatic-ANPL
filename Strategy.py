@@ -44,7 +44,7 @@ class SelfDebugStrategy(Strategy):
                  num_verifiers            : int     = CONFIG.num_verifiers,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
-                 use_pretests_debug       : bool    = CONFIG.use_pretests_debug,
+                 use_pretests             : bool    = CONFIG.use_pretests,
                  use_asserts              : bool    = CONFIG.use_asserts,
                  use_random_inputs        : bool    = CONFIG.use_random_inputs
                  ):
@@ -59,7 +59,7 @@ class SelfDebugStrategy(Strategy):
         self.num_verifiers            = num_verifiers
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
-        self.use_pretests_debug       = use_pretests_debug
+        self.use_pretests             = use_pretests
         self.use_random_inputs        = use_random_inputs
 
         self.state                    = self.ProgramState()
@@ -77,17 +77,22 @@ class SelfDebugStrategy(Strategy):
             Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts)
         )
 
-        # Generate tests and verifiers
-        self._initial_actions = [
-            Action.GeneratePretest(num_completions=self.num_pretests),
-            Action.GenerateRandomInput(num_random_inputs=self.num_random_inputs),
-            Action.GenerateVerifier(num_verifiers=self.num_verifiers),
+        
+        # Generate tests or test generators + verifiers
+        if use_pretests:
+            self._initial_actions = [Action.GeneratePretest(num_completions=num_pretests)]
+        else:
+            self._initial_actions = [
+                Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
+                Action.GenerateVerifier(num_verifiers=num_verifiers)
+            ]
+        self._initial_actions.extend([
             Action.Restart(),
             *self.generation_actions
-        ]
+        ])
 
         # Do final test and stop the process
-        self.finish_actions           = [
+        self.finish_actions   = [
             Action.Restart(),
             Action.EvalSystemTest(),
             Action.Finish()
@@ -111,7 +116,7 @@ class SelfDebugStrategy(Strategy):
         state = self.state
 
         # Early stop
-        if obs.all_pretests_passed:
+        if obs.early_stop:
             return self.finish_actions
 
         # Restart when error
@@ -122,7 +127,6 @@ class SelfDebugStrategy(Strategy):
         if state.program_debug_times < self.max_program_debug_times:
             state.program_debug_times += 1
             return [
-                Action.GenerateCounterexample(use_pretests_debug=self.use_pretests_debug),
                 Action.DebugFunction(num_completions=self.num_debugged_funcs),
                 Action.EvalPretest(max_time=self.eval_max_time, max_attempts=self.eval_max_attempts)
             ]
@@ -132,7 +136,6 @@ class SelfDebugStrategy(Strategy):
             state.program_debug_times = 0
             state.solution_debug_times += 1
             return [
-                Action.GenerateCounterexample(use_pretests_debug=self.use_pretests_debug),
                 Action.DebugSolution(),
                 *self.generation_actions[1:]
             ]

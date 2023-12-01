@@ -46,7 +46,7 @@ class CONFIG:
     num_verifiers: int              = 1
     eval_max_attempts: int          = 100000
     eval_max_time: float            = 240
-    use_pretests_debug: bool        = True
+    use_pretests: bool              = False 
     use_asserts: bool               = False 
     use_random_inputs: bool         = True
 

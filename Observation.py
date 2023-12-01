@@ -9,7 +9,7 @@ class Observation(ABC):
 # Observation from Evaluator.
 @dataclass
 class ProgramAgentObservation(Observation):
-    all_pretests_passed : bool = False
+    early_stop          : bool = False
     error_raised        : bool = False
 
 

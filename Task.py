@@ -22,6 +22,7 @@ class ProgramTask(Task):
     seed: int
     restart_times: int              = 0
     task_name: str                  = None
+    max_score: int                  = 0
     pretests: list[str]             = None
     random_inputs: list[Any]        = None
     verifiers: list[str]            = None

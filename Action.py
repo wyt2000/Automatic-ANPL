@@ -41,6 +41,7 @@ class GeneratePretest(ProgramAgentAction):
             num_completions     = self.config['num_completions'] 
         )
         task.pretests = pretests.splitlines()
+        task.max_score = len(task.pretests)
 
 class GenerateRandomInput(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
@@ -74,9 +75,9 @@ class GenerateVerifier(ProgramAgentAction):
                 },
                 num_completions   = self.config['num_verifiers'] 
             )
+            task.max_score = len(task.random_inputs) * len(task.verifiers) 
         except Exception as err:
             self.logger.exception(err)
-
 
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
@@ -165,10 +166,6 @@ class GenerateFunction(ProgramAgentAction):
 
 class GenerateCounterexample(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        if self.config['use_pretests_debug']:
-            task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
-            GPTClient.save_one(task.counterexample, task.save_dir, f"{task.task_name}.0.counterexample")
-            return
         counterexamples = await task.client.request_for_counterexamples(
             task_name         = task.task_name,
             question          = task.problem_data.question,
@@ -252,9 +249,11 @@ class EvalPretest(ProgramAgentAction):
             max_time       = self.config['max_time']
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
-        self.logger.debug(f"{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!")
+        self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!')
         task.program = best_result[0]
-        GPTClient.save_one(task.program, task.save_dir, f"{task.task_name}_program.py")
+        GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
+        task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
+        GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
 
 class EvalSystemTest(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
@@ -269,16 +268,16 @@ class EvalSystemTest(ProgramAgentAction):
         )
         success = (len(passed_asserts) == len(system_tests))
         if success:
-            self.logger.debug(f"{task.task_name}: System Test passed! Successfully solve the problem!")
+            self.logger.debug(f'{task.task_name}: System Test passed! Successfully solve the problem!')
         else:
-            self.logger.debug(f"{task.task_name}: System Test Failed! ")
-            self.logger.debug(f"{task.task_name}: Best attempt passed {len(passed_asserts)} / {len(system_tests)} system tests!")
-        GPTClient.save_one(program, task.save_dir, f"{task.task_name}_final_submit_{success}.py")
+            self.logger.debug(f'{task.task_name}: System Test Failed! ')
+            self.logger.debug(f'{task.task_name}: Best attempt passed {len(passed_asserts)} / {len(system_tests)} system tests!')
+        GPTClient.save_one(program, task.save_dir, f'{task.task_name}_final_submit_{success}.py')
 
 class Restart(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
         task.evaluator.restart()
-        task.task_name = f"{task.task_name_prefix}_{task.restart_times}"
+        task.task_name = f'{task.task_name_prefix}_{task.restart_times}'
         task.restart_times += 1
 
 class Finish(ProgramAgentAction):

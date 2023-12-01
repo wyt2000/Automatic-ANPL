@@ -13,11 +13,13 @@ import re
 import ast
 from contextlib import contextmanager, redirect_stdout
 import asyncio
-from typing import Callable, Coroutine
+from typing import Callable, Coroutine, Any
 import time
 import traceback
+import json
 
 from Tracer import eval_program, IOExample
+from Config import CONFIG
 
 def mkdir_override(dir_path):
     '''
@@ -296,3 +298,28 @@ def prepare_for_submit(code: str):
     return code
 #############################################################################
 
+# Check if the code has a callable input generator `func_name`.
+def verify_input_generator(code: str, func_name: str) -> bool:
+    _, exc = eval_program(code, func_name, [CONFIG.seed])
+    if exc:
+        return False
+    return True
+
+# Generate random inputs by input generator `func_name`.
+def collect_random_input(funcs: list[str], func_name: str, num_random_inputs: int) -> list[list[Any]]:
+    random_inputs = []
+    for func in funcs:
+        for seed in range(CONFIG.seed, CONFIG.seed + num_random_inputs):
+            try:
+                ios, exc = eval_program(
+                    code       = func,
+                    entry_name = func_name,
+                    inputs     = [seed],
+                    with_trace = True,
+                    func_names = [func_name]
+                )
+                if exc: raise exc
+                random_inputs.append(ios[func_name][0].output) 
+            except Exception as err:
+                pass
+    return random_inputs

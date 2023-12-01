@@ -40,10 +40,12 @@ class SelfDebugStrategy(Strategy):
                  num_generated_funcs      : int     = CONFIG.num_generated_funcs,
                  num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
                  num_pretests             : int     = CONFIG.num_pretests,
+                 num_random_inputs        : int     = CONFIG.num_random_inputs,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
                  use_pretests_debug       : bool    = CONFIG.use_pretests_debug,
-                 use_asserts              : bool    = CONFIG.use_asserts
+                 use_asserts              : bool    = CONFIG.use_asserts,
+                 use_random_inputs        : bool    = CONFIG.use_random_inputs
                  ):
 
         self.max_restart_times        = max_restart_times
@@ -52,9 +54,11 @@ class SelfDebugStrategy(Strategy):
         self.num_generated_funcs      = num_generated_funcs 
         self.num_debugged_funcs       = num_debugged_funcs
         self.num_pretests             = num_pretests
+        self.num_random_inputs        = num_random_inputs
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
         self.use_pretests_debug       = use_pretests_debug
+        self.use_random_inputs        = use_random_inputs
 
         self.state                    = self.ProgramState()
         self.logger                   = logging.getLogger('SelfDebugStrategy')
@@ -91,7 +95,7 @@ class SelfDebugStrategy(Strategy):
     def initial_actions(self):
         return [
             Action.GeneratePretest(num_completions=self.num_pretests),
-            Action.GenerateVerifier(),
+            Action.GenerateRandomInput(num_random_inputs=self.num_random_inputs),
             Action.Restart(),
             *self.generation_actions
         ]

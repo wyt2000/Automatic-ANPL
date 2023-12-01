@@ -15,7 +15,7 @@ class CONFIG:
     gen_anpl_with_asserts   = {
         'temperature'       : 0.6,
     }
-    gen_verifier            = {
+    gen_random_input        = {
         'temperature'       : 0.6,
     }
     gen_function            = {
@@ -39,10 +39,12 @@ class CONFIG:
     num_generated_funcs: int        = 16
     num_debugged_funcs: int         = 8
     num_pretests: int               = 100
+    num_random_inputs: int          = 100
     eval_max_attempts: int          = 100000
     eval_max_time: float            = 240
     use_pretests_debug: bool        = True
-    use_asserts: bool               = True
+    use_asserts: bool               = False 
+    use_random_inputs: bool         = True
 
     # Misc    
     seed = 42

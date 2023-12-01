@@ -42,24 +42,23 @@ class GeneratePretest(ProgramAgentAction):
         )
         task.pretests = pretests.splitlines()
 
-class GenerateVerifier(ProgramAgentAction):
+class GenerateRandomInput(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
         try:
-            verifier = await task.client.request_for_verifier( 
+            task.random_inputs = await task.client.request_for_random_input( 
                 task_name         = task.task_name,
                 save_dir          = task.save_dir,
                 func_name         = task.problem_data.entry_point,
                 func_code         = task.problem_data.question,
+                num_random_inputs = self.config['num_random_inputs'],
                 completion_kwargs = {
                     'model'       : task.model_name,
-                    **CONFIG.gen_verifier
+                    **CONFIG.gen_random_input
                 },
-                num_completions   = 1 
+                num_completions   = 1
             )
         except Exception as err:
             self.logger.exception(err)
-        assert verifier, f'{task.task_name}: Couldn\'t generate verifier!'
-        task.verifier = verifier[0] 
 
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):

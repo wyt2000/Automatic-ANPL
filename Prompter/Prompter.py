@@ -175,11 +175,11 @@ def {func_name}(...):
 You should only output the function code! Omit explanations or any additional text!
 """
 
-verification_prompt = """-----Function-----
+random_input_prompt= """-----Function-----
 {function}
 
 -----Task-----
-Write a test generator function to generate one random test input for the function mentioned above.
+Write a test generator function to generate one random test input for the function mentioned above. Consider all edge cases and failure modes.
 Your output should be in the following format:
 ```
 def test_{func_name}(seed: int) -> list:

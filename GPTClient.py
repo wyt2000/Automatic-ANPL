@@ -10,7 +10,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts, verify_input_generator, collect_random_input
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -49,16 +49,16 @@ class GPTClient:
 
     # Save response to file
     @staticmethod
-    def save_one(result: str, save_dir: str, filename: str):
+    def save_one(result: Any, save_dir: str, filename: str):
         with open(pathlib.Path(save_dir, filename), 'w') as f:
-            f.write(result)
+            f.write(str(result))
 
     # Save responses to files named as 0 to n - 1
     @staticmethod
-    def save_all(results: list[str], save_dir: str, filename: str):
+    def save_all(results: list[Any], save_dir: str, filename: str):
         for i, response in enumerate(results):
             with open(pathlib.Path(save_dir, filename.format(i=i)), 'w') as f:
-                f.write(response)
+                f.write(str(response))
 
     # Abstract request GPT for completions.
     async def _request(self,
@@ -317,25 +317,25 @@ class GPTClient:
         )
 
     # Request from chatGPT to verify the function.
-    async def request_for_verifier(self,
-                                   task_name: str,
-                                   func_name: str,
-                                   func_code: str,
-                                   save_dir: str,
-                                   completion_kwargs: dict,
-                                   num_completions: int,
-                                   retry_times: int = 5):
+    async def request_for_random_input(self,
+                                       task_name: str,
+                                       func_name: str,
+                                       func_code: str,
+                                       num_random_inputs: int,
+                                       save_dir: str,
+                                       completion_kwargs: dict,
+                                       num_completions: int,
+                                       retry_times: int = 5):
 
         return await self._request(
             task_name               = task_name,
-            task_kind               = 'verifier',
-            prompt_template         = Prompter.verification_prompt,
+            task_kind               = 'random_input',
+            prompt_template         = Prompter.random_input_prompt,
             prompt_kwargs           = {'func_name': func_name, 'function': func_code},
-            response_handlers       = [
-                extract_code
-            ],
-            response_verifier       = verify_python,
-            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.verifier'),
+            response_handlers       = [extract_code],
+            response_verifier       = partial(verify_input_generator, func_name=f'test_{func_name}'),
+            response_collector      = partial(collect_random_input, func_name=f'test_{func_name}', num_random_inputs=num_random_inputs),
+            response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.random_input'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times

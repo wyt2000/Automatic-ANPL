@@ -179,7 +179,7 @@ random_input_prompt= """-----Function-----
 {function}
 
 -----Task-----
-Write a test generator function to generate one random test input for the function mentioned above. Consider all edge cases and failure modes.
+Give a test generator function to generate one random test input for the function mentioned above.
 Your output should be in the following format:
 ```
 def test_{func_name}(seed: int) -> list:
@@ -190,4 +190,18 @@ def test_{func_name}(seed: int) -> list:
 ```
 
 You should only output the python code! Omit explanations or any additional text!
+"""
+
+verifier_prompt = """-----Function-----
+{function}
+
+-----Task-----
+Give a verifier function to verify the correctness of the function mentioned above. Consider all edge cases and failure modes.
+Your output should be in the following format:
+```
+def verify_{func_name}(...): # Same as inputs of {func_name}
+    outputs = {func_name}(...)
+    (Check the correctness of the outputs, raise Exception if fail)
+```
+
 """

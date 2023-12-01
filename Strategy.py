@@ -41,6 +41,7 @@ class SelfDebugStrategy(Strategy):
                  num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
                  num_pretests             : int     = CONFIG.num_pretests,
                  num_random_inputs        : int     = CONFIG.num_random_inputs,
+                 num_verifiers            : int     = CONFIG.num_verifiers,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
                  use_pretests_debug       : bool    = CONFIG.use_pretests_debug,
@@ -55,6 +56,7 @@ class SelfDebugStrategy(Strategy):
         self.num_debugged_funcs       = num_debugged_funcs
         self.num_pretests             = num_pretests
         self.num_random_inputs        = num_random_inputs
+        self.num_verifiers            = num_verifiers
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
         self.use_pretests_debug       = use_pretests_debug
@@ -75,6 +77,15 @@ class SelfDebugStrategy(Strategy):
             Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts)
         )
 
+        # Generate tests and verifiers
+        self._initial_actions = [
+            Action.GeneratePretest(num_completions=self.num_pretests),
+            Action.GenerateRandomInput(num_random_inputs=self.num_random_inputs),
+            Action.GenerateVerifier(num_verifiers=self.num_verifiers),
+            Action.Restart(),
+            *self.generation_actions
+        ]
+
         # Do final test and stop the process
         self.finish_actions           = [
             Action.Restart(),
@@ -93,13 +104,8 @@ class SelfDebugStrategy(Strategy):
     # Generate pretest and enter the first generation process
     @property
     def initial_actions(self):
-        return [
-            Action.GeneratePretest(num_completions=self.num_pretests),
-            Action.GenerateRandomInput(num_random_inputs=self.num_random_inputs),
-            Action.Restart(),
-            *self.generation_actions
-        ]
-    
+        return self._initial_actions    
+
     # Refresh state and give new action list according to current observation 
     async def step(self, obs: ProgramAgentObservation) -> list[Action.ProgramAgentAction]:
         state = self.state

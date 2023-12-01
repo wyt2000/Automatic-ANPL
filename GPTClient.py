@@ -316,7 +316,7 @@ class GPTClient:
             retry_times             = retry_times
         )
 
-    # Request from chatGPT to verify the function.
+    # Request from chatGPT to generate random inputs.
     async def request_for_random_input(self,
                                        task_name: str,
                                        func_name: str,
@@ -336,6 +336,29 @@ class GPTClient:
             response_verifier       = partial(verify_input_generator, func_name=f'test_{func_name}'),
             response_collector      = partial(collect_random_input, func_name=f'test_{func_name}', num_random_inputs=num_random_inputs),
             response_saver          = partial(GPTClient.save_one, save_dir=save_dir, filename=f'{task_name}.random_input'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions,
+            retry_times             = retry_times
+        )
+
+    # Request from chatGPT to verify the function.
+    async def request_for_verifier(self,
+                                   task_name: str,
+                                   func_name: str,
+                                   func_code: str,
+                                   save_dir: str,
+                                   completion_kwargs: dict,
+                                   num_completions: int,
+                                   retry_times: int = 5):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'verifier',
+            prompt_template         = Prompter.verifier_prompt,
+            prompt_kwargs           = {'func_name': func_name, 'function': func_code},
+            response_handlers       = [extract_code],
+            response_verifier       = verify_python,
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.verifier'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times

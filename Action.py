@@ -60,6 +60,24 @@ class GenerateRandomInput(ProgramAgentAction):
         except Exception as err:
             self.logger.exception(err)
 
+class GenerateVerifier(ProgramAgentAction):
+    async def execute(self, task: ProgramTask):
+        try:
+            task.verifiers = await task.client.request_for_verifier( 
+                task_name         = task.task_name,
+                save_dir          = task.save_dir,
+                func_name         = task.problem_data.entry_point,
+                func_code         = task.problem_data.question,
+                completion_kwargs = {
+                    'model'       : task.model_name,
+                    **CONFIG.gen_verifier
+                },
+                num_completions   = self.config['num_verifiers'] 
+            )
+        except Exception as err:
+            self.logger.exception(err)
+
+
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
         solutions = await task.client.request_for_solutions(

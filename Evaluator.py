@@ -19,7 +19,7 @@ from utils import AsyncTimer
 class Evaluator(ABC):
 
     @abstractmethod
-    def update(self, program: str, asserts: list[str], passed_asserts: list[str]):
+    def update(self, program: str, *args):
         pass
 
     @abstractmethod
@@ -28,14 +28,18 @@ class Evaluator(ABC):
 
     @property
     @abstractmethod
-    def best_result(self) -> list[str, list[str]]:
+    def best_result(self) -> list[str, Any]:
         pass
 
     @property
     @abstractmethod
-    def final_submit(self) -> list[str, list[str]]:
+    def final_submit(self) -> list[str, Any]:
         pass
- 
+
+    @property
+    @abstractmethod
+    def score(self) -> int:
+        pass
 
 # Trivial policy, just choose the program passed the most test cases.
 class MaxPassEvaluator(Evaluator):
@@ -60,6 +64,38 @@ class MaxPassEvaluator(Evaluator):
     @property
     def final_submit(self) -> list[str, list[str]]:
         return self._final_submit
+
+    @property
+    def score(self) -> int:
+        return len(self.best_result[1])
+
+# Use |validators| x |passed input| as score.
+class ValidationEvaluator(Evaluator):
+
+    def __init__(self):
+        self._final_submit = ['', 0]
+        self._best_result = ['', 0]
+
+    def update(self, program: str, score: int):
+        if score >= self._best_result[1]:
+            self._best_result = [program, score]
+
+    def restart(self):
+        if self._best_result[1] >= self.final_submit[1]:
+            self._final_submit = deepcopy(self._best_result)
+        self._best_result = ['', 0]
+
+    @property
+    def best_result(self) -> list[str, int]:
+        return self._best_result
+
+    @property
+    def final_submit(self) -> list[str, int]:
+        return self._final_submit
+
+    @property
+    def score(self) -> int:
+        return self.best_result[1]
 
 # Use CodeT score to choose the best program with reasonable tests.
 class CodetEvaluator(Evaluator):
@@ -88,6 +124,10 @@ class CodetEvaluator(Evaluator):
     @property
     def final_submit(self) -> list[str, list[str]]:
         return self.best_result
+
+    @property
+    def score(self) -> int:
+        return max(self.all_attempts.values())[0]
 
 ###################################################################################
 
@@ -151,20 +191,19 @@ def eval_full_code(code: str, entry_point: str, asserts: list[str]):
                 inputs     = assert_stmt 
             ) 
             if exc: continue
-        except Exception:
+        except Exception as err:
             continue
         passed_asserts.append(assert_stmt)
     return passed_asserts
 
 # Evaluate all programs in code_generator and update the results in evaluator
 async def eval_sampled_functions(code_generator: Iterator[str],
-                           n_to_try: int,
-                           entry_point: str,
-                           imports_prefix: str,
-                           asserts: list[str],
-                           evaluator: Evaluator,
-                           max_time: float):
-    
+                                 entry_point: str,
+                                 imports_prefix: str,
+                                 asserts: list[str],
+                                 evaluator: Evaluator,
+                                 max_time: float):
+        
     max_time = int(max_time) * (10 ** 9)
     total_time = 0
     for code in code_generator:
@@ -173,6 +212,49 @@ async def eval_sampled_functions(code_generator: Iterator[str],
                 code = '\n'.join([imports_prefix, code])
                 passed_asserts = eval_full_code(code, entry_point, asserts)
                 evaluator.update(code, asserts, passed_asserts)
+            total_time += timer.time
+            if total_time >= max_time:
+                break
+            await asyncio.sleep(0)
+        except Exception as err:
+            pass
+    return evaluator.best_result
+
+# Validate a single program by the validator and tests
+def validate_full_code(code: str, entry_point: str, validators: list[str], test_inputs: list[Any]) -> int:
+    score = 0
+    for validator in validators:
+        code_with_validator = '\n'.join([code, validator])
+        for inputs in test_inputs:
+            try:
+                _, exc = eval_program(
+                    code       = code_with_validator,
+                    entry_name = f'validate_{entry_point}',
+                    inputs     = inputs 
+                ) 
+                if exc: continue
+            except Exception as err:
+                continue
+            score += 1
+    return score 
+
+# Validate programs in code_generator by validators and tests, then update the results in evaluator
+async def validate_sampled_functions(code_generator: Iterator[str],
+                                     entry_point: str,
+                                     imports_prefix: str,
+                                     validators: list[str],
+                                     test_inputs: list[Any],
+                                     evaluator: ValidationEvaluator,
+                                     max_time: float):
+    
+    max_time = int(max_time) * (10 ** 9)
+    total_time = 0
+    for code in code_generator:
+        try:
+            with AsyncTimer(time.time_ns()) as timer:
+                code = '\n'.join([imports_prefix, code])
+                score = validate_full_code(code, entry_point, validators, test_inputs)
+                evaluator.update(code, score)
             total_time += timer.time
             if total_time >= max_time:
                 break

@@ -41,7 +41,7 @@ class SelfDebugStrategy(Strategy):
                  num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
                  num_pretests             : int     = CONFIG.num_pretests,
                  num_random_inputs        : int     = CONFIG.num_random_inputs,
-                 num_validators            : int     = CONFIG.num_validators,
+                 num_validators           : int     = CONFIG.num_validators,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
                  use_pretests             : bool    = CONFIG.use_pretests,
@@ -56,7 +56,7 @@ class SelfDebugStrategy(Strategy):
         self.num_debugged_funcs       = num_debugged_funcs
         self.num_pretests             = num_pretests
         self.num_random_inputs        = num_random_inputs
-        self.num_validators            = num_validators
+        self.num_validators           = num_validators
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
         self.use_pretests             = use_pretests
@@ -64,6 +64,11 @@ class SelfDebugStrategy(Strategy):
 
         self.state                    = self.ProgramState()
         self.logger                   = logging.getLogger('SelfDebugStrategy')
+
+        if self.use_pretests:
+            self.eval_action          = Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts) 
+        else:
+            self.eval_action          = Action.Validate(max_time=eval_max_time, max_attempts=eval_max_attempts)
 
         # Generation from scratch and eval
         self.generation_actions       = []
@@ -73,10 +78,7 @@ class SelfDebugStrategy(Strategy):
         self.generation_actions.append(
             Action.GenerateFunction(num_completions=num_generated_funcs, use_asserts=use_asserts)
         )
-        self.generation_actions.append(
-            Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts)
-        )
-
+        self.generation_actions.append(self.eval_action)
         
         # Generate tests or test generators + validators
         if use_pretests:
@@ -130,7 +132,7 @@ class SelfDebugStrategy(Strategy):
             state.program_debug_times += 1
             return [
                 Action.DebugFunction(num_completions=self.num_debugged_funcs),
-                Action.EvalPretest(max_time=self.eval_max_time, max_attempts=self.eval_max_attempts)
+                self.eval_action
             ]
 
         # Debug in solution-level

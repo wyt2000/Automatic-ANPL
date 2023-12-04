@@ -50,8 +50,8 @@ class CONFIG:
     num_generated_funcs: int        = 16
     num_debugged_funcs: int         = 8
     num_pretests: int               = 100
-    num_random_inputs: int          = 100
-    num_validators: int             = 1
+    num_random_inputs: int          = 10
+    num_validators: int             = 10
     eval_max_attempts: int          = 100000
     eval_max_time: float            = 240
     use_pretests: bool              = False 

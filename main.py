@@ -21,7 +21,7 @@ from Strategy import SelfDebugStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from GPTClient import GPTClient
 from CacheManager import CacheManager
-from Evaluator import MaxPassEvaluator, CodetEvaluator
+from Evaluator import MaxPassEvaluator, ValidationEvaluator, CodetEvaluator
 from utils import mkdir_override, mkdir_no_override, await_with_semaphone
 
 logging.config.fileConfig('logging.conf')
@@ -59,7 +59,7 @@ if __name__ == '__main__':
                     mkdir_override(save_path)
                     with CacheManager(cache_path) as cacheManager: 
                         client = GPTClient(cacheManager)
-                        evaluator = MaxPassEvaluator()
+                        evaluator = ValidationEvaluator()
                         strategy = SelfDebugStrategy(
                             use_asserts = args.use_asserts
                         )

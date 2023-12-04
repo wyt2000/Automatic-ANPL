@@ -5,7 +5,7 @@ import logging
 
 from Task import Task, ProgramTask
 from GPTClient import GPTClient
-from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code
+from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code, validate_sampled_functions
 from ProblemSampler.ProblemSampler import ProblemData
 from Tracer import get_sorted_funcs, trace_code
 from utils import extract_imports, collect_counterexample, prepare_for_submit
@@ -276,7 +276,6 @@ class EvalPretest(ProgramAgentAction):
         self.logger.debug(f'{task.task_name}: Evaluating {n_to_try} programs...')
         best_result = await eval_sampled_functions(
             code_generator = code_generator,
-            n_to_try       = n_to_try,
             entry_point    = task.problem_data.entry_point,
             imports_prefix = task.imports_prefix,
             asserts        = task.pretests,
@@ -284,11 +283,31 @@ class EvalPretest(ProgramAgentAction):
             max_time       = self.config['max_time']
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
-        self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.pretests)} pretests!')
+        self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.max_score)} pretests!')
         task.program = best_result[0]
         GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
         task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
         GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
+
+class Validate(ProgramAgentAction): 
+    async def execute(self, task: ProgramTask):
+        n_to_try, code_generator = sample_functions(task.func_candidates, self.config['max_attempts'], task.seed)
+        self.logger.debug(f'{task.task_name}: Validating {n_to_try} programs...')
+        best_result = await validate_sampled_functions(
+            code_generator = code_generator,
+            entry_point    = task.problem_data.entry_point,
+            imports_prefix = task.imports_prefix,
+            validators     = task.validators,
+            test_inputs    = task.random_inputs,
+            evaluator      = task.evaluator,
+            max_time       = self.config['max_time']
+        )
+        self.logger.debug(f'{task.task_name}: Validating done!')
+        self.logger.debug(f'{task.task_name}: Current best attempt got score {best_result[1]} / {task.max_score}!')
+        task.program = best_result[0]
+        GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
+        # task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
+        # GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
 
 class EvalSystemTest(ProgramAgentAction):
     async def execute(self, task: ProgramTask):

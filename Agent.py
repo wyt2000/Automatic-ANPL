@@ -59,7 +59,7 @@ class ProgramAgent(Agent):
 
     async def observe(self, task: ProgramTask):
         obs = ProgramAgentObservation(
-            early_stop          = (len(task.evaluator.best_result[1]) == task.max_score),
+            early_stop          = (task.evaluator.score == task.max_score),
             error_raised        = (task.error is not None)
         )
         task.error = None

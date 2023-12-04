@@ -24,6 +24,7 @@ class ProgramTask(Task):
     task_name: str                  = None
     max_score: int                  = 0
     pretests: list[str]             = None
+    input_constraint: str           = None
     random_inputs: list[Any]        = None
     verifiers: list[str]            = None
     solution: str                   = None 

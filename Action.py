@@ -43,6 +43,21 @@ class GeneratePretest(ProgramAgentAction):
         task.pretests = pretests.splitlines()
         task.max_score = len(task.pretests)
 
+class GenerateInputConstraint(ProgramAgentAction): 
+    async def execute(self, task: ProgramTask):
+        input_constraints = await task.client.request_for_input_constraint(
+            task_name           = task.task_name,
+            function            = task.problem_data.question,
+            save_dir            = task.save_dir,
+            completion_kwargs   = {
+                'model'         : task.model_name,
+                **CONFIG.gen_input_constraint
+            },
+            num_completions     = 1
+        )
+        assert input_constraints, f'{task.task_name}: Couldn\'t generate input constraint!'
+        task.input_constraint = input_constraints[0] 
+
 class GenerateRandomInput(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
         try:
@@ -51,6 +66,7 @@ class GenerateRandomInput(ProgramAgentAction):
                 save_dir          = task.save_dir,
                 func_name         = task.problem_data.entry_point,
                 func_code         = task.problem_data.question,
+                constraint        = task.input_constraint,
                 num_random_inputs = self.config['num_random_inputs'],
                 completion_kwargs = {
                     'model'       : task.model_name,
@@ -60,6 +76,7 @@ class GenerateRandomInput(ProgramAgentAction):
             )
         except Exception as err:
             self.logger.exception(err)
+        assert task.random_inputs, f'{task.task_name}: Couldn\'t generate random inputs!'
 
 class GenerateVerifier(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
@@ -78,6 +95,7 @@ class GenerateVerifier(ProgramAgentAction):
             task.max_score = len(task.random_inputs) * len(task.verifiers) 
         except Exception as err:
             self.logger.exception(err)
+        assert task.verifiers, f'{task.task_name}: Couldn\'t generate verifiers!'
 
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):

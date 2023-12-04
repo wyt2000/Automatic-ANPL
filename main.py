@@ -46,6 +46,7 @@ if __name__ == '__main__':
     agent = ProgramAgent()
 
     sample_list = sampler.sample_randomly(args.num_problems)
+    # sample_list = sampler.sample([145])
     async def batch_tasks():
         # Handle SSL Error 
         async with aiohttp.ClientSession(trust_env=True) as session:

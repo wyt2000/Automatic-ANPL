@@ -316,11 +316,31 @@ class GPTClient:
             retry_times             = retry_times
         )
 
+    # Request from chatGPT to get the input constraints.
+    async def request_for_input_constraint(self,
+                                           task_name: str,
+                                           function: str,
+                                           save_dir: str,
+                                           completion_kwargs: dict,
+                                           num_completions: int):
+
+        return await self._request(
+            task_name               = task_name,
+            task_kind               = 'input_constraint',
+            prompt_template         = Prompter.input_constraint_prompt,
+            prompt_kwargs           = {'function' : function},
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.input_constraint'),
+            completion_kwargs       = completion_kwargs,
+            num_completions         = num_completions 
+        )
+
+
     # Request from chatGPT to generate random inputs.
     async def request_for_random_input(self,
                                        task_name: str,
                                        func_name: str,
                                        func_code: str,
+                                       constraint: str,
                                        num_random_inputs: int,
                                        save_dir: str,
                                        completion_kwargs: dict,
@@ -331,7 +351,7 @@ class GPTClient:
             task_name               = task_name,
             task_kind               = 'random_input',
             prompt_template         = Prompter.random_input_prompt,
-            prompt_kwargs           = {'func_name': func_name, 'function': func_code},
+            prompt_kwargs           = {'func_name': func_name, 'function': func_code, 'constraint': constraint},
             response_handlers       = [extract_code],
             response_verifier       = partial(verify_input_generator, func_name=f'test_{func_name}'),
             response_collector      = partial(collect_random_input, func_name=f'test_{func_name}', num_random_inputs=num_random_inputs),

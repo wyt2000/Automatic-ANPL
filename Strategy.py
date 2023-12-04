@@ -83,8 +83,9 @@ class SelfDebugStrategy(Strategy):
             self._initial_actions = [Action.GeneratePretest(num_completions=num_pretests)]
         else:
             self._initial_actions = [
+                Action.GenerateInputConstraint(),
                 Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
-                Action.GenerateVerifier(num_verifiers=num_verifiers)
+                # Action.GenerateVerifier(num_verifiers=num_verifiers)
             ]
         self._initial_actions.extend([
             Action.Restart(),

@@ -224,7 +224,7 @@ def collect_anpl_with_asserts(entry_func: str, anpl_code: str, entry_point: str)
 
 # Verify python syntax, faster than `ast.parse`.
 def verify_python(string):
-    if string is None: return False
+    if not string: return False
     try:
         compile(string, '<string>', 'exec')
         return True
@@ -309,6 +309,7 @@ def verify_input_generator(code: str, func_name: str) -> bool:
 def collect_random_input(funcs: list[str], func_name: str, num_random_inputs: int) -> list[list[Any]]:
     random_inputs = []
     for func in funcs:
+        print(func)
         for seed in range(CONFIG.seed, CONFIG.seed + num_random_inputs):
             try:
                 ios, exc = eval_program(

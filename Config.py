@@ -8,6 +8,10 @@ class CONFIG:
         'temperature'       : 0.6,
         'logit_bias'        : {755:-100},
     }
+    gen_input_constraint    = {
+        'temperature'       : 0.6,
+        'logit_bias'        : {755:-100},
+    }
     gen_anpl                = {
         'temperature'       : 0.2,
         'presence_penalty'  : 0.1,

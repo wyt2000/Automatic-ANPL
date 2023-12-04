@@ -25,8 +25,9 @@ class ProgramTask(Task):
     max_score: int                  = 0
     pretests: list[str]             = None
     input_constraint: str           = None
+    output_constraint: str          = None
     random_inputs: list[Any]        = None
-    verifiers: list[str]            = None
+    validators: list[str]           = None
     solution: str                   = None 
     anpl_code: str                  = None 
     func_candidates: list[set[str]] = None

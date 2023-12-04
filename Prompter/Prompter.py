@@ -192,11 +192,11 @@ def test_{func_name}(seed: int) -> list:
 You should only output the python code! Omit explanations or any additional text!
 """
 
-input_constraint_prompt = """-----Function-----
+io_constraint_prompt = """-----Function-----
 {function}
 
 -----Task-----
-Give input constraints of the function mentioned above step by step.
+Give {io_type} constraints of the function mentioned above step by step.
 """
 
 random_input_prompt = """-----Function-----
@@ -223,14 +223,14 @@ def test():
 You should only output the python code! Omit explanations or any additional text!
 """
 
-verifier_prompt = """-----Function-----
+validator_prompt = """-----Function-----
 {function}
 
 -----Task-----
-Give a verifier function to verify the correctness of the function mentioned above. Consider all edge cases and failure modes.
+Give a validator function to validate the correctness of the function mentioned above. Consider all edge cases and failure modes.
 Your output should be in the following format:
 ```
-def verify_{func_name}(...): # Same as inputs of {func_name}
+def validate_{func_name}(...): # Same as inputs of {func_name}
     outputs = {func_name}(...)
     (Check the correctness of the outputs, raise Exception if fail)
 ```

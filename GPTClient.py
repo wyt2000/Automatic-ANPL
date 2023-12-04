@@ -316,25 +316,25 @@ class GPTClient:
             retry_times             = retry_times
         )
 
-    # Request from chatGPT to get the input constraints.
-    async def request_for_input_constraint(self,
-                                           task_name: str,
-                                           function: str,
-                                           save_dir: str,
-                                           completion_kwargs: dict,
-                                           num_completions: int):
+    # Request from chatGPT to get the input or output constraints.
+    async def request_for_io_constraint(self,
+                                        task_name: str,
+                                        function: str,
+                                        io_type: str,
+                                        save_dir: str,
+                                        completion_kwargs: dict,
+                                        num_completions: int):
 
         return await self._request(
             task_name               = task_name,
-            task_kind               = 'input_constraint',
-            prompt_template         = Prompter.input_constraint_prompt,
-            prompt_kwargs           = {'function' : function},
-            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.input_constraint'),
+            task_kind               = f'{io_type}_constraint',
+            prompt_template         = Prompter.io_constraint_prompt,
+            prompt_kwargs           = {'function' : function, 'io_type' : io_type},
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.{io_type}_constraint'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions 
         )
-
-
+        
     # Request from chatGPT to generate random inputs.
     async def request_for_random_input(self,
                                        task_name: str,
@@ -361,24 +361,24 @@ class GPTClient:
             retry_times             = retry_times
         )
 
-    # Request from chatGPT to verify the function.
-    async def request_for_verifier(self,
-                                   task_name: str,
-                                   func_name: str,
-                                   func_code: str,
-                                   save_dir: str,
-                                   completion_kwargs: dict,
-                                   num_completions: int,
-                                   retry_times: int = 5):
+    # Request from chatGPT to validate the function.
+    async def request_for_validator(self,
+                                    task_name: str,
+                                    func_name: str,
+                                    func_code: str,
+                                    save_dir: str,
+                                    completion_kwargs: dict,
+                                    num_completions: int,
+                                    retry_times: int = 5):
 
         return await self._request(
             task_name               = task_name,
-            task_kind               = 'verifier',
-            prompt_template         = Prompter.verifier_prompt,
+            task_kind               = 'validator',
+            prompt_template         = Prompter.validator_prompt,
             prompt_kwargs           = {'func_name': func_name, 'function': func_code},
             response_handlers       = [extract_code],
             response_verifier       = verify_python,
-            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.verifier'),
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.validator'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times

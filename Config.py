@@ -12,6 +12,10 @@ class CONFIG:
         'temperature'       : 0.6,
         'logit_bias'        : {755:-100},
     }
+    gen_output_constraint    = {
+        'temperature'       : 0.6,
+        'logit_bias'        : {755:-100},
+    }
     gen_anpl                = {
         'temperature'       : 0.2,
         'presence_penalty'  : 0.1,
@@ -22,7 +26,7 @@ class CONFIG:
     gen_random_input        = {
         'temperature'       : 0.6,
     }
-    gen_verifier            = {
+    gen_validator           = {
         'temperature'       : 0.6,
     }
     gen_function            = {
@@ -47,7 +51,7 @@ class CONFIG:
     num_debugged_funcs: int         = 8
     num_pretests: int               = 100
     num_random_inputs: int          = 100
-    num_verifiers: int              = 1
+    num_validators: int             = 1
     eval_max_attempts: int          = 100000
     eval_max_time: float            = 240
     use_pretests: bool              = False 

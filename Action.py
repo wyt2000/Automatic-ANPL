@@ -45,9 +45,10 @@ class GeneratePretest(ProgramAgentAction):
 
 class GenerateInputConstraint(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
-        input_constraints = await task.client.request_for_input_constraint(
+        input_constraints = await task.client.request_for_io_constraint(
             task_name           = task.task_name,
             function            = task.problem_data.question,
+            io_type             = 'input',
             save_dir            = task.save_dir,
             completion_kwargs   = {
                 'model'         : task.model_name,
@@ -57,6 +58,22 @@ class GenerateInputConstraint(ProgramAgentAction):
         )
         assert input_constraints, f'{task.task_name}: Couldn\'t generate input constraint!'
         task.input_constraint = input_constraints[0] 
+
+class GenerateOutputConstraint(ProgramAgentAction): 
+    async def execute(self, task: ProgramTask):
+        output_constraints = await task.client.request_for_io_constraint(
+            task_name           = task.task_name,
+            function            = task.problem_data.question,
+            io_type             = 'output',
+            save_dir            = task.save_dir,
+            completion_kwargs   = {
+                'model'         : task.model_name,
+                **CONFIG.gen_output_constraint
+            },
+            num_completions     = 1
+        )
+        assert output_constraints, f'{task.task_name}: Couldn\'t generate output constraint!'
+        task.output_constraint = output_constraints[0] 
 
 class GenerateRandomInput(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
@@ -78,24 +95,24 @@ class GenerateRandomInput(ProgramAgentAction):
             self.logger.exception(err)
         assert task.random_inputs, f'{task.task_name}: Couldn\'t generate random inputs!'
 
-class GenerateVerifier(ProgramAgentAction):
+class GenerateValidator(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
         try:
-            task.verifiers = await task.client.request_for_verifier( 
+            task.validators = await task.client.request_for_validator( 
                 task_name         = task.task_name,
                 save_dir          = task.save_dir,
                 func_name         = task.problem_data.entry_point,
                 func_code         = task.problem_data.question,
                 completion_kwargs = {
                     'model'       : task.model_name,
-                    **CONFIG.gen_verifier
+                    **CONFIG.gen_validator
                 },
-                num_completions   = self.config['num_verifiers'] 
+                num_completions   = self.config['num_validators'] 
             )
-            task.max_score = len(task.random_inputs) * len(task.verifiers) 
+            task.max_score = len(task.random_inputs) * len(task.validators) 
         except Exception as err:
             self.logger.exception(err)
-        assert task.verifiers, f'{task.task_name}: Couldn\'t generate verifiers!'
+        assert task.validators, f'{task.task_name}: Couldn\'t generate validators!'
 
 class GenerateSolution(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):

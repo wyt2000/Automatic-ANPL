@@ -41,7 +41,7 @@ class SelfDebugStrategy(Strategy):
                  num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
                  num_pretests             : int     = CONFIG.num_pretests,
                  num_random_inputs        : int     = CONFIG.num_random_inputs,
-                 num_verifiers            : int     = CONFIG.num_verifiers,
+                 num_validators            : int     = CONFIG.num_validators,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
                  use_pretests             : bool    = CONFIG.use_pretests,
@@ -56,7 +56,7 @@ class SelfDebugStrategy(Strategy):
         self.num_debugged_funcs       = num_debugged_funcs
         self.num_pretests             = num_pretests
         self.num_random_inputs        = num_random_inputs
-        self.num_verifiers            = num_verifiers
+        self.num_validators            = num_validators
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
         self.use_pretests             = use_pretests
@@ -78,14 +78,15 @@ class SelfDebugStrategy(Strategy):
         )
 
         
-        # Generate tests or test generators + verifiers
+        # Generate tests or test generators + validators
         if use_pretests:
             self._initial_actions = [Action.GeneratePretest(num_completions=num_pretests)]
         else:
             self._initial_actions = [
                 Action.GenerateInputConstraint(),
+                Action.GenerateOutputConstraint(),
                 Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
-                # Action.GenerateVerifier(num_verifiers=num_verifiers)
+                Action.GenerateValidator(num_validators=num_validators)
             ]
         self._initial_actions.extend([
             Action.Restart(),

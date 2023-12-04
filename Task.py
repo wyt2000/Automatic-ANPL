@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from ProblemSampler.ProblemSampler import ProblemData
 from GPTClient import GPTClient
 from Evaluator import Evaluator
+from Tracer import IOCollector
 from typing import Any
 
 # External state of task, specfied by Agent. 
@@ -20,20 +21,21 @@ class ProgramTask(Task):
     model_name: str
     evaluator: Evaluator 
     seed: int
-    restart_times: int              = 0
-    task_name: str                  = None
-    max_score: int                  = 0
-    pretests: list[str]             = None
-    input_constraint: str           = None
-    output_constraint: str          = None
-    random_inputs: list[Any]        = None
-    validators: list[str]           = None
-    solution: str                   = None 
-    anpl_code: str                  = None 
-    func_candidates: list[set[str]] = None
-    imports_prefix: str             = None
-    program: str                    = None
-    counterexample: str | list[Any] = None
-    error: Exception | None         = None
-    running: bool                   = True 
+    restart_times: int                          = 0
+    task_name: str                              = None
+    max_score: int                              = 0
+    pretests: list[str]                         = None
+    input_constraint: str                       = None
+    output_constraint: str                      = None
+    random_inputs: list[Any]                    = None
+    validators: list[str]                       = None
+    solution: str                               = None 
+    anpl_code: str                              = None 
+    func_candidates: list[set[str]]             = None
+    imports_prefix: str                         = None
+    program: str                                = None
+    counterexample: str | list[str, list[Any]]  = None
+    func_traces: list[IOCollector]              = None
+    error: Exception | None                     = None
+    running: bool                               = True 
 

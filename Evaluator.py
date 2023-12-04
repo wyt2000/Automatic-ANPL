@@ -221,7 +221,7 @@ async def eval_sampled_functions(code_generator: Iterator[str],
     return evaluator.best_result
 
 # Validate a single program by the validator and tests
-def validate_full_code(code: str, entry_point: str, validators: list[str], test_inputs: list[Any]) -> int:
+def validate_full_code(code: str, entry_point: str, validators: list[str], test_inputs: list[list[Any]]) -> int:
     score = 0
     for validator in validators:
         code_with_validator = '\n'.join([code, validator])
@@ -243,7 +243,7 @@ async def validate_sampled_functions(code_generator: Iterator[str],
                                      entry_point: str,
                                      imports_prefix: str,
                                      validators: list[str],
-                                     test_inputs: list[Any],
+                                     test_inputs: list[list[Any]],
                                      evaluator: ValidationEvaluator,
                                      max_time: float):
     

@@ -8,7 +8,7 @@ from GPTClient import GPTClient
 from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code, validate_sampled_functions
 from ProblemSampler.ProblemSampler import ProblemData
 from Tracer import get_sorted_funcs, trace_code
-from utils import extract_imports, collect_counterexample, prepare_for_submit
+from utils import extract_imports, collect_counterexample, collect_counterexample_with_validator, prepare_for_submit
 from Config import CONFIG 
 
 # Request new solution or debug, specified by Agent.
@@ -218,9 +218,7 @@ class GenerateCounterexample(ProgramAgentAction):
 
 class DebugFunction(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
-        _, _, func_traces, _ = trace_code(task.program, task.counterexample, task.problem_data.entry_point)
-        if func_traces is None:
-            raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
+        func_traces = task.func_traces
         func_names_sorted, func_codes = get_sorted_funcs(task.program)
         func_candidates = [{func_codes[name]} for name in func_names_sorted]
         self.logger.debug(f'{task.task_name}: Debugging {len(func_names_sorted)} functions... ')
@@ -287,11 +285,17 @@ class EvalPretest(ProgramAgentAction):
         task.program = best_result[0]
         GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
         task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
+        _, _, task.func_traces, _ = trace_code(task.program, task.counterexample, task.problem_data.entry_point)
+        if task.func_traces is None:
+            raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
         GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
 
 class Validate(ProgramAgentAction): 
     async def execute(self, task: ProgramTask):
+        # Generate codes
         n_to_try, code_generator = sample_functions(task.func_candidates, self.config['max_attempts'], task.seed)
+
+        # Test by validators
         self.logger.debug(f'{task.task_name}: Validating {n_to_try} programs...')
         best_result = await validate_sampled_functions(
             code_generator = code_generator,
@@ -306,8 +310,25 @@ class Validate(ProgramAgentAction):
         self.logger.debug(f'{task.task_name}: Current best attempt got score {best_result[1]} / {task.max_score}!')
         task.program = best_result[0]
         GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
-        # task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
-        # GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
+
+        # Find one counterexample 
+        validator, inputs = collect_counterexample_with_validator(
+            code        = task.program,
+            entry_point = task.problem_data.entry_point,
+            validators  = task.validators,
+            test_inputs = task.random_inputs
+        )
+
+        # Get traces
+        _, _, task.func_traces, _ = trace_code(
+            code        = '\n'.join([task.program, validator]),
+            inputs      = inputs,
+            entry_name  = f'validate_{task.problem_data.entry_point}'
+        )
+        if task.func_traces is None:
+            raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
+        task.counterexample = [validator, inputs]
+        GPTClient.save_one(task.counterexample[1], task.save_dir, f'{task.task_name}.0.counterexample')
 
 class EvalSystemTest(ProgramAgentAction):
     async def execute(self, task: ProgramTask):

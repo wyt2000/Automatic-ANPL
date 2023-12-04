@@ -231,6 +231,7 @@ def verify_python(string):
     except SyntaxError:
         return False
 
+#############################################################################
 # TODO: support APPS
 # Find the assert which makes the program fail
 def collect_counterexample(asserts: list[str], program: str, entry_point: str) -> str:
@@ -250,6 +251,24 @@ def collect_counterexample(asserts: list[str], program: str, entry_point: str) -
 # Check if the program will raise an exception when tested by asserts
 def verify_counterexample(asserts: str, program: str, entry_point: str) -> bool:
     return collect_counterexample(asserts.splitlines(), program, entry_point) is not None
+
+def collect_counterexample_with_validator(code: str, entry_point: str, validators: list[str], test_inputs: list[list[Any]]) -> list[str, list[Any]]:
+    for validator in validators:
+        code_with_validator = '\n'.join([code, validator])
+        for inputs in test_inputs:
+            try:
+                _, exc = eval_program(
+                    code       = code_with_validator,
+                    entry_name = f'validate_{entry_point}',
+                    inputs     = inputs 
+                ) 
+            except Exception as err:
+                exc = err
+            if exc is not None:
+                return validator, inputs
+    return None 
+
+#############################################################################
 
 # Add trace before function code
 def compose_function_with_traces(func_code: str, func_traces: list[IOExample]) -> str:

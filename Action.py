@@ -285,6 +285,7 @@ class EvalPretest(ProgramAgentAction):
         task.program = best_result[0]
         GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
         task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)        
+        if task.counterexample is None: return
         _, _, task.func_traces, _ = trace_code(task.program, task.counterexample, task.problem_data.entry_point)
         if task.func_traces is None:
             raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
@@ -319,9 +320,10 @@ class Validate(ProgramAgentAction):
             validators  = task.validators,
             test_inputs = task.random_inputs
         )
+        if validator is None: return
 
         # Get traces
-        _, _, func_traces, _ = trace_code(
+        _, _, func_traces, exc = trace_code(
             code        = '\n'.join([task.program, validator]),
             inputs      = inputs,
             entry_name  = f'validate_{entry_point}'

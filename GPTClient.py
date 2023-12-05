@@ -10,7 +10,7 @@ from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts, verify_input_generator, collect_random_input
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts, verify_input_generator, collect_random_input, extract_validator
 from Tracer import IOExample
 from CacheManager import CacheManager
 
@@ -376,8 +376,9 @@ class GPTClient:
             task_kind               = 'validator',
             prompt_template         = Prompter.validator_prompt,
             prompt_kwargs           = {'func_name': func_name, 'function': func_code},
-            response_handlers       = [extract_code],
+            response_handlers       = [extract_code, extract_validator],
             response_verifier       = verify_python,
+            response_saver          = partial(GPTClient.save_all, save_dir=save_dir, filename=f'{task_name}.{{i}}.validator'),
             completion_kwargs       = completion_kwargs,
             num_completions         = num_completions,
             retry_times             = retry_times

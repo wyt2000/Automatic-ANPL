@@ -266,7 +266,7 @@ def collect_counterexample_with_validator(code: str, entry_point: str, validator
                 exc = err
             if exc is not None:
                 return validator, inputs
-    return None 
+    return None, None 
 
 #############################################################################
 
@@ -317,6 +317,7 @@ def prepare_for_submit(code: str):
     return code
 #############################################################################
 
+#############################################################################
 # Check if the code has a callable input generator `func_name`.
 def verify_input_generator(code: str, func_name: str) -> bool:
     _, exc = eval_program(code, func_name, [CONFIG.seed])
@@ -342,3 +343,14 @@ def collect_random_input(funcs: list[str], func_name: str, num_random_inputs: in
             except Exception as err:
                 pass
     return random_inputs
+
+#############################################################################
+# Remove all statement except function define in the top module to avoid exception
+def extract_validator(code: str):
+    try:
+        root = ast.parse(code)
+        root.body = [node for node in root.body if isinstance(node, (ast.FunctionDef, ast.Import, ast.ImportFrom))]
+        code = ast.unparse(root)
+    except Exception as err:
+        return None
+    return code

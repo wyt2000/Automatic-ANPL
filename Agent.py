@@ -5,7 +5,7 @@ import traceback
 
 from Action import Action, ProgramAgentAction
 from Observation import Observation, ProgramAgentObservation
-from Strategy import Strategy
+from Strategy.Strategy import Strategy
 from Task import Task, ProgramTask
 
 from GPTClient import GPTClient

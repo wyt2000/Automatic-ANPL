@@ -17,7 +17,7 @@ import pathlib
 import traceback
 
 from Agent import ProgramAgent 
-from Strategy import SelfDebugStrategy
+from Strategy.SelfDebugStrategy import SelfDebugStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from GPTClient import GPTClient
 from CacheManager import CacheManager

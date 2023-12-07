@@ -16,7 +16,7 @@ import openai
 import pathlib
 import traceback
 
-from Agent import ProgramAgent 
+from Agents import ProgramAgent 
 from Strategies import SelfDebugStrategy, FuzzingStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from GPTClient import GPTClient

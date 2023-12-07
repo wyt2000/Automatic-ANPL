@@ -4,7 +4,7 @@ import logging
 import logging.config
 
 from Actions import Action 
-from Observation import Observation 
+from Observations import Observation 
 
 __all__ = ['Strategy']
 

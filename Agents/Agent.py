@@ -1,0 +1,14 @@
+from abc import ABC, abstractmethod
+
+from Actions import Action
+from Task import Task
+
+
+class Agent(ABC):
+
+    # Do action and change state according to Strategy. 
+    @abstractmethod
+    def execute(self, task: Task, action: Action):
+        pass
+
+

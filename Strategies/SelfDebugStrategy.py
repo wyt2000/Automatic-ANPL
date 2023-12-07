@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from .Strategy import Strategy, State
-from Observation import ProgramAgentObservation
+from Observations import ProgramAgentObservation
 from Config import CONFIG
 import Actions.ProgramAgentActions as Action
 

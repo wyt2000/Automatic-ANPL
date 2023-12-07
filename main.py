@@ -21,7 +21,7 @@ from Strategies import SelfDebugStrategy, FuzzingStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
 from GPTClient import GPTClient
 from CacheManager import CacheManager
-from Evaluator import MaxPassEvaluator, ValidationEvaluator, CodetEvaluator
+from Evaluators import MaxPassEvaluator, ValidationEvaluator, CodetEvaluator
 from utils import mkdir_override, mkdir_no_override, await_with_semaphone
 
 logging.config.fileConfig('logging.conf')

@@ -1,5 +1,5 @@
 from .ProgramAgentAction import ProgramAgentAction
-from Evaluator import sample_functions, validate_sampled_functions
+from Evaluators import sample_functions, validate_sampled_functions
 from GPTClient import GPTClient
 from Task import ProgramTask
 from Tracer import trace_code

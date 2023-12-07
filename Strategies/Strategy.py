@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 import logging
 import logging.config
 
@@ -19,7 +20,7 @@ class Strategy(ABC):
 
     @property
     @abstractmethod
-    def initial_actions(self) -> list[Action]:
+    def initial_actions(self) -> List[Action]:
         pass
     
     @abstractmethod

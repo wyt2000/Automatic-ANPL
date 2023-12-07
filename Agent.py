@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import List
 import logging
 import logging.config
 import traceback
@@ -10,7 +11,7 @@ from Strategies import Strategy
 from Task import Task, ProgramTask
 
 from GPTClient import GPTClient
-from Evaluator import Evaluator, sample_functions, eval_sampled_functions, eval_full_code
+from Evaluators import Evaluator
 from ProblemSampler.ProblemSampler import ProblemData
 from Tracer import get_sorted_funcs, trace_code
 from utils import extract_imports, collect_counterexample, prepare_for_submit
@@ -66,7 +67,7 @@ class ProgramAgent(Agent):
         task.error = None
         return obs
 
-    async def execute(self, task: ProgramTask, actions: list[ProgramAgentAction]):
+    async def execute(self, task: ProgramTask, actions: List[ProgramAgentAction]):
         for action in actions:
             assert isinstance(action, ProgramAgentAction)
             try:

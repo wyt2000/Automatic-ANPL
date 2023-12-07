@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 
 from .Strategy import Strategy, State
 from Observation import ProgramAgentObservation
@@ -100,7 +101,7 @@ class SelfDebugStrategy(Strategy):
         return self._initial_actions    
 
     # Refresh state and give new action list according to current observation 
-    async def step(self, obs: ProgramAgentObservation) -> list[Action.ProgramAgentAction]:
+    async def step(self, obs: ProgramAgentObservation) -> List[Action.ProgramAgentAction]:
         state = self.state
 
         # Early stop

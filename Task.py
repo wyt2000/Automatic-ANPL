@@ -3,9 +3,9 @@ from dataclasses import dataclass
 
 from ProblemSampler.ProblemSampler import ProblemData
 from GPTClient import GPTClient
-from Evaluator import Evaluator
+from Evaluators import Evaluator
 from Tracer import IOCollector
-from typing import Any
+from typing import Any, Tuple, List, Set
 
 # External state of task, specfied by Agent. 
 class Task(ABC):
@@ -24,18 +24,18 @@ class ProgramTask(Task):
     restart_times: int                          = 0
     task_name: str                              = None
     max_score: int                              = 0
-    pretests: list[str]                         = None
+    pretests: List[str]                         = None
     input_constraint: str                       = None
     output_constraint: str                      = None
-    random_inputs: list[Any]                    = None
-    validators: list[str]                       = None
+    random_inputs: List[Any]                    = None
+    validators: List[str]                       = None
     solution: str                               = None 
     anpl_code: str                              = None 
-    func_candidates: list[set[str]]             = None
+    func_candidates: List[Set[str]]             = None
     imports_prefix: str                         = None
     program: str                                = None
-    counterexample: str | list[str, list[Any]]  = None
-    func_traces: list[IOCollector]              = None
+    counterexample: str | Tuple[str, List[Any]] = None
+    func_traces: List[IOCollector]              = None
     error: Exception | None                     = None
     running: bool                               = True 
 

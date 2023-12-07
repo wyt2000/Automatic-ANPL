@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from .Strategy import Strategy, State
+from typing import List
 
+from .Strategy import Strategy, State
 from Observation import ProgramAgentObservation
 from Config import CONFIG
 import Actions.ProgramAgentActions as Action
@@ -92,7 +93,7 @@ class FuzzingStrategy(Strategy):
         return self._initial_actions    
 
     # Refresh state and give new action list according to current observation 
-    async def step(self, obs: ProgramAgentObservation) -> list[Action.ProgramAgentAction]:
+    async def step(self, obs: ProgramAgentObservation) -> List[Action.ProgramAgentAction]:
         state = self.state
 
         # Early stop

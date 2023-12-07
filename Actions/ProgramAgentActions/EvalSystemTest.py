@@ -1,5 +1,5 @@
 from .ProgramAgentAction import ProgramAgentAction
-from Evaluator import eval_full_code
+from Evaluators import eval_full_code
 from GPTClient import GPTClient
 from Task import ProgramTask
 from utils import prepare_for_submit

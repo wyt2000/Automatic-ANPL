@@ -1,21 +1,27 @@
 from dataclasses import dataclass
-import logging
-import logging.config
-
 from .Strategy import Strategy, State
+
 from Observation import ProgramAgentObservation
 from Config import CONFIG
-import Action
+import Actions.ProgramAgentActions as Action
 
-# Generation and self-debug in fixed times.
-class SelfDebugStrategy(Strategy):
+__all__ = ['FuzzingStrategy']
+
+# Rank programs by fuzzing tests.
+class FuzzingStrategy(Strategy):
+    '''
+    STEP1: Generation inputs and programs.
+    STEP2: Get outputs by executing the programs.
+    STEP3: Rank programs by (inputs, outputs).
+    '''
 
     # 3-level inner state in self-debug 
     @dataclass
     class ProgramState(State):
-        restart_times        : int = 0
-        solution_debug_times : int = 0
-        program_debug_times  : int = 0
+        evaluation           : bool = False
+        restart_times        : int  = 0
+        solution_debug_times : int  = 0
+        program_debug_times  : int  = 0
 
     def __init__(self,
                  max_restart_times        : int     = CONFIG.max_restart_times,
@@ -25,14 +31,11 @@ class SelfDebugStrategy(Strategy):
                  num_debugged_funcs       : int     = CONFIG.num_debugged_funcs,
                  num_pretests             : int     = CONFIG.num_pretests,
                  num_random_inputs        : int     = CONFIG.num_random_inputs,
-                 num_validators           : int     = CONFIG.num_validators,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
-                 eval_max_time            : float   = CONFIG.eval_max_time,
-                 use_pretests             : bool    = CONFIG.use_pretests,
-                 use_asserts              : bool    = CONFIG.use_asserts,
-                 use_random_inputs        : bool    = CONFIG.use_random_inputs
+                 eval_max_time            : float   = CONFIG.eval_max_time
                  ):
-
+    
+        super().__init__()
         self.max_restart_times        = max_restart_times
         self.max_solution_debug_times = max_solution_debug_times
         self.max_program_debug_times  = max_program_debug_times
@@ -40,40 +43,29 @@ class SelfDebugStrategy(Strategy):
         self.num_debugged_funcs       = num_debugged_funcs
         self.num_pretests             = num_pretests
         self.num_random_inputs        = num_random_inputs
-        self.num_validators           = num_validators
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
-        self.use_pretests             = use_pretests
-        self.use_random_inputs        = use_random_inputs
 
         self.state                    = self.ProgramState()
-        self.logger                   = logging.getLogger('SelfDebugStrategy')
 
-        if self.use_pretests:
-            self.eval_action          = Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts) 
-        else:
-            self.eval_action          = Action.Validate(max_time=eval_max_time, max_attempts=eval_max_attempts)
+        self.eval_action          = Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts) 
 
         # Generation from scratch and eval
         self.generation_actions       = []
         self.generation_actions.append(Action.GenerateSolution())
         self.generation_actions.append(Action.GenerateANPL())
-        if use_asserts: self.generation_actions.append(Action.GenerateANPLWithAsserts())
         self.generation_actions.append(
-            Action.GenerateFunction(num_completions=num_generated_funcs, use_asserts=use_asserts)
+            Action.GenerateFunction(num_completions=num_generated_funcs, use_asserts=False)
         )
         self.generation_actions.append(self.eval_action)
         
         # Generate tests or test generators + validators
-        if use_pretests:
-            self._initial_actions = [Action.GeneratePretest(num_completions=num_pretests)]
-        else:
-            self._initial_actions = [
-                Action.GenerateInputConstraint(),
-                Action.GenerateOutputConstraint(),
-                Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
-                Action.GenerateValidator(num_validators=num_validators)
-            ]
+        self._initial_actions = [
+            Action.GeneratePretest(num_completions=num_pretests),
+            Action.GenerateInputConstraint(),
+            Action.GenerateOutputConstraint(),
+            Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
+        ]
         self._initial_actions.extend([
             Action.Restart(),
             *self.generation_actions

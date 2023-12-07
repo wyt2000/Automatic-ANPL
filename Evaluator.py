@@ -113,11 +113,11 @@ class FuzzingEvaluator(Evaluator):
 
     def update(self, program: str, mode: str, input_outputs: list[list[Any], list[Any]] = None):
         '''
-        Generation: Record the input x output count.
+        Sample: Record the input x output count.
         Freeze: Get the max output.
         Evaluation: Calulate the score.
         '''
-        if mode == 'Generation':
+        if mode == 'Sample':
             for inputs, outputs in input_outputs:
                 self.ios[self.h(inputs)][self.h(outputs)] += 1
         elif mode == 'Freeze':

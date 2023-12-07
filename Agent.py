@@ -3,9 +3,10 @@ import logging
 import logging.config
 import traceback
 
-from Action import Action, ProgramAgentAction
+from Actions import Action
+from Actions.ProgramAgentActions import ProgramAgentAction
 from Observation import Observation, ProgramAgentObservation
-from Strategy.Strategy import Strategy
+from Strategies import Strategy
 from Task import Task, ProgramTask
 
 from GPTClient import GPTClient

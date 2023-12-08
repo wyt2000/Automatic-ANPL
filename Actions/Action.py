@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from Task import Task
+from Tasks import Task
 
 __all__ = ['Action']
 

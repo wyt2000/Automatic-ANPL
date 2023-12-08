@@ -6,8 +6,9 @@ from GPTClient import GPTClient
 from Observations import ProgramAgentObservation
 from ProblemSampler.ProblemSampler import ProblemData
 from Strategies import Strategy
-from Task import ProgramTask
+from Tasks import ProgramTask
 
+__all__ = ['ProgramAgent']
 
 import logging
 import traceback

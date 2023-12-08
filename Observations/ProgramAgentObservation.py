@@ -1,6 +1,8 @@
 from .Observation import Observation
 from dataclasses import dataclass
 
+__all__ = ['ProgramAgentObservation']
+
 @dataclass
 class ProgramAgentObservation(Observation):
     # Observation from Evaluator.

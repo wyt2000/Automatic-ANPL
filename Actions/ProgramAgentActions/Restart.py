@@ -1,5 +1,5 @@
 from .ProgramAgentAction import ProgramAgentAction
-from Task import ProgramTask
+from Tasks import ProgramTask
 
 __all__ = ['Restart']
 

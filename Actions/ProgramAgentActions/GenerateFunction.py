@@ -1,6 +1,6 @@
 from .ProgramAgentAction import ProgramAgentAction
 from Config import CONFIG
-from Task import ProgramTask
+from Tasks import ProgramTask
 from Tracer import get_sorted_funcs
 from utils import extract_imports
 

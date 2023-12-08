@@ -1,6 +1,6 @@
 from .ProgramAgentAction import ProgramAgentAction
 from Config import CONFIG
-from Task import ProgramTask
+from Tasks import ProgramTask
 
 __all__ = ['GenerateSolution']
 

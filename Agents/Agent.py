@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 
 from Actions import Action
-from Task import Task
+from Tasks import Task
 
+__all__ = ['Agent']
 
 class Agent(ABC):
 

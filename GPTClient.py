@@ -10,7 +10,7 @@ from typing import Callable, Any
 
 from Prompter import Prompter
 from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, collect_anpl_with_asserts, verify_input_generator, collect_random_input, extract_validator
-from Tracer import IOExample
+from Utils.Tracer import IOExample
 from Utils import CacheManager
 
 class GPTClient:

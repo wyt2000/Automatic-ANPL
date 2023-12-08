@@ -1,7 +1,6 @@
 *.zip
 *.json
 *.ss
-*prompts*
 *responses*
 *results*
 !logging.conf

@@ -1,36 +1,22 @@
 import functools
 import traceback
-import sys
-import importlib.util
 import functools
+from .ProgramOperations import get_sorted_funcs
 import timeout_decorator
 from copy import deepcopy
 from types import FunctionType, ModuleType
-import io as IO
-from contextlib import redirect_stdout
-import resource
-import code
-import ast
-from typing import Any
+from typing import Any, List, Dict
 
-# Import program str as module.
-def import_module_from_string(source: str):
-    spec = importlib.util.spec_from_loader("test", loader=None)
-    module = importlib.util.module_from_spec(spec)
-    exec(source, module.__dict__)
-    return module
+from .ProgramOperations import eval_program
 
-# Get func lineno from code_str
-def get_lineno_for_function(code: list[str], func_name: str):
-    for i, line in enumerate(code):
-        if f'def {func_name}' in line:
-            return i + 1
-    return -1
+__all__ = [
+    'IOExample',
+    'IOCollector',
+    'trace_code',
+]
 
 class TraceException(Exception):
-    '''
-    Exception with lineno in str module.
-    '''
+    # Exception with lineno in str module.
     def __init__(self,
                  lineno: int,
                  func_name: str,
@@ -45,11 +31,9 @@ class TraceException(Exception):
         return f"{super().args[0].__repr__()} at line {self.lineno} in function \'{self.func_name}\': {self.code.strip()}"
 
 class IOExample:
-    '''
-    input-output pair with exception for function.
-    '''
+    # input-output pair with exception for function.
     def __init__(self,
-                 inp: dict[str, str],
+                 inp: Dict[str, str],
                  out: str,
                  exc: Exception = None):
         self.input     = inp
@@ -62,12 +46,10 @@ class IOExample:
         return f'input: {repr(self.input)}, exception: {repr(self.exception)}'
 
 class IOCollector:
-    '''
-    Wrap func in module to record input/output when exec.
-    '''
+    # Wrap func in module to record input/output when exec.
     def __init__(self,
                  code: str, # for lineno -> line str
-                 func_names: list[str],
+                 func_names: List[str],
                  module: ModuleType,
                  limit: int= 3):
 
@@ -88,8 +70,16 @@ class IOCollector:
     def __getitem__(self, key):
         return self.func_ios.get(key, [])
 
-    # Wrap function to save I/O in func_ios when execuated
+    @staticmethod
+    def get_lineno_for_function(code: List[str], func_name: str):
+        # Get func lineno from code_str
+        for i, line in enumerate(code):
+            if f'def {func_name}' in line:
+                return i + 1
+        return -1
+
     def set_trace(self, func: FunctionType):
+        # Wrap function to save I/O in func_ios when execuated
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -121,7 +111,7 @@ class IOCollector:
                 if not func_name or func_name == 'wrapper': 
                     # Handle exception before entering func, eg: arg number not match 
                     func_name = func.__name__
-                    lineno = get_lineno_for_function(self.full_code, func_name)
+                    lineno = self.get_lineno_for_function(self.full_code, func_name)
                 code = self.full_code[lineno - 1] if 0 <= lineno - 1 < len(self.full_code) else ""
                 exc = TraceException(lineno, func_name, code, e)
             frozen_output = deepcopy(output)
@@ -140,76 +130,16 @@ class IOCollector:
             return output
         return wrapper
 
-# Run code and save traces of func_names (optional), NOT support kwargs 
-@timeout_decorator.timeout(1)
-def eval_program(code: str,
-                 entry_name: str,
-                 inputs: list[Any] | str = None,
-                 with_trace: bool = False,
-                 func_names: list[str] = None,
-                 ) -> list[IOCollector | None, Exception]:
-    io, exc = None, None
-
-    # Save resource usage limit
-    soft, hard = resource.getrlimit(resource.RLIMIT_AS)
-    recursion_limit = sys.getrecursionlimit()
-    try:
-        with redirect_stdout(IO.StringIO()):
-            # Limit resource usage
-            resource.setrlimit(resource.RLIMIT_AS, (1 << 32, hard))
-            sys.setrecursionlimit(100)
-
-            # Load module from code and find entry function
-            module = import_module_from_string(code)
-            if with_trace: io = IOCollector(code, func_names, module)
-            entry_func = getattr(module, entry_name, None)
-            if not (entry_func and isinstance(entry_func, FunctionType)):
-                raise ValueError(f"Couldn't find entry function {entry_name}")
-
-            # Exec entry_func with inputs
-            if inputs is None:
-                exec(code) # for anpl syntax check
-            elif isinstance(inputs, list):
-                entry_func(*inputs) # For list[args]
-            elif isinstance(inputs, str):
-                exec(inputs, locals() | {entry_func.__name__: entry_func}) # For assert str
-            else:
-                raise TypeError("Inputs should be either list or assert str!")
-
-    # Collect Exceptions and Recover the resource limits
-    except AssertionError as err:
-        exc = err if err.args else AssertionError(inputs)
-    except Exception as err:
-        exc = err 
-    finally:
-        sys.setrecursionlimit(recursion_limit)
-        resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
-    return io, exc 
-
-# Get function names and codes in definition order of the program.
-def get_sorted_funcs(program: str) -> tuple[list[str], dict[str, str]]:
-    func_names_sorted = []
-    func_codes = {} 
-    root = ast.parse(program)
-    for node in root.body:
-        if isinstance(node, ast.FunctionDef):
-            func: ast.FunctionDef = node
-            func_names_sorted.append(func.name)
-            func_codes[func.name] = ast.unparse(func)
-    return func_names_sorted, func_codes
-
-# Trace all functions in code
 def trace_code(code: str,
-               inputs: list[Any] | str,
-               entry_name: str = 'main') -> list[list[str], dict[str, str], IOCollector, Exception]:
+               inputs: List[Any] | str,
+               entry_name: str = 'main') -> List[List[str], Dict[str, str], IOCollector, Exception]:
     # Get function names and codes
     try:
         func_names_sorted, func_codes = get_sorted_funcs(code)
     except Exception as e:
-        te = traceback.TracebackException.from_exception(e)
-        lineno = te.stack[0].lineno
         return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
 
+    # Trace all functions in code
     try:
         ios, exc = eval_program(
             code        = code,
@@ -221,5 +151,3 @@ def trace_code(code: str,
         return func_names_sorted, func_codes, ios, exc
     except Exception as exc:
         return func_names_sorted, func_codes, None, exc
-
-

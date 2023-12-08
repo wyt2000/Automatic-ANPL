@@ -1,7 +1,9 @@
 import os
 import json
 import pathlib
-from utils import mkdir_no_override, mkdir_override
+from .FileOperations import mkdir_no_override, mkdir_override
+
+__all__ = ['CacheManager']
 
 # Save the responses from GPT.
 class Cache:

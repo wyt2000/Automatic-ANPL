@@ -7,8 +7,8 @@ from typing import Any, Iterator, List, Set
 from .Evaluator import Evaluator 
 from .ValidationEvaluator import ValidationEvaluator
 
-from Tracer import eval_program
-from utils import AsyncTimer
+from Utils.ProgramOperations import eval_program
+from Utils.AsyncTimer import AsyncTimer
 
 __all__ = [
     'sample_functions',

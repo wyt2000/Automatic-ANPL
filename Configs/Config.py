@@ -61,5 +61,6 @@ class CONFIG:
     use_random_inputs: bool         = True
 
     # Misc    
-    seed = 42
+    seed                            = 42
+    eval_program_timeout            = 1.0
 

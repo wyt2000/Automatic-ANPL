@@ -1,18 +1,17 @@
+from Utils.ProgramOperations.compose_function_with_traces import compose_function_with_traces
+from Utils.ProgramOperations.remove_asserts import remove_asserts
 import openai
 import logging 
 import logging.config
 import pathlib
-import json
 import asyncio
-import re
-import ast
 from functools import partial
 from typing import Callable, Any
 
 from Prompter import Prompter
-from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, compose_function_with_traces, remove_asserts, collect_anpl_with_asserts, verify_input_generator, collect_random_input, extract_validator
+from utils import extract_code, extract_anpl, extract_func, extract_asserts, verify_anpl, collect_anpl, verify_python, verify_counterexample, collect_counterexample, collect_anpl_with_asserts, verify_input_generator, collect_random_input, extract_validator
 from Tracer import IOExample
-from CacheManager import CacheManager
+from Utils import CacheManager
 
 class GPTClient:
 

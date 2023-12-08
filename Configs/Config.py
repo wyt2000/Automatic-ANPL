@@ -1,3 +1,5 @@
+__all__ = ['CONFIG']
+
 class CONFIG:
 
     # Agent

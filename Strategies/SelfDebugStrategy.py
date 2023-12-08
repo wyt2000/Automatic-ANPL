@@ -3,7 +3,7 @@ from typing import List
 
 from .Strategy import Strategy, State
 from Observations import ProgramAgentObservation
-from Config import CONFIG
+from Configs import CONFIG
 import Actions.ProgramAgentActions as Action
 
 __all__ = ['SelfDebugStrategy']

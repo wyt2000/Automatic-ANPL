@@ -5,21 +5,14 @@ import coloredlogs
 import importlib
 import logging 
 import logging.config
-import json
-import functools
-import operator
-import random
-import re
 import ast
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager
 import asyncio
 from typing import Callable, Coroutine, Any
 import time
-import traceback
-import json
 
 from Tracer import eval_program, IOExample
-from Config import CONFIG
+from Configs import CONFIG
 
 def mkdir_override(dir_path):
     '''

@@ -18,13 +18,13 @@ import traceback
 
 from Agents import ProgramAgent 
 from Strategies import SelfDebugStrategy, FuzzingStrategy
-from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler, HumanEvalProblemData
+from ProblemSamplers import HumanEvalProblemSampler, HumanEvalProblemData
 from GPTClient import GPTClient
 from CacheManager import CacheManager
 from Evaluators import MaxPassEvaluator, ValidationEvaluator, CodetEvaluator
 from utils import mkdir_override, mkdir_no_override, await_with_semaphone
 
-logging.config.fileConfig('logging.conf')
+logging.config.fileConfig('Configs/logging.conf')
 logger = logging.getLogger('main')
 
 if __name__ == '__main__':

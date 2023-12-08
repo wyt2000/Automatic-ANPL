@@ -1,11 +1,13 @@
 from Evaluators import Evaluator
 from GPTClient import GPTClient
-from ProblemSampler.ProblemSampler import ProblemData
-from Tasks.Task import Task
+from ProblemSamplers import ProblemData
+from .Task import Task
 from Tracer import IOCollector
 
 from dataclasses import dataclass
 from typing import Any, List, Set, Tuple
+
+__all__ = ['ProgramTask']
 
 @dataclass
 class ProgramTask(Task):

@@ -10,7 +10,7 @@ import sys
 import argparse
 from utils import mkdir_override
 
-logging.config.fileConfig('logging.conf')
+logging.config.fileConfig('Configs/logging.conf')
 logger = logging.getLogger('main')
 
 if __name__ == '__main__':

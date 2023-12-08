@@ -1,10 +1,10 @@
 from Actions.ProgramAgentActions import ProgramAgentAction
 from .Agent import Agent
-from Config import CONFIG
+from Configs import CONFIG
 from Evaluators import Evaluator
 from GPTClient import GPTClient
 from Observations import ProgramAgentObservation
-from ProblemSampler.ProblemSampler import ProblemData
+from ProblemSamplers import ProblemData
 from Strategies import Strategy
 from Tasks import ProgramTask
 

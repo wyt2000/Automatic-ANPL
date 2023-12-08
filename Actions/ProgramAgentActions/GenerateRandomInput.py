@@ -1,5 +1,5 @@
 from .ProgramAgentAction import ProgramAgentAction
-from Config import CONFIG
+from Configs import CONFIG
 from Tasks import ProgramTask
 
 __all__ = ['GenerateRandomInput']

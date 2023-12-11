@@ -1,4 +1,4 @@
-Pretest = """-----Question-----
+GeneratePretest = """-----Question-----
 {question}
 -----Task-----
 Give an assert test for this question. Each assert statement should be on one line.

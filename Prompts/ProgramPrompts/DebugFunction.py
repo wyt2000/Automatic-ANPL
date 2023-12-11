@@ -1,4 +1,4 @@
-FunctionDebug = """-----Question-----
+DebugFunction = """-----Question-----
 {question}
 
 -----Solution-----

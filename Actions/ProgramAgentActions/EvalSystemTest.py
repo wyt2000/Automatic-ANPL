@@ -2,7 +2,7 @@ from .ProgramAgentAction import ProgramAgentAction
 from Evaluators import eval_full_code
 from GPTClient import GPTClient
 from Tasks import ProgramTask
-from utils import prepare_for_submit
+from Utils.ProgramOperations import prepare_for_submit
 
 __all__ = ['EvalSystemTest']
 

@@ -61,7 +61,7 @@ class CONFIG:
     use_random_inputs: bool         = True
 
     # LLM Client
-    GPT_retry_times                 = 5
+    LLM_retry_times                 = 5
 
     # Misc    
     seed                            = 42

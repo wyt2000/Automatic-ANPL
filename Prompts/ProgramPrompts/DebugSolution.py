@@ -1,4 +1,4 @@
-SolutionDebug = """-----Question-----
+DebugSolution = """-----Question-----
 {question}
 
 -----Solution-----

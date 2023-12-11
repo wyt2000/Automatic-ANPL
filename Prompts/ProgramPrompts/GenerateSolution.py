@@ -1,4 +1,4 @@
-Solution = """-----Question-----
+GenerateSolution = """-----Question-----
 {question}
 
 -----Task-----

@@ -1,7 +1,7 @@
 import ast
 from typing import Set
 
-__all__ = ['remove_implemented_functions']
+__all__ = ['extract_func']
 
 class FuncDefTransformer(ast.NodeTransformer):
     def __init__(self, removed_funcs: Set[str]):
@@ -26,3 +26,7 @@ def remove_implemented_functions(raw_code: str, target: str, implemented_functio
     except Exception:
         pass
     return code
+
+def extract_func(content: str, target: str, func_names: Set[str]):
+    # Filter other functions, but allow decompose
+    return remove_implemented_functions(content, target, func_names - {target})

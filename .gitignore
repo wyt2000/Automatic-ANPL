@@ -1,7 +1,5 @@
 *.zip
 *.json
-*.ss
-*responses*
 *results*
 !logging.conf
 __pycache__

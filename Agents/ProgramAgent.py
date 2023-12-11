@@ -59,7 +59,6 @@ class ProgramAgent(Agent):
 
     async def execute(self, task: ProgramTask, actions: List[ProgramAgentAction]):
         for action in actions:
-            assert isinstance(action, ProgramAgentAction)
             try:
                 await action.execute(task)
             except Exception as err:

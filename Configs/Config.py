@@ -60,6 +60,9 @@ class CONFIG:
     use_asserts: bool               = False 
     use_random_inputs: bool         = True
 
+    # LLM Client
+    GPT_retry_times                 = 5
+
     # Misc    
     seed                            = 42
     eval_program_timeout            = 1.0

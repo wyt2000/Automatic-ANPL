@@ -1,9 +1,10 @@
 from functools import partial
 
-import Prompts.ProgramPrompts as Prompts
-from ..Clients import LLMClient 
-from Utils.FileOperations import save_all
 from Utils.ProgramOperations import inject_func_to_class
+from Utils.FileOperations import save_all
+
+from .. import Prompts
+from ..Clients import LLMClient 
 from ..Extractors import extract_code, extract_anpl
 from ..Verifiers import verify_anpl
 from ..Collectors import collect_anpl
@@ -21,6 +22,7 @@ async def GenerateANPL(client: LLMClient,
                        num_completions: int,
                        retry_times: int = 5):
 
+    # Request from chatGPT to get code for high-level solution.
     return await client.request(
         task_name               = task_name,
         task_kind               = 'translation',

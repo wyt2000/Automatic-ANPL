@@ -1,9 +1,10 @@
 from functools import partial
 
-import Prompts.ProgramPrompts as Prompts
-from ..Clients import LLMClient 
-from Utils.FileOperations import save_one
 from Utils.ProgramOperations import inject_func_to_class
+from Utils.FileOperations import save_one
+
+from .. import Prompts
+from ..Clients import LLMClient 
 from ..Extractors import extract_code, extract_asserts
 
 __all__ = ['GeneratePretest']
@@ -16,8 +17,8 @@ async def GeneratePretest(client: LLMClient,
                           completion_kwargs: dict,
                           num_completions: int,
                           retry_times: int = 5):
+                          
     # Request from chatGPT to get pretests for question.
-
     return await client.request(
         task_name               = task_name,
         task_kind               = 'pretest',

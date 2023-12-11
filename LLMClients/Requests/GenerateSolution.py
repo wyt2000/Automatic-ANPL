@@ -1,9 +1,10 @@
 from functools import partial
 
-import Prompts.ProgramPrompts as Prompts
-from ..Clients import LLMClient 
-from Utils.FileOperations import save_all
 from Utils.ProgramOperations import inject_func_to_class
+from Utils.FileOperations import save_all
+
+from .. import Prompts
+from ..Clients import LLMClient 
 
 __all__ = ['GenerateSolution']
 
@@ -14,8 +15,8 @@ async def GenerateSolution(client: LLMClient,
                                 save_dir: str,
                                 completion_kwargs: dict,
                                 num_completions: int):
+                                
     # Request from chatGPT to get high-level solution for question.
-
     return await client.request(
         task_name               = task_name,
         task_kind               = 'solution',

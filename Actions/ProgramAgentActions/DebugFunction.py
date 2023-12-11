@@ -24,7 +24,6 @@ class DebugFunction(ProgramAgentAction):
                     func_names        = set(func_names_sorted),
                     func_code         = func_codes[func_name],
                     func_traces       = func_traces[func_name],
-                    save_dir          = task.save_dir,
                     completion_kwargs = {
                         "model"       : task.model_name,
                         **CONFIG.debug_function

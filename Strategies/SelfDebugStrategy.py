@@ -8,12 +8,12 @@ import Actions.ProgramAgentActions as Action
 
 __all__ = ['SelfDebugStrategy']
 
-# Generation and self-debug in fixed times.
 class SelfDebugStrategy(Strategy):
+    # Generation and self-debug in fixed times.
 
-    # 3-level inner state in self-debug 
     @dataclass
     class ProgramState(State):
+        # 3-level inner state in self-debug 
         restart_times        : int = 0
         solution_debug_times : int = 0
         program_debug_times  : int = 0
@@ -29,9 +29,8 @@ class SelfDebugStrategy(Strategy):
                  num_validators           : int     = CONFIG.num_validators,
                  eval_max_attempts        : int     = CONFIG.eval_max_attempts,
                  eval_max_time            : float   = CONFIG.eval_max_time,
-                 use_pretests             : bool    = CONFIG.use_pretests,
-                 use_asserts              : bool    = CONFIG.use_asserts,
-                 use_random_inputs        : bool    = CONFIG.use_random_inputs
+                 use_fuzzing              : bool    = CONFIG.use_fuzzing,
+                 use_asserts              : bool    = CONFIG.use_asserts
                  ):
         
         super().__init__()
@@ -45,15 +44,14 @@ class SelfDebugStrategy(Strategy):
         self.num_validators           = num_validators
         self.eval_max_attempts        = eval_max_attempts
         self.eval_max_time            = eval_max_time
-        self.use_pretests             = use_pretests
-        self.use_random_inputs        = use_random_inputs
+        self.use_fuzzing              = use_fuzzing 
 
         self.state                    = self.ProgramState()
 
-        if self.use_pretests:
-            self.eval_action          = Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts) 
-        else:
+        if use_fuzzing:
             self.eval_action          = Action.Validate(max_time=eval_max_time, max_attempts=eval_max_attempts)
+        else:
+            self.eval_action          = Action.EvalPretest(max_time=eval_max_time, max_attempts=eval_max_attempts) 
 
         # Generation from scratch and eval
         self.generation_actions       = []
@@ -66,14 +64,16 @@ class SelfDebugStrategy(Strategy):
         self.generation_actions.append(self.eval_action)
         
         # Generate tests or test generators + validators
-        if use_pretests:
-            self._initial_actions = [Action.GeneratePretest(num_completions=num_pretests)]
-        else:
+        if use_fuzzing:
             self._initial_actions = [
                 Action.GenerateInputConstraint(),
                 Action.GenerateOutputConstraint(),
                 Action.GenerateRandomInput(num_random_inputs=num_random_inputs),
                 Action.GenerateValidator(num_validators=num_validators)
+            ]
+        else:
+            self._initial_actions = [
+                Action.GeneratePretest(num_completions=num_pretests)
             ]
         self._initial_actions.extend([
             Action.Restart(),

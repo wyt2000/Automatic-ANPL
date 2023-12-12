@@ -34,7 +34,8 @@ if __name__ == '__main__':
     argparser.add_argument("-p", "--num_problems", help="Number of problems", type=int, default=1)
     argparser.add_argument("-j", "--num_workers", help="Number of working coroutines", type=int, default=1)
     argparser.add_argument("-s", "--save_dir", help="Path to save the results and logs", type=str, required=True)
-    argparser.add_argument("--use_asserts", help="Generate assertions to debug", action='store_true')
+    argparser.add_argument("--use-asserts", help="Generate assertions to debug", action='store_true')
+    argparser.add_argument("--use-fuzzing", help="Generate fuzzing test to rank programs", action='store_true')
     args = argparser.parse_args()
     save_dir = args.save_dir
     cache_dir = f'{save_dir}_cache'
@@ -61,9 +62,10 @@ if __name__ == '__main__':
                     mkdir_override(save_path)
                     with CacheManager(cache_path) as cacheManager: 
                         client = GPTClient(cacheManager)
-                        evaluator = ValidationEvaluator()
+                        evaluator = ValidationEvaluator() if args.use_fuzzing else MaxPassEvaluator()
                         strategy = SelfDebugStrategy(
-                            use_asserts = args.use_asserts
+                            use_asserts = args.use_asserts,
+                            use_fuzzing = args.use_fuzzing
                         )
                         await agent.dispatch(
                             task_name        = data.problem_id,

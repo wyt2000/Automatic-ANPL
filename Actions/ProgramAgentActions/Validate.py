@@ -1,7 +1,7 @@
 from .ProgramAgentAction import ProgramAgentAction
 from Evaluators import sample_functions, validate_sampled_functions
 from Tasks import ProgramTask
-from Utils.Tracer import trace_code
+from Utils.ProgramOperations import trace_code
 from Utils.FileOperations import save_one
 from LLMClients.Collectors import collect_counterexample_with_validator
 

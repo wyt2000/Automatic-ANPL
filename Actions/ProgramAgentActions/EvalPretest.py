@@ -2,7 +2,7 @@ from .ProgramAgentAction import ProgramAgentAction
 from Tasks import ProgramTask
 from Evaluators import eval_sampled_functions, sample_functions
 from LLMClients.Collectors import collect_counterexample
-from Utils.Tracer import trace_code
+from Utils.ProgramOperations import trace_code
 from Utils.FileOperations import save_one
 
 __all__ = ['EvalPretest']
@@ -20,7 +20,7 @@ class EvalPretest(ProgramAgentAction):
             max_time       = self.config['max_time']
         )
         self.logger.debug(f'{task.task_name}: Evaluating done!')
-        self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.max_score)} pretests!')
+        self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {task.max_score} pretests!')
         task.program = best_result[0]
         save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
         task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)

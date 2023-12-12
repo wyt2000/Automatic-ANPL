@@ -6,7 +6,7 @@ __all__ = ['GenerateSolution']
 
 class GenerateSolution(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        solutions = await task.client.request_for_solutions(
+        solutions = await task.client.GenerateSolution(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             save_dir            = task.save_dir,

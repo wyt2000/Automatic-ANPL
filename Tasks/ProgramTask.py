@@ -1,8 +1,8 @@
 from Evaluators import Evaluator
-from GPTClient import GPTClient
+from LLMClients import LLMClient 
 from ProblemSamplers import ProblemData
+from Utils.Tracer import IOCollector
 from .Task import Task
-from Tracer import IOCollector
 
 from dataclasses import dataclass
 from typing import Any, List, Set, Tuple
@@ -15,7 +15,7 @@ class ProgramTask(Task):
     task_name_prefix: str
     save_dir: str
     problem_data: ProblemData
-    client: GPTClient
+    client: LLMClient 
     model_name: str
     evaluator: Evaluator
     seed: int

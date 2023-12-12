@@ -1,9 +1,9 @@
 from .ProgramAgentAction import ProgramAgentAction
-from Evaluators import eval_sampled_functions, sample_functions
-from GPTClient import GPTClient
 from Tasks import ProgramTask
+from Evaluators import eval_sampled_functions, sample_functions
+from LLMClients.Collectors import collect_counterexample
 from Utils.Tracer import trace_code
-from utils import collect_counterexample
+from Utils.FileOperations import save_one
 
 __all__ = ['EvalPretest']
 
@@ -22,10 +22,10 @@ class EvalPretest(ProgramAgentAction):
         self.logger.debug(f'{task.task_name}: Evaluating done!')
         self.logger.debug(f'{task.task_name}: Current best attempt passed {len(best_result[1])} / {len(task.max_score)} pretests!')
         task.program = best_result[0]
-        GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
+        save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
         task.counterexample = collect_counterexample(task.pretests, task.program, task.problem_data.entry_point)
         if task.counterexample is None: return
         _, _, task.func_traces, _ = trace_code(task.program, task.counterexample, task.problem_data.entry_point)
         if task.func_traces is None:
             raise Exception(f'{task.task_name}: Couldn\'t get function trace!')
-        GPTClient.save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')
+        save_one(task.counterexample, task.save_dir, f'{task.task_name}.0.counterexample')

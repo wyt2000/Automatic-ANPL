@@ -1,8 +1,7 @@
 from .ProgramAgentAction import ProgramAgentAction
 from Configs import CONFIG
 from Tasks import ProgramTask
-from Tracer import get_sorted_funcs
-from utils import extract_imports
+from Utils.ProgramOperations import get_sorted_funcs, extract_imports
 
 __all__ = ['GenerateFunction']
 
@@ -14,7 +13,7 @@ class GenerateFunction(ProgramAgentAction):
         for i, func_name in enumerate(func_names_sorted):
             generated_funcs = []
             try:
-                generated_funcs = await task.client.request_for_function_completions(
+                generated_funcs = await task.client.GenerateFunction(
                     task_name         = f'{task.task_name}_{func_name}',
                     prefix            = '',
                     code              = task.anpl_code,

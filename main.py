@@ -21,10 +21,10 @@ import traceback
 from Agents import ProgramAgent 
 from Strategies import SelfDebugStrategy, FuzzingStrategy
 from ProblemSamplers import HumanEvalProblemSampler, HumanEvalProblemData
-from GPTClient import GPTClient
+from LLMClients import GPTClient
 from Utils import CacheManager
 from Evaluators import MaxPassEvaluator, ValidationEvaluator, CodetEvaluator
-from utils import mkdir_override, mkdir_no_override
+from Utils.FileOperations import mkdir_override, mkdir_no_override
 
 logging.config.fileConfig('Configs/logging.conf')
 logger = logging.getLogger('main')
@@ -50,8 +50,8 @@ if __name__ == '__main__':
     sample_list = sampler.sample_randomly(args.num_problems)
     # sample_list = sampler.sample([145])
     async def batch_tasks():
-        # Handle SSL Error 
         async with aiohttp.ClientSession(trust_env=True) as session:
+            # Handle SSL Error 
             openai.aiosession.set(session)
             tasks = []
             for data in sample_list:

@@ -2,6 +2,7 @@ from functools import partial
 
 from Utils.ProgramOperations import inject_func_to_class
 from Utils.FileOperations import save_all
+from Configs import CONFIG
 
 from .. import Prompts
 from ..Clients import LLMClient 
@@ -18,13 +19,13 @@ async def GenerateValidator(client: LLMClient,
                             save_dir: str,
                             completion_kwargs: dict,
                             num_completions: int,
-                            retry_times: int = 5):
+                            retry_times: int = CONFIG.verifier_retry_times):
 
     # Request from chatGPT to validate the function.
     return await client.request(
         task_name               = task_name,
         task_kind               = 'validator',
-        prompt_template         = Prompts.validator_prompt,
+        prompt_template         = Prompts.GenerateValidator,
         prompt_kwargs           = {'func_name': func_name, 'function': func_code},
         response_handlers       = [extract_code, extract_validator],
         response_verifier       = verify_python,

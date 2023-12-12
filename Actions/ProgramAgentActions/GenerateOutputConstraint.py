@@ -6,7 +6,7 @@ __all__ = ['GenerateOutputConstraint']
 
 class GenerateOutputConstraint(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        output_constraints = await task.client.request_for_io_constraint(
+        output_constraints = await task.client.GenerateConstraint(
             task_name           = task.task_name,
             function            = task.problem_data.question,
             io_type             = 'output',

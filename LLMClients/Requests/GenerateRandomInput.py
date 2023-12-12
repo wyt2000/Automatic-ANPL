@@ -2,6 +2,7 @@ from functools import partial
 
 from Utils.ProgramOperations import inject_func_to_class
 from Utils.FileOperations import save_one
+from Configs import CONFIG
 
 from .. import Prompts
 from ..Clients import LLMClient 
@@ -21,7 +22,7 @@ async def GenerateRandomInput(client: LLMClient,
                               save_dir: str,
                               completion_kwargs: dict,
                               num_completions: int,
-                              retry_times: int = 5):
+                              retry_times: int = CONFIG.verifier_retry_times):
 
     # Request from chatGPT to generate random inputs.
     return await client.request(

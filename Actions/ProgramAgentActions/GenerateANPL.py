@@ -6,7 +6,7 @@ __all__ = ['GenerateANPL']
 
 class GenerateANPL(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        anpl_codes = await task.client.request_for_anpl_codes(
+        anpl_codes = await task.client.GenerateANPL(
             task_name           = task.task_name,
             save_dir            = task.save_dir,
             entry_point         = task.problem_data.entry_point,

@@ -2,7 +2,7 @@ from Actions.ProgramAgentActions import ProgramAgentAction
 from .Agent import Agent
 from Configs import CONFIG
 from Evaluators import Evaluator
-from GPTClient import GPTClient
+from LLMClients import LLMClient 
 from Observations import ProgramAgentObservation
 from ProblemSamplers import ProblemData
 from Strategies import Strategy
@@ -24,7 +24,7 @@ class ProgramAgent(Agent):
                        task_name: str,
                        problem_data: ProblemData,
                        save_dir: str,
-                       client: GPTClient,
+                       client: LLMClient,
                        model_name: str,
                        evaluator: Evaluator,
                        strategy: Strategy,

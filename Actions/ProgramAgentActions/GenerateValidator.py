@@ -7,7 +7,7 @@ __all__ = ['GenerateValidator']
 class GenerateValidator(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
         try:
-            task.validators = await task.client.request_for_validator(
+            task.validators = await task.client.GenerateValidator(
                 task_name         = task.task_name,
                 save_dir          = task.save_dir,
                 func_name         = task.problem_data.entry_point,

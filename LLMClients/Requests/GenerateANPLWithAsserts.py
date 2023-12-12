@@ -1,8 +1,9 @@
 from functools import partial
 from typing import Set
 
-from Utils.ProgramOperations import inject_func_to_class
-from Utils.FileOperations import save_all, remove_asserts 
+from Utils.ProgramOperations import inject_func_to_class, remove_asserts 
+from Utils.FileOperations import save_all 
+from Configs import CONFIG
 
 from .. import Prompts
 from ..Clients import LLMClient 
@@ -24,7 +25,7 @@ async def GenerateANPLWithAsserts(client: LLMClient,
                                   save_dir: str,
                                   completion_kwargs: dict,
                                   num_completions: int,
-                                  retry_times: int = 5):
+                                  retry_times: int = CONFIG.verifier_retry_times):
 
     # Request from chatGPT to add assertions for the function.
     return await client.request(

@@ -6,7 +6,7 @@ __all__ = ['DebugSolution']
 
 class DebugSolution(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        solutions = await task.client.request_for_debugged_solution(
+        solutions = await task.client.DebugSolution(
             task_name           = task.task_name,
             question            = task.problem_data.question,
             old_solution        = task.solution,

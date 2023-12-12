@@ -2,7 +2,6 @@
 
 from typing import Tuple, Any
 from abc import ABC, abstractmethod 
-from typing import List
 
 __all__ = ['Evaluator']
 

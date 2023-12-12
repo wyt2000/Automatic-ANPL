@@ -14,7 +14,7 @@ class FuzzingEvaluator(Evaluator):
         self._final_submit = ['', 0]
 
     @staticmethod
-    def h(self, ios: List[Any]):
+    def h(ios: List[Any]):
         return hash(str(tuple(ios)))
 
     def update(self, program: str, mode: str, input_outputs: Tuple[List[Any], List[Any]] = None):

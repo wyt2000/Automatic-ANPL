@@ -4,7 +4,7 @@ import logging
 from typing import Callable, List, Any
 
 from .LLMClient import LLMClient
-import Prompts.ProgramPrompts as Prompts
+from .. import Prompts
 
 __all__ = ['GPTClient']
 

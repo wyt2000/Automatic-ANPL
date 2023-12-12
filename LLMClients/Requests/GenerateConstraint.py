@@ -18,7 +18,7 @@ async def GenerateConstraint(client: LLMClient,
                              num_completions: int):
 
     # Request from chatGPT to get the input or output constraints.
-    return await client._request(
+    return await client.request(
         task_name               = task_name,
         task_kind               = f'{io_type}_constraint',
         prompt_template         = Prompts.GenerateConstraint,

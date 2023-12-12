@@ -32,6 +32,7 @@ def eval_program(code: str,
 
     @timeout_decorator.timeout(timeout)
     def eval_program_impl():
+        nonlocal io, exc
         # Save resource usage limit
         soft, hard = resource.getrlimit(resource.RLIMIT_AS)
         recursion_limit = sys.getrecursionlimit()

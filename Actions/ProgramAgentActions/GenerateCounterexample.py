@@ -6,7 +6,7 @@ __all__ = ['GenerateCounterexample']
 
 class GenerateCounterexample(ProgramAgentAction):
     async def execute(self, task: ProgramTask):
-        counterexamples = await task.client.request_for_counterexamples(
+        counterexamples = await task.client.GenerateCounterexample(
             task_name         = task.task_name,
             question          = task.problem_data.question,
             program           = task.program,

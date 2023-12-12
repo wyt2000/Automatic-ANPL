@@ -1,8 +1,7 @@
 from .Evaluator import Evaluator
 
-
 from copy import deepcopy
-from typing import List, Tuple
+from typing import Tuple
 
 __all__ = ['ValidationEvaluator']
 

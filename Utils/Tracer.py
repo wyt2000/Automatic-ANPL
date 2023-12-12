@@ -1,11 +1,11 @@
 import functools
 import traceback
 import functools
-from .ProgramOperations import get_sorted_funcs
+from .ProgramOperations.get_sorted_funcs import get_sorted_funcs
 import timeout_decorator
 from copy import deepcopy
 from types import FunctionType, ModuleType
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 
 from .ProgramOperations import eval_program
 
@@ -132,12 +132,14 @@ class IOCollector:
 
 def trace_code(code: str,
                inputs: List[Any] | str,
-               entry_name: str = 'main') -> List[List[str], Dict[str, str], IOCollector, Exception]:
+               entry_name: str = 'main') -> Tuple[List[str], Dict[str, str], IOCollector, Exception]:
     # Get function names and codes
     try:
         func_names_sorted, func_codes = get_sorted_funcs(code)
     except Exception as e:
-        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}") 
+        te = traceback.TracebackException.from_exception(e)
+        lineno = te.stack[0].lineno
+        return None, None, None, Exception(f"{e}: {code.splitlines()[lineno - 1].strip()}") 
 
     # Trace all functions in code
     try:

@@ -1,9 +1,9 @@
 from .ProgramAgentAction import ProgramAgentAction
 from Evaluators import sample_functions, validate_sampled_functions
-from GPTClient import GPTClient
 from Tasks import ProgramTask
 from Utils.Tracer import trace_code
-from utils import collect_counterexample_with_validator
+from Utils.FileOperations import save_one
+from LLMClients.Collectors import collect_counterexample_with_validator
 
 __all__ = ['Validate']
 
@@ -27,7 +27,7 @@ class Validate(ProgramAgentAction):
         self.logger.debug(f'{task.task_name}: Validating done!')
         self.logger.debug(f'{task.task_name}: Current best attempt got score {best_result[1]} / {task.max_score}!')
         task.program = best_result[0]
-        GPTClient.save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
+        save_one(task.program, task.save_dir, f'{task.task_name}_program.py')
 
         # Find one counterexample 
         validator, inputs = collect_counterexample_with_validator(
@@ -50,4 +50,4 @@ class Validate(ProgramAgentAction):
         func_traces[entry_point].extend(func_traces[f'validate_{entry_point}'])
         task.func_traces = func_traces
         task.counterexample = [validator, inputs]
-        GPTClient.save_one(task.counterexample[1], task.save_dir, f'{task.task_name}.0.counterexample')
+        save_one(task.counterexample[1], task.save_dir, f'{task.task_name}.0.counterexample')

@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Tuple
 
 from Utils.ProgramOperations import eval_program
 
@@ -22,7 +22,7 @@ def collect_counterexample(asserts: List[str], program: str, entry_point: str) -
             return assert_stmt 
     return None
 
-def collect_counterexample_with_validator(code: str, entry_point: str, validators: List[str], test_inputs: List[List[Any]]) -> List[str, List[Any]]:
+def collect_counterexample_with_validator(code: str, entry_point: str, validators: List[str], test_inputs: List[List[Any]]) -> Tuple[str, List[Any]]:
     for validator in validators:
         code_with_validator = '\n'.join([code, validator])
         for inputs in test_inputs:

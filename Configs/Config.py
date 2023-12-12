@@ -53,15 +53,16 @@ class CONFIG:
     num_debugged_funcs: int         = 8
     num_pretests: int               = 100
     num_random_inputs: int          = 10
-    num_validators: int             = 10
     eval_max_attempts: int          = 100000
+    eval_max_attempts: int          = 10
     eval_max_time: float            = 240
     use_pretests: bool              = False 
     use_asserts: bool               = False 
     use_random_inputs: bool         = True
 
     # LLM Client
-    LLM_retry_times                 = 5
+    LLM_retry_times                 = 5     # For LLM inner error, like token limit exceeded.
+    verifier_retry_times            = 5     # For verification failed
 
     # Misc    
     seed                            = 42

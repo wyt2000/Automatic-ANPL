@@ -35,7 +35,7 @@ if __name__ == '__main__':
     argparser.add_argument("-j", "--num_workers", help="Number of working coroutines", type=int, default=1)
     argparser.add_argument("-s", "--save_dir", help="Path to save the results and logs", type=str, required=True)
     argparser.add_argument("--use-asserts", help="Generate assertions to debug", action='store_true')
-    argparser.add_argument("--use-fuzzing", help="Generate fuzzing test to rank programs", action='store_true')
+    argparser.add_argument("--use-fuzzing", help="Generate fuzzing tests to rank programs", action='store_true')
     args = argparser.parse_args()
     save_dir = args.save_dir
     cache_dir = f'{save_dir}_cache'

@@ -32,7 +32,7 @@ async def GenerateFunction(client: LLMClient,
         response_handlers       = [
             extract_code,
             partial(extract_func, target=target, func_names=func_names),
-            partial(remove_asserts, func_name=target)
+            remove_asserts
         ],
         response_collector      = lambda res : sorted(set(filter(verify_python, res))),
         completion_kwargs       = completion_kwargs,

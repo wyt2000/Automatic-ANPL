@@ -5,7 +5,6 @@
 __pycache__
 key.txt
 *apps*
-*humaneval*
 !humaneval_judger
 !ProblemSamplers/*.py
 .pytest_cache

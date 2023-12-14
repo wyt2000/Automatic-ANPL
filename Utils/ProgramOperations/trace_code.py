@@ -2,7 +2,6 @@ from . import eval_program
 from . import get_sorted_funcs
 from ..Tracer import IOCollector
 
-import traceback
 from typing import Any, Dict, List, Tuple
 
 __all__ = ['trace_code']
@@ -14,9 +13,7 @@ def trace_code(code: str,
     try:
         func_names_sorted, func_codes = get_sorted_funcs(code)
     except Exception as e:
-        te = traceback.TracebackException.from_exception(e)
-        lineno = te.stack[0].lineno
-        return None, None, None, Exception(f"{e}: {code.splitlines()[lineno - 1].strip()}")
+        return None, None, None, Exception(f"{e}: {code.splitlines()[e.lineno - 1].strip()}")
 
     # Trace all functions in code
     try:

@@ -3,15 +3,9 @@
 from human_eval.data import write_jsonl, read_problems
 from human_eval.execution import check_correctness
 
-import logging
-import logging.config
 import pathlib
 import os
-import sys
 import argparse
-
-logging.config.fileConfig('Configs/logging.conf')
-logger = logging.getLogger('main')
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()

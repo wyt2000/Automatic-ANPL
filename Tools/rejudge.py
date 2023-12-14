@@ -6,11 +6,7 @@ import logging
 import logging.config
 import pathlib
 import os
-import sys
 import argparse
-
-logging.config.fileConfig('Configs/logging.conf')
-logger = logging.getLogger('main')
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser()

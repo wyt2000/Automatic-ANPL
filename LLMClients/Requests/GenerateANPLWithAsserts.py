@@ -36,7 +36,7 @@ async def GenerateANPLWithAsserts(client: LLMClient,
         response_handlers       = [
             extract_code,
             partial(extract_func, target=entry_point, func_names=func_names),
-            partial(remove_asserts, func_name=entry_point)
+            remove_asserts
         ],
         response_verifier       = verify_python,
         response_collector      = lambda res : list(map(partial(collect_anpl_with_asserts, anpl_code=anpl_code, entry_point=entry_point), res)),

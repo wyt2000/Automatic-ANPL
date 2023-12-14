@@ -1,4 +1,5 @@
 import ast
+import traceback
 
 __all__ = ['remove_asserts']
 
@@ -12,22 +13,29 @@ class AssertNameVisitor(ast.NodeVisitor):
             self.has_target = True
 
 class AssertRemover(ast.NodeTransformer):
-    def __init__(self, target: str):
-        self.target = target
-    def visit_Assert(self, node):
-        visitor = AssertNameVisitor(self.target)
+    def __init__(self):
+        self.func_names = []
+    def visit_FunctionDef(self, node: ast.FunctionDef):
+        self.func_names.append(node.name)
+        self.generic_visit(node)
+        self.func_names.pop()
+        return node
+    def visit_Assert(self, node: ast.Assert):
+        if not self.func_names:
+            return ast.Pass()
+        visitor = AssertNameVisitor(self.func_names[-1])
         visitor.visit(node)
         if visitor.has_target:
-            return None
+            return ast.Pass()
         return node
 
-def remove_asserts(content: str, func_name: str):
+def remove_asserts(content: str):
     # Remove the asserts outside of all functions and the recursive call in asserts 
     try:
         root = ast.parse(content)
-        root.body = [node for node in root.body if not isinstance(node, ast.Assert)]
-        AssertRemover(func_name).visit(root)
+        AssertRemover().visit(root)
         content = ast.unparse(root)
-    except Exception:
+    except Exception as err:
+        print(err)
         pass
     return content

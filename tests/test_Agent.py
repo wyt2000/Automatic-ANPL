@@ -1,5 +1,5 @@
-from Agent import ProgramAgent 
-from Strategy.SelfDebugStrategy import SelfDebugStrategy
+from Agents import ProgramAgent 
+from Strategies import SelfDebugStrategy
 from ProblemSampler.HumanEvalProblemSampler import HumanEvalProblemSampler
 from GPTClient import GPTClient
 from CacheManager import CacheManager

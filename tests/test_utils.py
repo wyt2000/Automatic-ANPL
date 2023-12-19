@@ -1,4 +1,6 @@
-from utils import remove_implemented_functions, extract_asserts, compose_function_with_traces
+from Utils.ProgramOperations.compose_function_with_traces import compose_function_with_traces
+from Utils.ProgramOperations.remove_implemented_functions import remove_implemented_functions
+from utils import extract_asserts
 from Tracer import trace_code
 import ast
 

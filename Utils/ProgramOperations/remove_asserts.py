@@ -36,6 +36,5 @@ def remove_asserts(content: str):
         AssertRemover().visit(root)
         content = ast.unparse(root)
     except Exception as err:
-        print(err)
         pass
     return content

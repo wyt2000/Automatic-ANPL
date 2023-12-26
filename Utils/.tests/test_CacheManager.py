@@ -1,4 +1,5 @@
-from CacheManager import CacheManager
+from Utils import CacheManager
+import shutil
 
 def test_CacheManager():
     with CacheManager('anpl_test_cache') as m:
@@ -31,4 +32,5 @@ def test_CacheManager():
         assert m.load('solution', 1, [1,2,3], 'ab', True) == 'It is a test solution'
         assert m.load('solution', 'anpl') is None
 
+    shutil.rmtree('anpl_test_cache')
 

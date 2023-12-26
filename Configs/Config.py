@@ -61,9 +61,12 @@ class CONFIG:
 
     # LLM Client
     LLM_retry_times                 = 5     # For LLM inner error, like token limit exceeded.
+    LLM_retry_interval              = 2.0 
     verifier_retry_times            = 5     # For verification failed
 
     # Misc    
     seed                            = 42
     eval_program_timeout            = 1.0
 
+    # Unit test
+    test_model_name                 = "gpt-3.5-turbo-0301"

@@ -10,6 +10,11 @@ __all__ = ['GPTClient']
 
 class GPTClient(LLMClient):
 
+    @staticmethod
+    def get_response_list(responses: str):
+        # Convert GPT responses to list[str]
+        return [response["message"]["content"] for response in responses["choices"]]
+
     async def _request_impl(self, task_name, messages, **kwargs):
         # Async create `ChatCompletion`, backoff when reach time limit
         for i in range(self.retry_times):
@@ -25,11 +30,6 @@ class GPTClient(LLMClient):
             except (openai.error.RateLimitError, openai.error.APIConnectionError) as err:
                 await asyncio.sleep(self.retry_interval * (2 ** i))
         raise openai.error.RateLimitError
-
-    @staticmethod
-    def get_response_list(responses: str):
-        # Convert GPT responses to list[str]
-        return [response["message"]["content"] for response in responses["choices"]]
 
     async def request(self,
                       task_name: str,

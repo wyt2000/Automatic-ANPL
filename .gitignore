@@ -9,3 +9,4 @@ key.txt
 !ProblemSamplers/*.py
 .pytest_cache
 anpl_test*
+*.egg-info/
